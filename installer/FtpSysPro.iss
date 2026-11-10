@@ -53,16 +53,16 @@ Filename: "{app}\{#MyServiceExeName}"; Parameters: "--install"; Flags: runhidden
 Filename: "sc.exe"; Parameters: "start FtpSysProService"; Flags: runhidden; StatusMsg: "Đang khởi động Windows Service..."
 ; Register Scheduled Task to auto-start Manager with highest privileges upon user logon
 Filename: "schtasks.exe"; Parameters: "/Create /TN ""FtpSysPro Manager Startup"" /TR ""\""{app}\{#MyAppExeName}\"" --minimized"" /SC ONLOGON /RL HIGHEST /F"; Tasks: autostart; Flags: runhidden
-; Run Manager at end of setup
-Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
+; Run Manager at end of setup with elevated admin privileges
+Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent runascurrentuser
 
 [UninstallRun]
 ; Stop and uninstall Manager auto-start task
-Filename: "schtasks.exe"; Parameters: "/Delete /TN ""FtpSysPro Manager Startup"" /F"; Flags: runhidden
+Filename: "schtasks.exe"; Parameters: "/Delete /TN ""FtpSysPro Manager Startup"" /F"; Flags: runhidden; RunOnceId: "DelStartupTask"
 ; Stop Windows Service
-Filename: "sc.exe"; Parameters: "stop FtpSysProService"; Flags: runhidden
+Filename: "sc.exe"; Parameters: "stop FtpSysProService"; Flags: runhidden; RunOnceId: "StopService"
 ; Uninstall Windows Service
-Filename: "{app}\{#MyServiceExeName}"; Parameters: "--uninstall"; Flags: runhidden
+Filename: "{app}\{#MyServiceExeName}"; Parameters: "--uninstall"; Flags: runhidden; RunOnceId: "UninstallService"
 
 [Code]
 // Check .NET Framework 4.8 presence
