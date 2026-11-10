@@ -29,7 +29,11 @@ Write-Host "Build & Test thanh cong!" -ForegroundColor Green
 
 # 2. Build Inno Setup Installer if ISCC is installed
 Write-Host "`n[2/4] Kiem tra dong goi bo cai dat Inno Setup..." -ForegroundColor Yellow
-$iscc = (Get-Command "ISCC.exe" -ErrorAction SilentlyContinue)?.Source
+$iscc = $null
+$cmd = Get-Command "ISCC.exe" -ErrorAction SilentlyContinue
+if ($cmd) {
+    $iscc = $cmd.Source
+}
 if (-not $iscc) {
     $paths = @(
         "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",

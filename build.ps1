@@ -66,7 +66,10 @@ if (-not $SkipInstaller) {
     }
 
     if ($null -eq $iscc) {
-        $iscc = (Get-Command "ISCC.exe" -ErrorAction SilentlyContinue)?.Source
+        $cmd = Get-Command "ISCC.exe" -ErrorAction SilentlyContinue
+        if ($cmd) {
+            $iscc = $cmd.Source
+        }
     }
 
     if ($null -ne $iscc) {
