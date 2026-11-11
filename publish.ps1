@@ -38,7 +38,9 @@ if (-not $iscc) {
     $paths = @(
         "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe",
         "${env:ProgramFiles}\Inno Setup 6\ISCC.exe",
-        "${env:LOCALAPPDATA}\Programs\Inno Setup 6\ISCC.exe"
+        "${env:LOCALAPPDATA}\Programs\Inno Setup 6\ISCC.exe",
+        "$env:USERPROFILE\AppData\Local\Programs\Inno Setup 6\ISCC.exe",
+        "C:\Users\XXXX\AppData\Local\Programs\Inno Setup 6\ISCC.exe"
     )
     foreach ($p in $paths) {
         if (Test-Path $p) { $iscc = $p; break }
@@ -47,15 +49,23 @@ if (-not $iscc) {
 
 if ($iscc) {
     Write-Host "Tim thay Inno Setup: $iscc" -ForegroundColor Gray
+
+    # Don dep cac file cai dat cu de giam dung luong repo
+    if (Test-Path "dist") {
+        Get-ChildItem -Path "dist" -Filter "*.exe" | Where-Object { $_.Name -ne "FtpSysPro_Setup_$Version.exe" } | Remove-Item -Force -ErrorAction SilentlyContinue
+    }
+
     & $iscc "installer\FtpSysPro.iss"
     if ($LASTEXITCODE -eq 0) {
-        Write-Host "Da tao bo cai dat trong dist\:" -ForegroundColor Green
+        Write-Host "Da tao bo cai dat thanh cong trong dist\:" -ForegroundColor Green
         Get-ChildItem -Path (Join-Path $ScriptDir "dist") -Filter "*.exe" | ForEach-Object {
             Write-Host " -> $($_.FullName) ($([math]::Round($_.Length / 1MB, 2)) MB)" -ForegroundColor Cyan
         }
+    } else {
+        throw "Loi khi bien dich bo cai dat bang Inno Setup!"
     }
 } else {
-    Write-Host "Chua cai dat Inno Setup 6 tren may nay. GitHub Actions CI se tu dong dong goi khi push!" -ForegroundColor DarkGray
+    Write-Host "Chua tim thay Inno Setup tren may. Vui long cai dat Inno Setup 6!" -ForegroundColor Red
 }
 
 # 3. Configure Git & Commit
@@ -78,21 +88,10 @@ if (-not $existingRemote) {
 git add .
 $status = git status --porcelain
 if ($status) {
-    git commit -m "feat: initial release of FTPSys-Pro v1.0.0
+    git commit -m "build: release $Version with installer binary
 
-- Windows Service (LocalSystem) for unattended background scheduling
-- System Tray WinForms Manager with real-time progress and notifications
-- Dual transfer modes: Uncompressed direct directory mirroring or ZIP archive with AES-256 encryption
-- Live source size calculation and side detail card on main window
-- Four data reliability features:
-  1. Volume Shadow Copy (VSS) snapshot for in-use/locked files
-  2. Cryptographic SHA-256 checksum verification
-  3. Pre-flight 1:1 disk space check
-  4. Exponential backoff auto-retry for network resilience
-- Full & Incremental backups with automated retention pruning
-- Built-in Point-in-time Restore Wizard
-- SMTP TLS email notifications with HTML reports
-- Bilingual UI (Vietnamese / English)
+- Built and packaged Inno Setup installer $Version into dist/
+- Updated source binaries, configs, and tests
 
 Co-Authored-By: Claude Code <noreply@anthropic.com>"
     Write-Host "Da commit thay doi thanh cong!" -ForegroundColor Green
