@@ -19,6 +19,39 @@ namespace FtpSysPro.Manager.UI
         private TextBox txtName;
         private TextBox txtDescription;
         private CheckBox chkEnabled;
+        private RadioButton rbModeIncremental;
+        private RadioButton rbModeFull;
+
+        // Stepper Navigation
+        private Panel pnlStepHeader;
+        private Button[] _stepButtons;
+        private Label lblStepCounter;
+        private Button btnBack;
+        private Button btnNext;
+        private Button btnSave;
+        private Button btnCancel;
+
+        private static readonly string[] StepNames = new[]
+        {
+            "1. Chung",
+            "2. Nguồn",
+            "3. Đích đến",
+            "4. Tuỳ chọn",
+            "5. Lập lịch",
+            "6. Giữ bản",
+            "7. Email"
+        };
+
+        private static readonly string[] StepDescriptions = new[]
+        {
+            "Thông tin chung & Chế độ",
+            "Thư mục nguồn dữ liệu",
+            "Đích đến sao lưu",
+            "Nén & Độ tin cậy",
+            "Lập lịch chạy tự động",
+            "Chính sách giữ bản sao",
+            "Cấu hình thông báo Email"
+        };
 
         // Sources
         private ListBox lstSources;
@@ -100,14 +133,62 @@ namespace FtpSysPro.Manager.UI
         private void InitializeComponents()
         {
             Text = _isNew ? (Strings.AppName + " - " + Strings.Add) : (Strings.AppName + " - " + Strings.Edit);
-            Size = new Size(680, 560);
+            Size = new Size(740, 640);
+            MinimumSize = new Size(740, 640);
             StartPosition = FormStartPosition.CenterParent;
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
             MinimizeBox = false;
             Font = new Font("Segoe UI", 9F);
 
-            tabControl = new TabControl { Dock = DockStyle.Fill };
+            // Stepper top banner
+            pnlStepHeader = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 46,
+                BackColor = Color.FromArgb(240, 244, 248),
+                Padding = new Padding(6, 5, 6, 5)
+            };
+
+            var tblSteps = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 7,
+                RowCount = 1,
+                Margin = new Padding(0)
+            };
+            for (int i = 0; i < 7; i++)
+            {
+                tblSteps.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f / 7f));
+            }
+
+            _stepButtons = new Button[7];
+            for (int i = 0; i < 7; i++)
+            {
+                int stepIdx = i;
+                _stepButtons[i] = new Button
+                {
+                    Text = StepNames[i],
+                    Dock = DockStyle.Fill,
+                    FlatStyle = FlatStyle.Flat,
+                    Cursor = Cursors.Hand,
+                    Margin = new Padding(2)
+                };
+                _stepButtons[i].FlatAppearance.BorderSize = 1;
+                _stepButtons[i].FlatAppearance.BorderColor = Color.FromArgb(210, 218, 228);
+                _stepButtons[i].Click += (s, e) => GoToStep(stepIdx);
+                tblSteps.Controls.Add(_stepButtons[i], i, 0);
+            }
+            pnlStepHeader.Controls.Add(tblSteps);
+
+            // TabControl (raw tab headers hidden, controlled via Stepper)
+            tabControl = new TabControl
+            {
+                Dock = DockStyle.Fill,
+                Appearance = TabAppearance.Buttons,
+                ItemSize = new Size(0, 1),
+                SizeMode = TabSizeMode.Fixed
+            };
 
             tabControl.TabPages.Add(CreateGeneralTab());
             tabControl.TabPages.Add(CreateSourcesTab());
@@ -117,11 +198,57 @@ namespace FtpSysPro.Manager.UI
             tabControl.TabPages.Add(CreateRetentionTab());
             tabControl.TabPages.Add(CreateNotificationTab());
 
-            var pnlBottom = new Panel { Dock = DockStyle.Bottom, Height = 48 };
-            var btnOk = new Button { Text = Strings.Save, DialogResult = DialogResult.OK, Location = new Point(480, 10), Size = new Size(85, 30) };
-            var btnCancel = new Button { Text = Strings.Cancel, DialogResult = DialogResult.Cancel, Location = new Point(575, 10), Size = new Size(80, 30) };
+            // Bottom navigation panel
+            var pnlBottom = new Panel
+            {
+                Dock = DockStyle.Bottom,
+                Height = 52,
+                BackColor = Color.FromArgb(245, 247, 250),
+                Padding = new Padding(12, 8, 12, 8)
+            };
 
-            btnOk.Click += (s, e) =>
+            lblStepCounter = new Label
+            {
+                Text = "Bước 1 / 7: Thông tin chung & Chế độ",
+                Location = new Point(15, 16),
+                AutoSize = true,
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(40, 60, 80),
+                Anchor = AnchorStyles.Bottom | AnchorStyles.Left
+            };
+
+            btnBack = new Button
+            {
+                Text = Strings.Back,
+                Size = new Size(95, 32),
+                Location = new Point(320, 10),
+                Enabled = false,
+                Anchor = AnchorStyles.Bottom | AnchorStyles.Right
+            };
+            btnBack.Click += (s, e) => GoToStep(tabControl.SelectedIndex - 1);
+
+            btnNext = new Button
+            {
+                Text = Strings.Next,
+                Size = new Size(95, 32),
+                Location = new Point(425, 10),
+                Anchor = AnchorStyles.Bottom | AnchorStyles.Right
+            };
+            btnNext.Click += (s, e) => GoToStep(tabControl.SelectedIndex + 1);
+
+            btnSave = new Button
+            {
+                Text = Strings.Save,
+                Size = new Size(95, 32),
+                Location = new Point(530, 10),
+                BackColor = Color.FromArgb(40, 167, 69),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                Anchor = AnchorStyles.Bottom | AnchorStyles.Right
+            };
+            btnSave.FlatAppearance.BorderSize = 0;
+            btnSave.Click += (s, e) =>
             {
                 if (SaveData())
                 {
@@ -130,14 +257,149 @@ namespace FtpSysPro.Manager.UI
                 }
             };
 
-            pnlBottom.Controls.Add(btnOk);
-            pnlBottom.Controls.Add(btnCancel);
+            btnCancel = new Button
+            {
+                Text = Strings.Cancel,
+                Size = new Size(75, 32),
+                Location = new Point(635, 10),
+                DialogResult = DialogResult.Cancel,
+                Anchor = AnchorStyles.Bottom | AnchorStyles.Right
+            };
+
+            pnlBottom.Controls.AddRange(new Control[] { lblStepCounter, btnBack, btnNext, btnSave, btnCancel });
 
             Controls.Add(tabControl);
+            Controls.Add(pnlStepHeader);
             Controls.Add(pnlBottom);
 
-            AcceptButton = btnOk;
             CancelButton = btnCancel;
+
+            UpdateStepUI();
+        }
+
+        private bool ValidateCurrentStep(int stepIndex, bool showWarning = true)
+        {
+            if (stepIndex == 0)
+            {
+                if (string.IsNullOrWhiteSpace(txtName.Text))
+                {
+                    if (showWarning)
+                    {
+                        MessageBox.Show(this, "Vui lòng nhập tên tác vụ sao lưu.", "Thiếu thông tin", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        txtName.Focus();
+                    }
+                    return false;
+                }
+            }
+            else if (stepIndex == 1)
+            {
+                if (lstSources.Items.Count == 0)
+                {
+                    if (showWarning)
+                    {
+                        MessageBox.Show(this, "Vui lòng chọn ít nhất một thư mục nguồn cần sao lưu.", "Thiếu thông tin", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    }
+                    return false;
+                }
+            }
+            else if (stepIndex == 2)
+            {
+                if (cboDestType.SelectedIndex == 0)
+                {
+                    if (string.IsNullOrWhiteSpace(txtLocalPath.Text))
+                    {
+                        if (showWarning)
+                        {
+                            MessageBox.Show(this, "Vui lòng nhập đường dẫn thư mục đích đến.", "Thiếu thông tin", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            txtLocalPath.Focus();
+                        }
+                        return false;
+                    }
+                }
+                else if (cboDestType.SelectedIndex == 1)
+                {
+                    if (string.IsNullOrWhiteSpace(txtFtpHost.Text))
+                    {
+                        if (showWarning)
+                        {
+                            MessageBox.Show(this, "Vui lòng nhập địa chỉ máy chủ FTP.", "Thiếu thông tin", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            txtFtpHost.Focus();
+                        }
+                        return false;
+                    }
+                }
+                else if (cboDestType.SelectedIndex == 2)
+                {
+                    if (string.IsNullOrWhiteSpace(txtSftpHost.Text))
+                    {
+                        if (showWarning)
+                        {
+                            MessageBox.Show(this, "Vui lòng nhập địa chỉ máy chủ SFTP.", "Thiếu thông tin", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            txtSftpHost.Focus();
+                        }
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+        private void GoToStep(int targetIndex)
+        {
+            if (targetIndex < 0 || targetIndex >= tabControl.TabPages.Count) return;
+
+            int current = tabControl.SelectedIndex;
+            if (targetIndex > current)
+            {
+                for (int i = current; i < targetIndex; i++)
+                {
+                    if (!ValidateCurrentStep(i, true))
+                    {
+                        tabControl.SelectedIndex = i;
+                        UpdateStepUI();
+                        return;
+                    }
+                }
+            }
+
+            tabControl.SelectedIndex = targetIndex;
+            UpdateStepUI();
+        }
+
+        private void UpdateStepUI()
+        {
+            int current = tabControl.SelectedIndex;
+            if (_stepButtons != null)
+            {
+                for (int i = 0; i < _stepButtons.Length; i++)
+                {
+                    if (i == current)
+                    {
+                        _stepButtons[i].BackColor = Color.FromArgb(0, 102, 204);
+                        _stepButtons[i].ForeColor = Color.White;
+                        _stepButtons[i].Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+                    }
+                    else if (i < current)
+                    {
+                        _stepButtons[i].BackColor = Color.FromArgb(232, 245, 233);
+                        _stepButtons[i].ForeColor = Color.FromArgb(46, 125, 50);
+                        _stepButtons[i].Font = new Font("Segoe UI", 8.5F, FontStyle.Regular);
+                    }
+                    else
+                    {
+                        _stepButtons[i].BackColor = Color.FromArgb(245, 247, 250);
+                        _stepButtons[i].ForeColor = Color.FromArgb(100, 110, 120);
+                        _stepButtons[i].Font = new Font("Segoe UI", 8.5F, FontStyle.Regular);
+                    }
+                }
+            }
+
+            if (lblStepCounter != null && current >= 0 && current < StepDescriptions.Length)
+            {
+                lblStepCounter.Text = $"Bước {current + 1} / {StepDescriptions.Length}: {StepDescriptions[current]}";
+            }
+            if (btnBack != null) btnBack.Enabled = (current > 0);
+            if (btnNext != null) btnNext.Visible = (current < tabControl.TabPages.Count - 1);
         }
 
         private TabPage CreateGeneralTab()
@@ -145,14 +407,57 @@ namespace FtpSysPro.Manager.UI
             var page = new TabPage(Strings.TabGeneral) { Padding = new Padding(15) };
 
             var lblName = new Label { Text = "Tên tác vụ / Job Name (*):", Location = new Point(15, 20), AutoSize = true };
-            txtName = new TextBox { Location = new Point(15, 42), Width = 400 };
+            txtName = new TextBox { Location = new Point(15, 42), Width = 450 };
 
             var lblDesc = new Label { Text = "Mô tả / Description:", Location = new Point(15, 80), AutoSize = true };
-            txtDescription = new TextBox { Location = new Point(15, 102), Width = 550, Height = 80, Multiline = true };
+            txtDescription = new TextBox { Location = new Point(15, 102), Width = 580, Height = 75, Multiline = true };
 
-            chkEnabled = new CheckBox { Text = "Kích hoạt tác vụ này (Enabled)", Location = new Point(15, 200), AutoSize = true, Checked = true };
+            chkEnabled = new CheckBox { Text = "Kích hoạt tác vụ này (Enabled)", Location = new Point(15, 195), AutoSize = true, Checked = true };
 
-            page.Controls.AddRange(new Control[] { lblName, txtName, lblDesc, txtDescription, chkEnabled });
+            var grpMode = new GroupBox
+            {
+                Text = "Chế độ sao lưu mặc định / Default Backup Mode (*)",
+                Location = new Point(15, 230),
+                Size = new Size(580, 130),
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold)
+            };
+
+            rbModeIncremental = new RadioButton
+            {
+                Text = "Sao lưu tăng dần (Incremental) - Chỉ copy file mới / đã sửa đổi (Khuyên dùng)",
+                Location = new Point(20, 28),
+                AutoSize = true,
+                Checked = true,
+                Font = new Font("Segoe UI", 9F, FontStyle.Regular)
+            };
+            var lblIncrDesc = new Label
+            {
+                Text = "Tối ưu tốc độ và dung lượng đường truyền. File không đổi sẽ không truyền lại.",
+                Location = new Point(42, 52),
+                AutoSize = true,
+                ForeColor = Color.DimGray,
+                Font = new Font("Segoe UI", 8.25F, FontStyle.Italic)
+            };
+
+            rbModeFull = new RadioButton
+            {
+                Text = "Sao lưu toàn bộ (Full) - Quét và sao lưu toàn bộ tất cả file mỗi lần chạy",
+                Location = new Point(20, 76),
+                AutoSize = true,
+                Font = new Font("Segoe UI", 9F, FontStyle.Regular)
+            };
+            var lblFullDesc = new Label
+            {
+                Text = "Đảm bảo tính độc lập hoàn toàn cho mỗi bản sao lưu nhưng tốn thời gian và dung lượng hơn.",
+                Location = new Point(42, 100),
+                AutoSize = true,
+                ForeColor = Color.DimGray,
+                Font = new Font("Segoe UI", 8.25F, FontStyle.Italic)
+            };
+
+            grpMode.Controls.AddRange(new Control[] { rbModeIncremental, lblIncrDesc, rbModeFull, lblFullDesc });
+
+            page.Controls.AddRange(new Control[] { lblName, txtName, lblDesc, txtDescription, chkEnabled, grpMode });
             return page;
         }
 
@@ -609,6 +914,10 @@ namespace FtpSysPro.Manager.UI
             txtName.Text = _job.Name;
             txtDescription.Text = _job.Description;
             chkEnabled.Checked = _job.Enabled;
+            if (_job.BackupType == BackupType.Full)
+                rbModeFull.Checked = true;
+            else
+                rbModeIncremental.Checked = true;
 
             lstSources.Items.Clear();
             foreach (var s in _job.SourceDirectories)
@@ -686,24 +995,28 @@ namespace FtpSysPro.Manager.UI
 
         private bool SaveData()
         {
-            if (string.IsNullOrWhiteSpace(txtName.Text))
+            if (!ValidateCurrentStep(0, true))
             {
-                MessageBox.Show(this, "Vui lòng nhập tên tác vụ sao lưu.", "Thiếu thông tin", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                tabControl.SelectedTab = tabControl.TabPages[0];
-                txtName.Focus();
+                GoToStep(0);
                 return false;
             }
 
-            if (lstSources.Items.Count == 0)
+            if (!ValidateCurrentStep(1, true))
             {
-                MessageBox.Show(this, "Vui lòng chọn ít nhất một thư mục nguồn cần sao lưu.", "Thiếu thông tin", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                tabControl.SelectedTab = tabControl.TabPages[1];
+                GoToStep(1);
+                return false;
+            }
+
+            if (!ValidateCurrentStep(2, true))
+            {
+                GoToStep(2);
                 return false;
             }
 
             _job.Name = txtName.Text.Trim();
             _job.Description = txtDescription.Text.Trim();
             _job.Enabled = chkEnabled.Checked;
+            _job.BackupType = rbModeFull.Checked ? BackupType.Full : BackupType.Incremental;
 
             _job.SourceDirectories.Clear();
             foreach (var item in lstSources.Items)

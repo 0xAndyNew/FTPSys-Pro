@@ -26,11 +26,11 @@ namespace FtpSysPro.Manager.UI
         private ToolStripButton btnClone;
         private ToolStripButton btnDelete;
         private ToolStripSeparator sep1;
-        private ToolStripButton btnRunFull;
-        private ToolStripButton btnRunIncr;
+        private ToolStripButton btnRun;
         private ToolStripButton btnStop;
         private ToolStripSeparator sep2;
         private ToolStripButton btnRestore;
+        private ToolStripButton btnLogs;
         private ToolStripButton btnSettings;
         private ToolStripButton btnRefresh;
 
@@ -39,6 +39,15 @@ namespace FtpSysPro.Manager.UI
         private ToolStripStatusLabel lblServiceStatus;
         private ToolStripStatusLabel lblServiceAction;
         private ToolStripProgressBar progressBar;
+
+        // Integrated Log Viewer
+        private Panel pnlLogViewer;
+        private Splitter logSplitter;
+        private Label lblLogStatus;
+        private CheckBox chkLogAutoScroll;
+        private RichTextBox txtLogViewer;
+        private long _lastLogFileLength = 0;
+        private string _lastLogFileName = null;
 
         // Side Detail Panel
         private SplitContainer splitContainer;
@@ -78,29 +87,29 @@ namespace FtpSysPro.Manager.UI
             // ToolStrip
             toolStrip = new ToolStrip { ImageScalingSize = new Size(20, 20), RenderMode = ToolStripRenderMode.System };
 
-            btnAdd = new ToolStripButton(Strings.Add) { DisplayStyle = ToolStripItemDisplayStyle.Text, Font = new Font(Font, FontStyle.Bold) };
-            btnEdit = new ToolStripButton(Strings.Edit) { DisplayStyle = ToolStripItemDisplayStyle.Text };
-            btnClone = new ToolStripButton(Strings.Clone) { DisplayStyle = ToolStripItemDisplayStyle.Text };
-            btnDelete = new ToolStripButton(Strings.Delete) { DisplayStyle = ToolStripItemDisplayStyle.Text };
+            btnAdd = new ToolStripButton("➕ " + Strings.Add) { DisplayStyle = ToolStripItemDisplayStyle.Text, Font = new Font(Font, FontStyle.Bold) };
+            btnEdit = new ToolStripButton("✏ " + Strings.Edit) { DisplayStyle = ToolStripItemDisplayStyle.Text };
+            btnDelete = new ToolStripButton("🗑 " + Strings.Delete) { DisplayStyle = ToolStripItemDisplayStyle.Text };
+            btnClone = new ToolStripButton("📋 " + Strings.Clone) { DisplayStyle = ToolStripItemDisplayStyle.Text };
 
             sep1 = new ToolStripSeparator();
 
-            btnRunFull = new ToolStripButton(Strings.RunFull) { DisplayStyle = ToolStripItemDisplayStyle.Text };
-            btnRunIncr = new ToolStripButton(Strings.RunIncr) { DisplayStyle = ToolStripItemDisplayStyle.Text };
-            btnStop = new ToolStripButton(Strings.Stop) { DisplayStyle = ToolStripItemDisplayStyle.Text, Enabled = false };
+            btnRun = new ToolStripButton("▶ " + Strings.Run) { DisplayStyle = ToolStripItemDisplayStyle.Text, Font = new Font(Font, FontStyle.Bold) };
+            btnStop = new ToolStripButton("■ " + Strings.Stop) { DisplayStyle = ToolStripItemDisplayStyle.Text, Enabled = false };
 
             sep2 = new ToolStripSeparator();
 
-            btnRestore = new ToolStripButton(Strings.Restore) { DisplayStyle = ToolStripItemDisplayStyle.Text };
-            btnSettings = new ToolStripButton(Strings.Settings) { DisplayStyle = ToolStripItemDisplayStyle.Text };
-            btnRefresh = new ToolStripButton(Strings.Refresh) { DisplayStyle = ToolStripItemDisplayStyle.Text };
+            btnRestore = new ToolStripButton("🔄 " + Strings.Restore) { DisplayStyle = ToolStripItemDisplayStyle.Text };
+            btnLogs = new ToolStripButton("📋 " + Strings.Logs) { DisplayStyle = ToolStripItemDisplayStyle.Text, CheckOnClick = true, Checked = true };
+            btnSettings = new ToolStripButton("⚙ " + Strings.Settings) { DisplayStyle = ToolStripItemDisplayStyle.Text };
+            btnRefresh = new ToolStripButton("↻ " + Strings.Refresh) { DisplayStyle = ToolStripItemDisplayStyle.Text };
 
             toolStrip.Items.AddRange(new ToolStripItem[] {
-                btnAdd, btnEdit, btnClone, btnDelete,
+                btnAdd, btnEdit, btnDelete, btnClone,
                 sep1,
-                btnRunFull, btnRunIncr, btnStop,
+                btnRun, btnStop,
                 sep2,
-                btnRestore, btnSettings, btnRefresh
+                btnRestore, btnLogs, btnSettings, btnRefresh
             });
 
             // Grid
@@ -118,15 +127,17 @@ namespace FtpSysPro.Manager.UI
                 BorderStyle = BorderStyle.None
             };
 
-            gridJobs.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = Strings.ColJobName, DataPropertyName = "Name", Width = 160 });
-            gridJobs.Columns.Add(new DataGridViewCheckBoxColumn { HeaderText = Strings.ColEnabled, DataPropertyName = "Enabled", Width = 50 });
-            gridJobs.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = Strings.ColSourceSize, DataPropertyName = "SourceSizeDisplay", Width = 150 });
-            gridJobs.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = Strings.ColTransferMode, DataPropertyName = "CompressionDisplay", Width = 115 });
-            gridJobs.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = Strings.ColDestination, DataPropertyName = "DestinationDisplay", Width = 150 });
-            gridJobs.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = Strings.ColLastRun, DataPropertyName = "LastRunDisplay", Width = 125 });
-            gridJobs.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = Strings.ColStatus, DataPropertyName = "StatusDisplay", Width = 95 });
-            gridJobs.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = Strings.ColNextRun, DataPropertyName = "NextRunDisplay", Width = 125 });
-            gridJobs.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = Strings.ColSize, DataPropertyName = "SizeDisplay", Width = 110 });
+            gridJobs.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = Strings.ColJobName, DataPropertyName = "Name", Width = 150 });
+            gridJobs.Columns.Add(new DataGridViewCheckBoxColumn { HeaderText = Strings.ColEnabled, DataPropertyName = "Enabled", Width = 45 });
+            gridJobs.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = Strings.ColBackupType, DataPropertyName = "BackupTypeDisplay", Width = 85 });
+            gridJobs.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = Strings.ColSource, DataPropertyName = "SourceDisplay", Width = 230 });
+            gridJobs.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = Strings.ColDestination, DataPropertyName = "DestinationDisplay", Width = 210 });
+            gridJobs.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = Strings.ColSourceSize, DataPropertyName = "SourceSizeDisplay", Width = 130 });
+            gridJobs.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = Strings.ColTransferMode, DataPropertyName = "CompressionDisplay", Width = 110 });
+            gridJobs.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = Strings.ColLastRun, DataPropertyName = "LastRunDisplay", Width = 120 });
+            gridJobs.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = Strings.ColStatus, DataPropertyName = "StatusDisplay", Width = 90 });
+            gridJobs.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = Strings.ColNextRun, DataPropertyName = "NextRunDisplay", Width = 120 });
+            gridJobs.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = Strings.ColSize, DataPropertyName = "SizeDisplay", Width = 100 });
 
             gridJobs.CellDoubleClick += (s, e) => EditSelectedJob();
             gridJobs.SelectionChanged += (s, e) => UpdateSelectedJobDetail();
@@ -312,8 +323,132 @@ namespace FtpSysPro.Manager.UI
             };
             trayIcon.DoubleClick += (s, e) => ShowMainWindow();
 
+            // Integrated Log Viewer Panel
+            pnlLogViewer = new Panel
+            {
+                Dock = DockStyle.Bottom,
+                Height = 180,
+                BackColor = Color.FromArgb(240, 243, 246)
+            };
+
+            var pnlLogHeader = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 32,
+                BackColor = Color.FromArgb(230, 235, 242),
+                Padding = new Padding(8, 4, 8, 4)
+            };
+
+            var lblLogTitle = new Label
+            {
+                Text = "📋 " + Strings.Logs + " - Nhật ký hoạt động hệ thống (Service Logs)",
+                Location = new Point(8, 7),
+                AutoSize = true,
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(30, 40, 60)
+            };
+
+            lblLogStatus = new Label
+            {
+                Text = "Đang tải...",
+                Location = new Point(340, 7),
+                AutoSize = true,
+                Font = new Font("Segoe UI", 8.5F, FontStyle.Italic),
+                ForeColor = Color.FromArgb(80, 90, 105)
+            };
+
+            chkLogAutoScroll = new CheckBox
+            {
+                Text = "Tự cuộn",
+                Location = new Point(560, 6),
+                AutoSize = true,
+                Checked = true,
+                Font = new Font("Segoe UI", 8.5F)
+            };
+
+            var btnLogRefresh = new Button
+            {
+                Text = "↻ Làm mới",
+                Size = new Size(80, 24),
+                Location = new Point(660, 4),
+                FlatStyle = FlatStyle.System
+            };
+            btnLogRefresh.Click += (s, e) => ReloadLogs(appendOnly: false);
+
+            var btnLogClear = new Button
+            {
+                Text = "Xoá màn hình",
+                Size = new Size(95, 24),
+                Location = new Point(745, 4),
+                FlatStyle = FlatStyle.System
+            };
+            btnLogClear.Click += (s, e) => txtLogViewer.Clear();
+
+            var btnOpenLogFolder = new Button
+            {
+                Text = "📁 Mở thư mục Log",
+                Size = new Size(130, 24),
+                Location = new Point(845, 4),
+                FlatStyle = FlatStyle.System
+            };
+            btnOpenLogFolder.Click += (s, e) =>
+            {
+                try
+                {
+                    var logsDir = _configStore.LogsDirectory;
+                    if (Directory.Exists(logsDir))
+                    {
+                        Process.Start(new ProcessStartInfo("explorer.exe", logsDir) { UseShellExecute = true });
+                    }
+                }
+                catch { }
+            };
+
+            var btnCloseLog = new Button
+            {
+                Text = "✕",
+                Size = new Size(30, 24),
+                Location = new Point(980, 4),
+                FlatStyle = FlatStyle.System
+            };
+            btnCloseLog.Click += (s, e) =>
+            {
+                pnlLogViewer.Visible = false;
+                logSplitter.Visible = false;
+                btnLogs.Checked = false;
+            };
+
+            pnlLogHeader.Controls.AddRange(new Control[] {
+                lblLogTitle, lblLogStatus, chkLogAutoScroll,
+                btnLogRefresh, btnLogClear, btnOpenLogFolder, btnCloseLog
+            });
+
+            txtLogViewer = new RichTextBox
+            {
+                Dock = DockStyle.Fill,
+                BackColor = Color.FromArgb(20, 24, 33),
+                ForeColor = Color.FromArgb(220, 225, 235),
+                Font = new Font("Consolas", 9F),
+                ReadOnly = true,
+                WordWrap = false,
+                ScrollBars = RichTextBoxScrollBars.Both,
+                BorderStyle = BorderStyle.None
+            };
+
+            pnlLogViewer.Controls.Add(txtLogViewer);
+            pnlLogViewer.Controls.Add(pnlLogHeader);
+
+            logSplitter = new Splitter
+            {
+                Dock = DockStyle.Bottom,
+                Height = 4,
+                BackColor = Color.FromArgb(200, 208, 220)
+            };
+
             // Layout
             Controls.Add(splitContainer);
+            Controls.Add(logSplitter);
+            Controls.Add(pnlLogViewer);
             Controls.Add(toolStrip);
             Controls.Add(statusStrip);
 
@@ -322,10 +457,18 @@ namespace FtpSysPro.Manager.UI
             btnEdit.Click += (s, e) => EditSelectedJob();
             btnClone.Click += (s, e) => CloneSelectedJob();
             btnDelete.Click += (s, e) => DeleteSelectedJob();
-            btnRunFull.Click += async (s, e) => await RunSelectedJobAsync(BackupType.Full);
-            btnRunIncr.Click += async (s, e) => await RunSelectedJobAsync(BackupType.Incremental);
+            btnRun.Click += async (s, e) => await RunSelectedJobAsync();
             btnStop.Click += async (s, e) => await StopSelectedJobAsync();
             btnRestore.Click += (s, e) => OpenRestoreWizard();
+            btnLogs.Click += (s, e) =>
+            {
+                pnlLogViewer.Visible = btnLogs.Checked;
+                logSplitter.Visible = btnLogs.Checked;
+                if (pnlLogViewer.Visible)
+                {
+                    ReloadLogs(appendOnly: false);
+                }
+            };
             btnSettings.Click += (s, e) => OpenSettings();
             btnRefresh.Click += async (s, e) => await RefreshAllAsync();
 
@@ -415,17 +558,16 @@ namespace FtpSysPro.Manager.UI
             }
         }
 
-        private async Task RunSelectedJobAsync(BackupType type)
+        private async Task RunSelectedJobAsync()
         {
             var job = GetSelectedJob();
             if (job == null) return;
 
-            btnRunFull.Enabled = false;
-            btnRunIncr.Enabled = false;
+            btnRun.Enabled = false;
 
             try
             {
-                var req = new RunJobRequest { JobId = job.Id, BackupType = type };
+                var req = new RunJobRequest { JobId = job.Id, BackupType = job.BackupType };
                 var resp = await _pipeClient.SendAsync(new IpcMessage
                 {
                     Action = IpcActions.RunJob,
@@ -444,8 +586,7 @@ namespace FtpSysPro.Manager.UI
             }
             finally
             {
-                btnRunFull.Enabled = true;
-                btnRunIncr.Enabled = true;
+                btnRun.Enabled = true;
             }
         }
 
@@ -535,6 +676,11 @@ namespace FtpSysPro.Manager.UI
                 _currentConfig = new AppConfig();
 
             RefreshJobGrid();
+
+            if (pnlLogViewer != null && pnlLogViewer.Visible)
+            {
+                ReloadLogs(appendOnly: false);
+            }
         }
 
         private async Task PeriodicCheckAsync()
@@ -557,12 +703,14 @@ namespace FtpSysPro.Manager.UI
                         {
                             progressBar.Visible = true;
                             btnStop.Enabled = true;
+                            btnRun.Enabled = false;
                             _wasRunning = true;
                         }
                         else
                         {
                             progressBar.Visible = false;
                             btnStop.Enabled = false;
+                            btnRun.Enabled = true;
 
                             if (_wasRunning)
                             {
@@ -584,8 +732,110 @@ namespace FtpSysPro.Manager.UI
                     lblServiceAction.Text = Strings.ServiceStartPrompt;
                     progressBar.Visible = false;
                 }
+
+                if (pnlLogViewer != null && pnlLogViewer.Visible)
+                {
+                    ReloadLogs(appendOnly: true);
+                }
             }
             catch { }
+        }
+
+        private void ReloadLogs(bool appendOnly = false)
+        {
+            try
+            {
+                var logsDir = _configStore.LogsDirectory;
+                if (!Directory.Exists(logsDir)) return;
+
+                var dir = new DirectoryInfo(logsDir);
+                var latestFile = dir.GetFiles("service-*.log")
+                    .OrderByDescending(f => f.LastWriteTimeUtc)
+                    .FirstOrDefault();
+
+                if (latestFile == null)
+                {
+                    if (!appendOnly)
+                    {
+                        txtLogViewer.Clear();
+                        AppendLogText("(Chưa có file nhật ký hoạt động)" + Environment.NewLine, Color.DarkGray);
+                        lblLogStatus.Text = "Không tìm thấy file nhật ký";
+                    }
+                    return;
+                }
+
+                lblLogStatus.Text = $"File: {latestFile.Name} ({JobViewModel.FormatBytes(latestFile.Length)})";
+
+                bool isNewFile = _lastLogFileName != latestFile.FullName;
+                if (isNewFile || !appendOnly)
+                {
+                    _lastLogFileName = latestFile.FullName;
+                    _lastLogFileLength = 0;
+                    txtLogViewer.Clear();
+                }
+
+                if (latestFile.Length == _lastLogFileLength && appendOnly)
+                {
+                    return;
+                }
+
+                using (var fs = new FileStream(latestFile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                {
+                    if (appendOnly && _lastLogFileLength > 0 && fs.Length > _lastLogFileLength)
+                    {
+                        fs.Seek(_lastLogFileLength, SeekOrigin.Begin);
+                    }
+                    else
+                    {
+                        // Limit initial view to last 64 KB if file is large
+                        if (fs.Length > 65536 && !appendOnly)
+                        {
+                            fs.Seek(-65536, SeekOrigin.End);
+                        }
+                    }
+
+                    using (var reader = new StreamReader(fs, System.Text.Encoding.UTF8))
+                    {
+                        string line;
+                        while ((line = reader.ReadLine()) != null)
+                        {
+                            Color lineColor = Color.FromArgb(220, 225, 235);
+                            if (line.Contains("[ERR]") || line.Contains("[FTL]") || line.IndexOf("Exception", StringComparison.OrdinalIgnoreCase) >= 0)
+                            {
+                                lineColor = Color.FromArgb(255, 110, 110);
+                            }
+                            else if (line.Contains("[WRN]"))
+                            {
+                                lineColor = Color.FromArgb(255, 195, 75);
+                            }
+                            else if (line.Contains("[INF]"))
+                            {
+                                lineColor = Color.FromArgb(210, 230, 250);
+                            }
+
+                            AppendLogText(line + Environment.NewLine, lineColor);
+                        }
+                    }
+
+                    _lastLogFileLength = fs.Length;
+                }
+
+                if (chkLogAutoScroll.Checked)
+                {
+                    txtLogViewer.SelectionStart = txtLogViewer.TextLength;
+                    txtLogViewer.ScrollToCaret();
+                }
+            }
+            catch { }
+        }
+
+        private void AppendLogText(string text, Color color)
+        {
+            txtLogViewer.SelectionStart = txtLogViewer.TextLength;
+            txtLogViewer.SelectionLength = 0;
+            txtLogViewer.SelectionColor = color;
+            txtLogViewer.AppendText(text);
+            txtLogViewer.SelectionColor = txtLogViewer.ForeColor;
         }
 
         private async Task StartOrRestartServiceAsync()
@@ -624,7 +874,7 @@ namespace FtpSysPro.Manager.UI
             if (gridJobs.SelectedRows.Count > 0 && gridJobs.SelectedRows[0].DataBoundItem is JobViewModel vm)
             {
                 var job = vm.Job;
-                lblDetailName.Text = job.Name;
+                lblDetailName.Text = $"{job.Name} ({vm.BackupTypeDisplay})";
                 lblDetailSourceSize.Text = job.SourceSizeBytes > 0
                     ? $"{JobViewModel.FormatBytes(job.SourceSizeBytes)} ({job.SourceFileCount:N0} files)"
                     : (job.SourceDirectories != null && job.SourceDirectories.Count > 0 ? "(Chưa quét hoặc 0 B)" : "-");
@@ -738,6 +988,11 @@ namespace FtpSysPro.Manager.UI
 
         public string Name => Job.Name;
         public bool Enabled => Job.Enabled;
+        public string BackupTypeDisplay => Job.BackupType == BackupType.Full ? "Full" : "Incremental";
+
+        public string SourceDisplay => (Job.SourceDirectories != null && Job.SourceDirectories.Count > 0)
+            ? string.Join("; ", Job.SourceDirectories)
+            : "-";
 
         public string SourceSizeDisplay => Job.SourceSizeBytes > 0
             ? $"{FormatBytes(Job.SourceSizeBytes)} ({Job.SourceFileCount:N0} files)"
@@ -753,8 +1008,8 @@ namespace FtpSysPro.Manager.UI
             {
                 switch (Job.Destination.Type)
                 {
-                    case DestinationType.Ftp: return $"FTP: {Job.Destination.FtpHost}";
-                    case DestinationType.Sftp: return $"SFTP: {Job.Destination.SftpHost}";
+                    case DestinationType.Ftp: return $"FTP: {Job.Destination.FtpHost}:{Job.Destination.FtpPort}{Job.Destination.FtpRemotePath}";
+                    case DestinationType.Sftp: return $"SFTP: {Job.Destination.SftpHost}:{Job.Destination.SftpPort}{Job.Destination.SftpRemotePath}";
                     default: return string.IsNullOrEmpty(Job.Destination.LocalPath) ? "(Local)" : Job.Destination.LocalPath;
                 }
             }

@@ -9,6 +9,7 @@ namespace FtpSysPro.Core.Models
         public string Name { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
         public bool Enabled { get; set; } = true;
+        public BackupType BackupType { get; set; } = BackupType.Incremental;
 
         public List<string> SourceDirectories { get; set; } = new List<string>();
         public List<string> ExcludePatterns { get; set; } = new List<string> { "*.tmp", "~$*", "Thumbs.db", "desktop.ini" };

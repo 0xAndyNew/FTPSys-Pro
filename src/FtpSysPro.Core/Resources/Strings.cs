@@ -21,16 +21,21 @@ namespace FtpSysPro.Core.Resources
         public static string Edit => IsVi ? "Sửa" : "Edit";
         public static string Delete => IsVi ? "Xoá" : "Delete";
         public static string Clone => IsVi ? "Nhân bản" : "Clone";
+        public static string Run => IsVi ? "Chạy tác vụ" : "Run";
         public static string RunFull => IsVi ? "Chạy Full" : "Run Full";
         public static string RunIncr => IsVi ? "Chạy Incremental" : "Run Incremental";
         public static string Stop => IsVi ? "Dừng" : "Stop";
         public static string Restore => IsVi ? "Khôi phục" : "Restore";
         public static string Settings => IsVi ? "Cài đặt" : "Settings";
+        public static string Logs => IsVi ? "Nhật ký" : "Logs";
         public static string History => IsVi ? "Lịch sử" : "History";
         public static string Refresh => IsVi ? "Làm mới" : "Refresh";
         public static string Save => IsVi ? "Lưu" : "Save";
         public static string Cancel => IsVi ? "Huỷ" : "Cancel";
         public static string Close => IsVi ? "Đóng" : "Close";
+        public static string Next => IsVi ? "Tiếp tục >" : "Next >";
+        public static string Back => IsVi ? "< Quay lại" : "< Back";
+        public static string Finish => IsVi ? "Hoàn tất" : "Finish";
         public static string Browse => IsVi ? "Chọn..." : "Browse...";
         public static string TestConnection => IsVi ? "Kiểm tra kết nối" : "Test Connection";
         public static string SendTestEmail => IsVi ? "Gửi email thử" : "Send Test Email";
@@ -38,9 +43,11 @@ namespace FtpSysPro.Core.Resources
         // Job Grid columns
         public static string ColJobName => IsVi ? "Tên tác vụ" : "Job Name";
         public static string ColEnabled => IsVi ? "Bật" : "Enabled";
-        public static string ColSourceSize => IsVi ? "Dung lượng cần backup" : "Source Size";
-        public static string ColTransferMode => IsVi ? "Chế độ truyền" : "Transfer Mode";
-        public static string ColDestination => IsVi ? "Đích" : "Destination";
+        public static string ColSource => IsVi ? "Nguồn sao lưu (Source)" : "Source";
+        public static string ColDestination => IsVi ? "Đích đến (Destination)" : "Destination";
+        public static string ColBackupType => IsVi ? "Chế độ" : "Mode";
+        public static string ColSourceSize => IsVi ? "Dung lượng nguồn" : "Source Size";
+        public static string ColTransferMode => IsVi ? "Định dạng truyền" : "Transfer Mode";
         public static string ColLastRun => IsVi ? "Lần chạy cuối" : "Last Run";
         public static string ColStatus => IsVi ? "Trạng thái" : "Status";
         public static string ColNextRun => IsVi ? "Lần chạy kế tiếp" : "Next Run";
