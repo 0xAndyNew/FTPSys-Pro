@@ -133,8 +133,8 @@ namespace FtpSysPro.Manager.UI
         private void InitializeComponents()
         {
             Text = _isNew ? (Strings.AppName + " - " + Strings.Add) : (Strings.AppName + " - " + Strings.Edit);
-            Size = new Size(740, 640);
-            MinimumSize = new Size(740, 640);
+            Size = new Size(760, 650);
+            MinimumSize = new Size(760, 650);
             StartPosition = FormStartPosition.CenterParent;
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
@@ -148,6 +148,13 @@ namespace FtpSysPro.Manager.UI
                 Height = 46,
                 BackColor = Color.FromArgb(240, 244, 248),
                 Padding = new Padding(6, 5, 6, 5)
+            };
+            pnlStepHeader.Paint += (s, e) =>
+            {
+                using (var pen = new Pen(Color.FromArgb(218, 224, 233), 1))
+                {
+                    e.Graphics.DrawLine(pen, 0, pnlStepHeader.Height - 1, pnlStepHeader.Width, pnlStepHeader.Height - 1);
+                }
             };
 
             var tblSteps = new TableLayoutPanel
@@ -202,52 +209,78 @@ namespace FtpSysPro.Manager.UI
             var pnlBottom = new Panel
             {
                 Dock = DockStyle.Bottom,
-                Height = 52,
+                Height = 56,
                 BackColor = Color.FromArgb(245, 247, 250),
-                Padding = new Padding(12, 8, 12, 8)
+                Padding = new Padding(15, 0, 15, 0)
+            };
+            pnlBottom.Paint += (s, e) =>
+            {
+                using (var pen = new Pen(Color.FromArgb(218, 224, 233), 1))
+                {
+                    e.Graphics.DrawLine(pen, 0, 0, pnlBottom.Width, 0);
+                }
             };
 
             lblStepCounter = new Label
             {
                 Text = "Bước 1 / 7: Thông tin chung & Chế độ",
-                Location = new Point(15, 16),
+                Location = new Point(15, 18),
                 AutoSize = true,
                 Font = new Font("Segoe UI", 9F, FontStyle.Bold),
-                ForeColor = Color.FromArgb(40, 60, 80),
-                Anchor = AnchorStyles.Bottom | AnchorStyles.Left
+                ForeColor = Color.FromArgb(40, 60, 80)
+            };
+
+            var pnlActionButtons = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Right,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                FlowDirection = FlowDirection.LeftToRight,
+                WrapContents = false,
+                Padding = new Padding(0, 11, 12, 0)
             };
 
             btnBack = new Button
             {
                 Text = Strings.Back,
-                Size = new Size(95, 32),
-                Location = new Point(320, 10),
+                Size = new Size(95, 34),
                 Enabled = false,
-                Anchor = AnchorStyles.Bottom | AnchorStyles.Right
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(238, 242, 246),
+                ForeColor = Color.FromArgb(60, 70, 80),
+                Font = new Font("Segoe UI", 9F, FontStyle.Regular),
+                Margin = new Padding(4, 0, 4, 0),
+                Cursor = Cursors.Hand
             };
+            btnBack.FlatAppearance.BorderColor = Color.FromArgb(205, 212, 220);
             btnBack.Click += (s, e) => GoToStep(tabControl.SelectedIndex - 1);
 
             btnNext = new Button
             {
                 Text = Strings.Next,
-                Size = new Size(95, 32),
-                Location = new Point(425, 10),
-                Anchor = AnchorStyles.Bottom | AnchorStyles.Right
+                Size = new Size(110, 34),
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(0, 102, 204),
+                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                Margin = new Padding(4, 0, 4, 0),
+                Cursor = Cursors.Hand
             };
+            btnNext.FlatAppearance.BorderSize = 0;
             btnNext.Click += (s, e) => GoToStep(tabControl.SelectedIndex + 1);
 
             btnSave = new Button
             {
                 Text = Strings.Save,
-                Size = new Size(95, 32),
-                Location = new Point(530, 10),
-                BackColor = Color.FromArgb(40, 167, 69),
-                ForeColor = Color.White,
+                Size = new Size(95, 34),
                 FlatStyle = FlatStyle.Flat,
-                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
-                Anchor = AnchorStyles.Bottom | AnchorStyles.Right
+                BackColor = Color.FromArgb(240, 243, 246),
+                ForeColor = Color.FromArgb(60, 70, 80),
+                Font = new Font("Segoe UI", 9F, FontStyle.Regular),
+                Margin = new Padding(4, 0, 4, 0),
+                Cursor = Cursors.Hand
             };
-            btnSave.FlatAppearance.BorderSize = 0;
+            btnSave.FlatAppearance.BorderColor = Color.FromArgb(205, 212, 220);
             btnSave.Click += (s, e) =>
             {
                 if (SaveData())
@@ -260,13 +293,21 @@ namespace FtpSysPro.Manager.UI
             btnCancel = new Button
             {
                 Text = Strings.Cancel,
-                Size = new Size(75, 32),
-                Location = new Point(635, 10),
+                Size = new Size(80, 34),
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(245, 247, 250),
+                ForeColor = Color.FromArgb(80, 90, 100),
+                Font = new Font("Segoe UI", 9F, FontStyle.Regular),
+                Margin = new Padding(4, 0, 4, 0),
                 DialogResult = DialogResult.Cancel,
-                Anchor = AnchorStyles.Bottom | AnchorStyles.Right
+                Cursor = Cursors.Hand
             };
+            btnCancel.FlatAppearance.BorderColor = Color.FromArgb(215, 220, 226);
 
-            pnlBottom.Controls.AddRange(new Control[] { lblStepCounter, btnBack, btnNext, btnSave, btnCancel });
+            pnlActionButtons.Controls.AddRange(new Control[] { btnBack, btnNext, btnSave, btnCancel });
+
+            pnlBottom.Controls.Add(lblStepCounter);
+            pnlBottom.Controls.Add(pnlActionButtons);
 
             Controls.Add(tabControl);
             Controls.Add(pnlStepHeader);
@@ -398,8 +439,44 @@ namespace FtpSysPro.Manager.UI
             {
                 lblStepCounter.Text = $"Bước {current + 1} / {StepDescriptions.Length}: {StepDescriptions[current]}";
             }
-            if (btnBack != null) btnBack.Enabled = (current > 0);
-            if (btnNext != null) btnNext.Visible = (current < tabControl.TabPages.Count - 1);
+
+            bool isLastStep = (current == tabControl.TabPages.Count - 1);
+
+            if (btnBack != null)
+            {
+                btnBack.Enabled = (current > 0);
+            }
+
+            if (btnNext != null)
+            {
+                btnNext.Visible = !isLastStep;
+                btnNext.Text = Strings.Next;
+            }
+
+            if (btnSave != null)
+            {
+                if (isLastStep)
+                {
+                    btnSave.Text = "✔ " + Strings.Finish;
+                    btnSave.Size = new Size(130, 34);
+                    btnSave.BackColor = Color.FromArgb(40, 167, 69);
+                    btnSave.ForeColor = Color.White;
+                    btnSave.Font = new Font("Segoe UI", 9.5F, FontStyle.Bold);
+                    btnSave.FlatAppearance.BorderSize = 0;
+                }
+                else
+                {
+                    btnSave.Text = Strings.Save;
+                    btnSave.Size = new Size(95, 34);
+                    btnSave.BackColor = Color.FromArgb(240, 243, 246);
+                    btnSave.ForeColor = Color.FromArgb(60, 70, 80);
+                    btnSave.Font = new Font("Segoe UI", 9F, FontStyle.Regular);
+                    btnSave.FlatAppearance.BorderSize = 1;
+                    btnSave.FlatAppearance.BorderColor = Color.FromArgb(205, 212, 220);
+                }
+            }
+
+            AcceptButton = isLastStep ? btnSave : btnNext;
         }
 
         private TabPage CreateGeneralTab()
@@ -905,7 +982,42 @@ namespace FtpSysPro.Manager.UI
 
             grp.Controls.AddRange(new Control[] { lblCond, cboNotificationCondition, lblRecipients, txtNotificationRecipients, lblSubject, txtNotificationSubject });
 
-            page.Controls.AddRange(new Control[] { chkNotificationEnabled, grp });
+            var pnlFinishBanner = new Panel
+            {
+                Location = new Point(15, 290),
+                Size = new Size(550, 75),
+                BackColor = Color.FromArgb(235, 248, 238),
+                Padding = new Padding(12)
+            };
+            pnlFinishBanner.Paint += (s, e) =>
+            {
+                using (var pen = new Pen(Color.FromArgb(163, 217, 175), 1))
+                {
+                    e.Graphics.DrawRectangle(pen, 0, 0, pnlFinishBanner.Width - 1, pnlFinishBanner.Height - 1);
+                }
+            };
+
+            var lblFinishTitle = new Label
+            {
+                Text = "✔ Đã hoàn tất các bước cấu hình!",
+                Location = new Point(12, 12),
+                AutoSize = true,
+                Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(21, 87, 36)
+            };
+
+            var lblFinishDesc = new Label
+            {
+                Text = "Nhấn nút '✔ Hoàn tất' ở góc dưới bên phải để lưu tác vụ sao lưu này vào hệ thống và kích hoạt lịch chạy tự động.",
+                Location = new Point(12, 36),
+                Size = new Size(520, 32),
+                ForeColor = Color.FromArgb(21, 87, 36),
+                Font = new Font("Segoe UI", 9F)
+            };
+
+            pnlFinishBanner.Controls.AddRange(new Control[] { lblFinishTitle, lblFinishDesc });
+
+            page.Controls.AddRange(new Control[] { chkNotificationEnabled, grp, pnlFinishBanner });
             return page;
         }
 
