@@ -2,7 +2,7 @@
 ; Requires Inno Setup 6 (free from jrsoftware.org)
 
 #define MyAppName "FtpSysPro"
-#define MyAppVersion "1.0.1"
+#define MyAppVersion "1.0.2"
 #define MyAppPublisher "0xAndyNew"
 #define MyAppURL "https://github.com/0xAndyNew/FTPSys-Pro"
 #define MyAppExeName "FtpSysPro.Manager.exe"
@@ -33,7 +33,7 @@ RestartApplications=no
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
-Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
+Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
 Name: "autostart"; Description: "Khởi động ứng dụng FtpSysPro Manager cùng Windows (trong khay hệ thống) / Start Manager with Windows"; GroupDescription: "Tự động khởi động / Startup"
 
 [Files]
@@ -42,9 +42,9 @@ Source: "..\src\FtpSysPro.Service\bin\Release\net48\*"; DestDir: "{app}"; Flags:
 Source: "..\src\FtpSysPro.Manager\bin\Release\net48\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
-Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
-Name: "{group}\Gỡ cài đặt {#MyAppName}"; Filename: "{uninstallexe}"
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
+Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"
+Name: "{group}\Gỡ cài đặt {#MyAppName}"; Filename: "{uninstallexe}"; WorkingDir: "{app}"
+Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; WorkingDir: "{app}"; Tasks: desktopicon
 
 [Run]
 ; Install Windows Service using .NET InstallUtil / Service --install
@@ -53,12 +53,14 @@ Filename: "{app}\{#MyServiceExeName}"; Parameters: "--install"; Flags: runhidden
 Filename: "sc.exe"; Parameters: "start FtpSysProService"; Flags: runhidden; StatusMsg: "Đang khởi động Windows Service..."
 ; Register Scheduled Task to auto-start Manager with highest privileges upon user logon
 Filename: "schtasks.exe"; Parameters: "/Create /TN ""FtpSysPro Manager Startup"" /TR ""\""{app}\{#MyAppExeName}\"" --minimized"" /SC ONLOGON /RL HIGHEST /F"; Tasks: autostart; Flags: runhidden
-; Run Manager at end of setup with elevated admin privileges
-Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent runascurrentuser
+; Run Manager at end of setup with elevated admin privileges (inherits Setup elevation, working directory set to app)
+Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; WorkingDir: "{app}"; Flags: nowait postinstall skipifsilent
 
 [UninstallRun]
 ; Stop and uninstall Manager auto-start task
 Filename: "schtasks.exe"; Parameters: "/Delete /TN ""FtpSysPro Manager Startup"" /F"; Flags: runhidden; RunOnceId: "DelStartupTask"
+; Terminate running Manager
+Filename: "taskkill.exe"; Parameters: "/F /IM {#MyAppExeName}"; Flags: runhidden; RunOnceId: "KillManager"
 ; Stop Windows Service
 Filename: "sc.exe"; Parameters: "stop FtpSysProService"; Flags: runhidden; RunOnceId: "StopService"
 ; Uninstall Windows Service
@@ -94,6 +96,17 @@ begin
   end
   else
     Result := True;
+end;
+
+function PrepareToInstall(var NeedsRestart: Boolean): String;
+var
+  ResultCode: Integer;
+begin
+  // Stop existing Windows Service if running so binaries can be overwritten cleanly
+  Exec('sc.exe', 'stop FtpSysProService', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  // Terminate any running Manager instance so binaries and mutex are freed
+  Exec('taskkill.exe', '/F /IM {#MyAppExeName}', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+  Result := '';
 end;
 
 procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);

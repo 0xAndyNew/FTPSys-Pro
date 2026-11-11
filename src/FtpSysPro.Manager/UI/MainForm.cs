@@ -646,12 +646,32 @@ namespace FtpSysPro.Manager.UI
             }
         }
 
-        private void ShowMainWindow()
+        public void ShowMainWindow()
         {
+            if (InvokeRequired)
+            {
+                BeginInvoke(new Action(ShowMainWindow));
+                return;
+            }
+
             Show();
-            WindowState = FormWindowState.Normal;
+            if (WindowState == FormWindowState.Minimized)
+            {
+                WindowState = FormWindowState.Normal;
+            }
+            ShowInTaskbar = true;
             BringToFront();
             Activate();
+        }
+
+        protected override void WndProc(ref Message m)
+        {
+            if (m.Msg == (int)Program.WM_SHOW_FTPSYSPRO)
+            {
+                ShowMainWindow();
+                return;
+            }
+            base.WndProc(ref m);
         }
 
         private void ExitApplication()
@@ -664,11 +684,15 @@ namespace FtpSysPro.Manager.UI
 
         private void OnMainFormClosing(object sender, FormClosingEventArgs e)
         {
-            if (!_isClosingForReal && _currentConfig.Settings.MinimizeToTrayOnClose)
+            if (e.CloseReason == CloseReason.UserClosing && !_isClosingForReal && _currentConfig?.Settings?.MinimizeToTrayOnClose == true)
             {
                 e.Cancel = true;
                 Hide();
-                trayIcon.ShowBalloonTip(2000, Strings.AppName, "Ứng dụng đang chạy ngầm trong khay hệ thống.", ToolTipIcon.Info);
+                try
+                {
+                    trayIcon.ShowBalloonTip(2000, Strings.AppName, "Ứng dụng đang chạy ngầm trong khay hệ thống.", ToolTipIcon.Info);
+                }
+                catch { }
             }
         }
     }

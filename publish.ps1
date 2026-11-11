@@ -9,7 +9,7 @@ param(
     [string]$RemoteUrl = "https://github.com/0xAndyNew/FTPSys-Pro.git",
     [string]$AuthorName = "0xAndyNew",
     [string]$AuthorEmail = "179321164+0xAndyNew@users.noreply.github.com",
-    [string]$Version = "v1.0.0"
+    [string]$Version = "v1.0.2"
 )
 
 $ErrorActionPreference = "Stop"
