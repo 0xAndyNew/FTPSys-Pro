@@ -2,7 +2,7 @@
 ; Requires Inno Setup 6 (free from jrsoftware.org)
 
 #define MyAppName "FtpSysPro"
-#define MyAppVersion "1.0.2"
+#define MyAppVersion "1.0.3"
 #define MyAppPublisher "0xAndyNew"
 #define MyAppURL "https://github.com/0xAndyNew/FTPSys-Pro"
 #define MyAppExeName "FtpSysPro.Manager.exe"
@@ -53,8 +53,8 @@ Filename: "{app}\{#MyServiceExeName}"; Parameters: "--install"; Flags: runhidden
 Filename: "sc.exe"; Parameters: "start FtpSysProService"; Flags: runhidden; StatusMsg: "Đang khởi động Windows Service..."
 ; Register Scheduled Task to auto-start Manager with highest privileges upon user logon
 Filename: "schtasks.exe"; Parameters: "/Create /TN ""FtpSysPro Manager Startup"" /TR ""\""{app}\{#MyAppExeName}\"" --minimized"" /SC ONLOGON /RL HIGHEST /F"; Tasks: autostart; Flags: runhidden
-; Run Manager at end of setup with elevated admin privileges (inherits Setup elevation, working directory set to app)
-Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; WorkingDir: "{app}"; Flags: nowait postinstall skipifsilent
+; Run Manager at end of setup with elevated admin privileges using ShellExecuteEx (shellexec prevents code 740 elevation error)
+Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; WorkingDir: "{app}"; Flags: nowait postinstall skipifsilent shellexec
 
 [UninstallRun]
 ; Stop and uninstall Manager auto-start task
