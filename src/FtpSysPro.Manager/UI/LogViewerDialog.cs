@@ -165,12 +165,23 @@ namespace FtpSysPro.Manager.UI
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 Font = new Font("Segoe UI", 8.5F)
             };
-            cboLevel.Items.AddRange(new object[] {
-                Strings.AllLevels,
-                "ERR (Lỗi vận hành)",
-                "WRN (Cảnh báo)",
-                "INF (Thông tin vận hành)"
-            });
+            cboLevel.Items.Add(Strings.AllLevels);
+            if (Strings.IsVi)
+            {
+                cboLevel.Items.AddRange(new object[] {
+                    "ERR (Lỗi)",
+                    "WRN (Cảnh báo)",
+                    "INF (Thông tin)"
+                });
+            }
+            else
+            {
+                cboLevel.Items.AddRange(new object[] {
+                    "ERR (Error)",
+                    "WRN (Warning)",
+                    "INF (Information)"
+                });
+            }
             cboLevel.SelectedIndex = 0;
             cboLevel.SelectedIndexChanged += (s, e) =>
             {

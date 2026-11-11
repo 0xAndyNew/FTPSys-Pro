@@ -5,6 +5,21 @@ namespace FtpSysPro.Core.Resources
 {
     public static class Strings
     {
+        private static string _currentLanguage = "en";
+
+        public static bool IsVi => string.Equals(_currentLanguage, "vi", System.StringComparison.OrdinalIgnoreCase);
+
+        public static void SetLanguage(string lang)
+        {
+            _currentLanguage = string.Equals(lang, "vi", System.StringComparison.OrdinalIgnoreCase) ? "vi" : "en";
+            var cultureName = IsVi ? "vi-VN" : "en-US";
+            var culture = new CultureInfo(cultureName);
+            Thread.CurrentThread.CurrentCulture = culture;
+            Thread.CurrentThread.CurrentUICulture = culture;
+            CultureInfo.DefaultThreadCurrentCulture = culture;
+            CultureInfo.DefaultThreadCurrentUICulture = culture;
+        }
+
         public static string AppName => IsVi ? "FTPSys Pro - Sao lưu Dữ liệu Doanh nghiệp" : "FTPSys Pro - Enterprise Backup & Recovery";
 
         // Navigation / Tabs
@@ -15,6 +30,18 @@ namespace FtpSysPro.Core.Resources
         public static string TabSchedule => IsVi ? "5. Lịch thực thi" : "5. Schedule";
         public static string TabRetention => IsVi ? "6. Chính sách lưu giữ" : "6. Retention";
         public static string TabNotification => IsVi ? "7. Cảnh báo Email" : "7. Alerts";
+
+        // Step titles & descriptions
+        public static string StepTitle1 => IsVi ? "1. Thông tin chung & Chế độ" : "1. General & Backup Mode";
+        public static string StepTitle2 => IsVi ? "2. Chọn thư mục dữ liệu nguồn" : "2. Select Backup Sources";
+        public static string StepTitle3 => IsVi ? "3. Cấu hình kho lưu trữ đích" : "3. Destination Repository";
+        public static string StepTitle4 => IsVi ? "4. Đóng gói & Nén tệp" : "4. Compression & Packaging";
+        public static string StepTitle5 => IsVi ? "5. Thiết lập lịch thực thi" : "5. Schedule Configuration";
+        public static string StepTitle6 => IsVi ? "6. Chính sách lưu giữ bản sao" : "6. Retention Policy";
+        public static string StepTitle7 => IsVi ? "7. Cảnh báo Email & Xác nhận" : "7. Email Alerts & Summary";
+
+        public static string StepIndicator(int current, int total) =>
+            IsVi ? $"Bước {current + 1} / {total}" : $"Step {current + 1} of {total}";
 
         // Common actions
         public static string Add => IsVi ? "Thêm Job" : "Add Job";
@@ -40,11 +67,94 @@ namespace FtpSysPro.Core.Resources
         public static string TestConnection => IsVi ? "Kiểm tra kết nối" : "Test Connection";
         public static string SendTestEmail => IsVi ? "Gửi email kiểm tra" : "Send Test Email";
 
+        // Backup Modes
+        public static string BackupMode => IsVi ? "Chế độ sao lưu" : "Backup Mode";
+        public static string ModeIncremental => IsVi ? "Sao lưu gia tăng" : "Incremental Backup";
+        public static string ModeFull => IsVi ? "Sao lưu toàn phần" : "Full Backup";
+
+        // General Tab
+        public static string JobName => IsVi ? "Tên Job sao lưu (*):" : "Backup Job Name (*):";
+        public static string JobDescription => IsVi ? "Mô tả mục đích:" : "Description:";
+        public static string JobEnabled => IsVi ? "Kích hoạt Job sao lưu này" : "Enable this backup job";
+
+        // Sources Tab
+        public static string AddFolder => IsVi ? "📁 Thêm thư mục" : "📁 Add Folder";
+        public static string AddDrive => IsVi ? "💾 Thêm toàn bộ ổ đĩa" : "💾 Add Entire Drive";
+        public static string RemoveSource => IsVi ? "🗑 Xóa khỏi danh sách" : "🗑 Remove";
+        public static string ClearAllSources => IsVi ? "Xóa tất cả" : "Clear All";
+        public static string ExcludePatterns => IsVi ? "Mẫu tệp / thư mục loại trừ (phân cách bằng dấu chấm phẩy ;):" : "Exclude Patterns (semicolon separated ;):";
+        public static string TotalSourceSize => IsVi ? "Tổng dung lượng dữ liệu nguồn:" : "Total Source Data Size:";
+        public static string ScanningSize => IsVi ? "Đang tính toán dung lượng nguồn..." : "Calculating source size...";
+
+        // Destination Tab
+        public static string DestType => IsVi ? "Loại kho lưu trữ đích:" : "Destination Repository Type:";
+        public static string DestPath => IsVi ? "Đường dẫn kho lưu trữ đích (Thư mục cục bộ / Ổ đĩa / Mạng UNC):" : "Destination Repository Path (Local / External Drive / UNC Share):";
+        public static string FtpHost => IsVi ? "Máy chủ FTP:" : "FTP Server Host:";
+        public static string FtpPort => IsVi ? "Cổng:" : "Port:";
+        public static string Username => IsVi ? "Tài khoản đăng nhập:" : "Username:";
+        public static string Password => IsVi ? "Mật khẩu:" : "Password:";
+        public static string RemotePath => IsVi ? "Thư mục lưu trữ từ xa:" : "Remote Path:";
+        public static string SecurityProtocol => IsVi ? "Giao thức bảo mật:" : "Security Protocol:";
+        public static string FtpPassiveMode => IsVi ? "Chế độ truyền thụ động (Passive Mode)" : "Passive Mode";
+        public static string SftpHost => IsVi ? "Máy chủ SFTP:" : "SFTP Server Host:";
+        public static string PrivateKey => IsVi ? "Tệp Private Key (tùy chọn):" : "Private Key File (optional):";
+        public static string KeyPassphrase => IsVi ? "Mật khẩu giải mã khóa (nếu có):" : "Key Passphrase (if any):";
+
+        // Options Tab
+        public static string TransferDirect => IsVi ? "Sao chép trực tiếp cấu trúc thư mục" : "Direct Directory Synchronization";
+        public static string TransferZip => IsVi ? "Đóng gói nén tệp .ZIP" : "Compress into .ZIP Archive";
+        public static string CompressionLevel => IsVi ? "Mức độ nén:" : "Compression Level:";
+        public static string EncryptZip => IsVi ? "Mã hóa tệp ZIP bằng mật khẩu (AES-256)" : "Encrypt ZIP Archive (AES-256)";
+        public static string ZipPassword => IsVi ? "Mật khẩu nén:" : "Archive Password:";
+        public static string VssSnapshot => IsVi ? "Volume Shadow Copy (VSS): Tự động chụp snapshot sao lưu tệp đang mở / đang khóa" : "Volume Shadow Copy (VSS): Snapshot open / locked files";
+        public static string RetryAttempts => IsVi ? "Số lần tự động thử lại khi mất kết nối mạng:" : "Automatic retry attempts on network disconnection:";
+        public static string RetryTimesSuffix => IsVi ? "lần" : "times";
+
+        // Schedule Tab
+        public static string ScheduleColType => IsVi ? "Kiểu lịch" : "Schedule Type";
+        public static string ScheduleColTime => IsVi ? "Thời gian" : "Time";
+        public static string ScheduleColDetails => IsVi ? "Chi tiết chu kỳ" : "Details";
+        public static string AddScheduleBtn => IsVi ? "Thêm lịch..." : "Add Schedule...";
+        public static string EditScheduleBtn => IsVi ? "Chỉnh sửa..." : "Edit...";
+        public static string DeleteScheduleBtn => IsVi ? "Xóa lịch" : "Delete";
+
+        // Retention Tab
+        public static string RetentionPolicyTitle => IsVi ? "Chính sách lưu giữ điểm phục hồi" : "Restore Point Retention Policy";
+        public static string RetentionKeepCount => IsVi ? "Duy trì số điểm phục hồi gần nhất:" : "Keep latest restore points:";
+        public static string RetentionKeepDays => IsVi ? "Duy trì các điểm phục hồi trong số ngày gần nhất:" : "Keep restore points within the last:";
+        public static string RetentionKeepAll => IsVi ? "Lưu giữ vĩnh viễn toàn bộ điểm phục hồi (không tự động xóa)" : "Keep all restore points permanently (no auto deletion)";
+        public static string RetentionSetsUnit => IsVi ? "điểm" : "points";
+        public static string RetentionDaysUnit => IsVi ? "ngày" : "days";
+
+        // Alert Tab
+        public static string AlertEmailSettings => IsVi ? "Cấu hình cảnh báo Email" : "Email Notification Settings";
+        public static string AlertEnable => IsVi ? "Kích hoạt gửi báo cáo Email sau khi sao lưu" : "Enable email notification after backup execution";
+        public static string AlertRecipients => IsVi ? "Địa chỉ Email nhận báo cáo (phân cách bằng dấu phẩy ,):" : "Recipient Email Addresses (comma separated ,):";
+        public static string AlertCondition => IsVi ? "Điều kiện gửi Email:" : "Send Condition:";
+        public static string ConditionAlways => IsVi ? "Luôn luôn gửi" : "Always";
+        public static string ConditionFailureOnly => IsVi ? "Chỉ gửi khi có lỗi" : "On Failure Only";
+        public static string ConditionSuccessOnly => IsVi ? "Chỉ gửi khi thành công" : "On Success Only";
+        public static string AlertSubjectPrefix => IsVi ? "Tiền tố tiêu đề Email:" : "Email Subject Prefix:";
+
+        // Detail Card in MainForm
+        public static string HeaderSourceSize => IsVi ? "DUNG LƯỢNG NGUỒN:" : "SOURCE SIZE:";
+        public static string HeaderTransfer => IsVi ? "HÌNH THỨC ĐÓNG GÓI:" : "PACKAGING MODE:";
+        public static string HeaderDest => IsVi ? "KHO LƯU TRỮ ĐÍCH:" : "DESTINATION REPOSITORY:";
+        public static string HeaderSources => IsVi ? "THƯ MỤC DỮ LIỆU NGUỒN:" : "SOURCE DIRECTORIES:";
+        public static string HeaderLast => IsVi ? "LẦN THỰC THI GẦN NHẤT:" : "LAST RUN:";
+        public static string HeaderNext => IsVi ? "LỊCH THỰC THI TIẾP THEO:" : "NEXT RUN:";
+        public static string NoJobSelected => IsVi ? "(Chưa chọn Job)" : "(No Job Selected)";
+        public static string NeverExecuted => IsVi ? "Chưa thực thi" : "Never executed";
+        public static string NotScanned => IsVi ? "Chưa quét" : "Not scanned";
+        public static string DirectCopy => IsVi ? "Sao chép trực tiếp" : "Direct Copy";
+        public static string ZipCompression => IsVi ? "Nén ZIP" : "ZIP Compression";
+        public static string FilesUnit => IsVi ? "tệp" : "files";
+
         // Job Grid columns
         public static string ColJobName => IsVi ? "Tên Job sao lưu" : "Job Name";
         public static string ColEnabled => IsVi ? "Kích hoạt" : "Enabled";
-        public static string ColSource => IsVi ? "Dữ liệu nguồn (Source)" : "Source";
-        public static string ColDestination => IsVi ? "Kho lưu trữ đích (Repository)" : "Destination";
+        public static string ColSource => IsVi ? "Dữ liệu nguồn" : "Source";
+        public static string ColDestination => IsVi ? "Kho lưu trữ đích" : "Destination";
         public static string ColBackupType => IsVi ? "Chế độ sao lưu" : "Mode";
         public static string ColSourceSize => IsVi ? "Dung lượng nguồn" : "Source Size";
         public static string ColTransferMode => IsVi ? "Định dạng đóng gói" : "Transfer Mode";
@@ -63,8 +173,8 @@ namespace FtpSysPro.Core.Resources
 
         // Destination types
         public static string DestLocal => IsVi ? "Thư mục cục bộ / Ổ lưu trữ / Chia sẻ mạng UNC" : "Local / Storage Drive / Network Share (UNC)";
-        public static string DestFtp => IsVi ? "Máy chủ FTP / FTPS (File Transfer Protocol)" : "FTP / FTPS Server";
-        public static string DestSftp => IsVi ? "Máy chủ SFTP (SSH File Transfer Protocol)" : "SFTP (SSH) Server";
+        public static string DestFtp => IsVi ? "Máy chủ FTP / FTPS" : "FTP / FTPS Server";
+        public static string DestSftp => IsVi ? "Máy chủ SFTP" : "SFTP (SSH) Server";
 
         // Dialog prompts
         public static string ConfirmDeleteJob => IsVi
@@ -107,24 +217,5 @@ namespace FtpSysPro.Core.Resources
         public static string ServiceStatusConnected => IsVi ? "Dịch vụ FtpSysProService: Đang hoạt động" : "FtpSysProService: Active (Running)";
         public static string ServiceStatusDisconnected => IsVi ? "Dịch vụ FtpSysProService: Mất kết nối / Đã dừng" : "FtpSysProService: Disconnected / Stopped";
         public static string ServiceStartPrompt => IsVi ? "Khởi động Dịch vụ" : "Start Service";
-
-        private static bool IsVi
-        {
-            get
-            {
-                var culture = Thread.CurrentThread.CurrentUICulture;
-                return culture.Name.StartsWith("vi", System.StringComparison.OrdinalIgnoreCase);
-            }
-        }
-
-        public static void SetLanguage(string lang)
-        {
-            var cultureName = string.Equals(lang, "en", System.StringComparison.OrdinalIgnoreCase) ? "en-US" : "vi-VN";
-            var culture = new CultureInfo(cultureName);
-            Thread.CurrentThread.CurrentCulture = culture;
-            Thread.CurrentThread.CurrentUICulture = culture;
-            CultureInfo.DefaultThreadCurrentCulture = culture;
-            CultureInfo.DefaultThreadCurrentUICulture = culture;
-        }
     }
 }

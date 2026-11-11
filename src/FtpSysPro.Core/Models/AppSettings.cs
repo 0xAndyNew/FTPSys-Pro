@@ -5,7 +5,7 @@ namespace FtpSysPro.Core.Models
 {
     public class AppSettings
     {
-        public string Language { get; set; } = "vi"; // "vi" or "en"
+        public string Language { get; set; } = "en"; // "en" (default) or "vi"
         public int MaxConcurrentJobs { get; set; } = 2;
         public string TempDirectory { get; set; } = string.Empty; // empty = ProgramData/FtpSysPro/temp
         public int KeepLogsDays { get; set; } = 30;

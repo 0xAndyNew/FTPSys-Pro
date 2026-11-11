@@ -27,8 +27,11 @@ namespace FtpSysPro.Core.Engine
         private static readonly HashSet<string> DefaultSystemFolders = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
             "$RECYCLE.BIN",
+            "$Recycle.Bin",
             "System Volume Information",
-            "$Recycle.Bin"
+            "Recovery",
+            "$WinREAgent",
+            "Config.Msi"
         };
 
         private static readonly HashSet<string> DefaultSystemFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
@@ -36,7 +39,8 @@ namespace FtpSysPro.Core.Engine
             "pagefile.sys",
             "swapfile.sys",
             "hiberfil.sys",
-            "DumpStack.log"
+            "DumpStack.log",
+            "DumpStack.log.tmp"
         };
 
         public static ScanResult Scan(
@@ -74,6 +78,23 @@ namespace FtpSysPro.Core.Engine
             CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
+
+            // Skip reparse points (junctions, directory symbolic links) to prevent infinite loops and recursive traps
+            if (!string.Equals(currentDir, root, StringComparison.OrdinalIgnoreCase))
+            {
+                try
+                {
+                    var di = new DirectoryInfo(currentDir);
+                    if ((di.Attributes & FileAttributes.ReparsePoint) == FileAttributes.ReparsePoint)
+                    {
+                        return;
+                    }
+                }
+                catch
+                {
+                    return;
+                }
+            }
 
             // Check if directory itself is excluded or special system volume directory
             var dirName = Path.GetFileName(currentDir.TrimEnd('\\', '/'));

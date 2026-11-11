@@ -37,17 +37,30 @@ namespace FtpSysPro.Manager
             Application.SetCompatibleTextRenderingDefault(false);
             Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
 
+            // Initialize application localization before opening UI forms
+            try
+            {
+                var cfg = new FtpSysPro.Core.Config.ConfigStore().LoadConfig();
+                FtpSysPro.Core.Resources.Strings.SetLanguage(cfg?.Settings?.Language ?? "en");
+            }
+            catch
+            {
+                FtpSysPro.Core.Resources.Strings.SetLanguage("en");
+            }
+
             AppDomain.CurrentDomain.UnhandledException += (s, e) =>
             {
                 var ex = e.ExceptionObject as Exception;
-                MessageBox.Show("Đã xảy ra lỗi khởi động FtpSysPro Manager:\n\n" + (ex?.Message ?? e.ExceptionObject?.ToString()),
-                    "FtpSysPro - Lỗi khởi động", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                string msg = FtpSysPro.Core.Resources.Strings.IsVi
+                    ? "Đã xảy ra lỗi khởi động FtpSysPro Manager:\n\n" + (ex?.Message ?? e.ExceptionObject?.ToString())
+                    : "An error occurred starting FtpSysPro Manager:\n\n" + (ex?.Message ?? e.ExceptionObject?.ToString());
+                MessageBox.Show(msg, FtpSysPro.Core.Resources.Strings.AppName, MessageBoxButtons.OK, MessageBoxIcon.Error);
             };
 
             Application.ThreadException += (s, e) =>
             {
-                MessageBox.Show("Đã xảy ra lỗi:\n\n" + e.Exception.Message,
-                    "FtpSysPro", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                string msg = (FtpSysPro.Core.Resources.Strings.IsVi ? "Đã xảy ra lỗi:\n\n" : "An error occurred:\n\n") + e.Exception.Message;
+                MessageBox.Show(msg, FtpSysPro.Core.Resources.Strings.AppName, MessageBoxButtons.OK, MessageBoxIcon.Error);
             };
 
             bool startMinimized = false;

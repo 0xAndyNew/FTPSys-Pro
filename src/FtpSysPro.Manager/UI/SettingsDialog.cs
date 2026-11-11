@@ -44,7 +44,7 @@ namespace FtpSysPro.Manager.UI
 
         private void InitializeComponents()
         {
-            Text = Strings.AppName + " - Cài đặt hệ thống / System Settings";
+            Text = Strings.AppName + " - " + Strings.Settings;
             Size = new Size(620, 530);
             StartPosition = FormStartPosition.CenterParent;
             FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -57,19 +57,66 @@ namespace FtpSysPro.Manager.UI
             // General Tab
             var pageGeneral = new TabPage(Strings.TabGeneral) { Padding = new Padding(15) };
 
-            var lblLang = new Label { Text = "Ngôn ngữ hiển thị / UI Language:", Location = new Point(15, 20), AutoSize = true };
-            cboLanguage = new ComboBox { Location = new Point(250, 17), Width = 160, DropDownStyle = ComboBoxStyle.DropDownList };
-            cboLanguage.Items.AddRange(new object[] { "Tiếng Việt (Mặc định)", "English" });
+            var lblLang = new Label
+            {
+                Text = Strings.IsVi ? "Ngôn ngữ giao diện:" : "User Interface Language:",
+                Location = new Point(15, 20),
+                AutoSize = true
+            };
+            cboLanguage = new ComboBox
+            {
+                Location = new Point(250, 17),
+                Width = 180,
+                DropDownStyle = ComboBoxStyle.DropDownList
+            };
+            cboLanguage.Items.AddRange(new object[] { "English (Default)", "Tiếng Việt" });
             cboLanguage.SelectedIndex = 0;
 
-            var lblConcurrent = new Label { Text = "Giới hạn số Job chạy đồng thời:", Location = new Point(15, 60), AutoSize = true };
-            numMaxConcurrent = new NumericUpDown { Location = new Point(250, 58), Width = 80, Minimum = 1, Maximum = 10, Value = 2 };
+            var lblConcurrent = new Label
+            {
+                Text = Strings.IsVi ? "Giới hạn số Job chạy đồng thời:" : "Maximum concurrent jobs:",
+                Location = new Point(15, 60),
+                AutoSize = true
+            };
+            numMaxConcurrent = new NumericUpDown
+            {
+                Location = new Point(250, 58),
+                Width = 80,
+                Minimum = 1,
+                Maximum = 10,
+                Value = 2
+            };
 
-            var lblKeepLogs = new Label { Text = "Thời hạn lưu trữ nhật ký vận hành (ngày):", Location = new Point(15, 100), AutoSize = true };
-            numKeepLogsDays = new NumericUpDown { Location = new Point(250, 98), Width = 80, Minimum = 1, Maximum = 365, Value = 30 };
+            var lblKeepLogs = new Label
+            {
+                Text = Strings.IsVi ? "Thời hạn lưu trữ nhật ký (ngày):" : "Keep logs duration (days):",
+                Location = new Point(15, 100),
+                AutoSize = true
+            };
+            numKeepLogsDays = new NumericUpDown
+            {
+                Location = new Point(250, 98),
+                Width = 80,
+                Minimum = 1,
+                Maximum = 365,
+                Value = 30
+            };
 
-            chkStartMinimized = new CheckBox { Text = "Tự động khởi động cùng Windows và thu nhỏ xuống khay hệ thống", Location = new Point(15, 145), AutoSize = true, Checked = true };
-            chkMinimizeOnClose = new CheckBox { Text = "Duy trì chạy ngầm trong khay hệ thống khi đóng cửa sổ chính (X)", Location = new Point(15, 175), AutoSize = true, Checked = true };
+            chkStartMinimized = new CheckBox
+            {
+                Text = Strings.IsVi ? "Tự động khởi động cùng Windows và thu nhỏ xuống khay" : "Start minimized to system tray with Windows",
+                Location = new Point(15, 145),
+                AutoSize = true,
+                Checked = true
+            };
+
+            chkMinimizeOnClose = new CheckBox
+            {
+                Text = Strings.IsVi ? "Duy trì chạy ngầm trong khay hệ thống khi đóng cửa sổ" : "Minimize to system tray on close",
+                Location = new Point(15, 175),
+                AutoSize = true,
+                Checked = true
+            };
 
             pageGeneral.Controls.AddRange(new Control[] {
                 lblLang, cboLanguage,
@@ -79,40 +126,64 @@ namespace FtpSysPro.Manager.UI
             });
 
             // SMTP Tab
-            var pageSmtp = new TabPage("Máy chủ Email (SMTP)") { Padding = new Padding(15) };
+            var pageSmtp = new TabPage(Strings.IsVi ? "Máy chủ Email (SMTP)" : "Email Server (SMTP)") { Padding = new Padding(15) };
 
-            chkSmtpEnabled = new CheckBox { Text = "Kích hoạt dịch vụ thông báo & cảnh báo vận hành qua Email", Location = new Point(15, 15), AutoSize = true };
+            chkSmtpEnabled = new CheckBox
+            {
+                Text = Strings.IsVi ? "Kích hoạt dịch vụ thông báo & cảnh báo qua Email" : "Enable email notifications & alerts",
+                Location = new Point(15, 15),
+                AutoSize = true
+            };
 
-            var grp = new GroupBox { Text = "Cấu hình máy chủ gửi thư SMTP / SMTP Server Settings", Location = new Point(15, 45), Size = new Size(560, 290) };
+            var grp = new GroupBox
+            {
+                Text = Strings.IsVi ? "Cấu hình máy chủ gửi thư SMTP" : "SMTP Server Configuration",
+                Location = new Point(15, 45),
+                Size = new Size(560, 290)
+            };
 
-            var lblHost = new Label { Text = "Máy chủ SMTP / Host:", Location = new Point(15, 28), AutoSize = true };
+            var lblHost = new Label { Text = Strings.IsVi ? "Máy chủ SMTP:" : "SMTP Host:", Location = new Point(15, 28), AutoSize = true };
             txtSmtpHost = new TextBox { Location = new Point(180, 25), Width = 230 };
-            var lblPort = new Label { Text = "Cổng / Port:", Location = new Point(420, 28), AutoSize = true };
+            var lblPort = new Label { Text = Strings.FtpPort, Location = new Point(420, 28), AutoSize = true };
             numSmtpPort = new NumericUpDown { Location = new Point(475, 25), Width = 65, Minimum = 1, Maximum = 65535, Value = 587 };
 
-            chkSmtpSsl = new CheckBox { Text = "SSL trực tiếp (Port 465)", Location = new Point(180, 60), AutoSize = true };
-            chkSmtpStartTls = new CheckBox { Text = "STARTTLS mã hóa TLS (Khuyến nghị - Port 587)", Location = new Point(320, 60), AutoSize = true, Checked = true };
+            chkSmtpSsl = new CheckBox
+            {
+                Text = Strings.IsVi ? "SSL trực tiếp (Cổng 465)" : "Direct SSL (Port 465)",
+                Location = new Point(180, 60),
+                AutoSize = true
+            };
+            chkSmtpStartTls = new CheckBox
+            {
+                Text = Strings.IsVi ? "STARTTLS (Khuyến nghị - Cổng 587)" : "STARTTLS (Recommended - Port 587)",
+                Location = new Point(320, 60),
+                AutoSize = true,
+                Checked = true
+            };
 
-            var lblUser = new Label { Text = "Tài khoản xác thực SMTP / User:", Location = new Point(15, 95), AutoSize = true };
+            var lblUser = new Label { Text = Strings.Username, Location = new Point(15, 95), AutoSize = true };
             txtSmtpUser = new TextBox { Location = new Point(180, 92), Width = 280 };
 
-            var lblPass = new Label { Text = "Mật khẩu / App Password:", Location = new Point(15, 130), AutoSize = true };
+            var lblPass = new Label { Text = Strings.Password, Location = new Point(15, 130), AutoSize = true };
             txtSmtpPass = new TextBox { Location = new Point(180, 127), Width = 280, UseSystemPasswordChar = true };
 
-            var lblFrom = new Label { Text = "Địa chỉ email gửi (From):", Location = new Point(15, 165), AutoSize = true };
+            var lblFrom = new Label { Text = Strings.IsVi ? "Địa chỉ email gửi (From):" : "Sender Email Address (From):", Location = new Point(15, 165), AutoSize = true };
             txtSmtpFrom = new TextBox { Location = new Point(180, 162), Width = 280 };
 
-            var lblDisplayName = new Label { Text = "Tên hiển thị người gửi:", Location = new Point(15, 200), AutoSize = true };
+            var lblDisplayName = new Label { Text = Strings.IsVi ? "Tên hiển thị người gửi:" : "Sender Display Name:", Location = new Point(15, 200), AutoSize = true };
             txtSmtpDisplayName = new TextBox { Location = new Point(180, 197), Width = 280, Text = "FtpSysPro Enterprise Backup" };
 
             btnTestEmail = new Button { Text = Strings.SendTestEmail + "...", Location = new Point(180, 240), Size = new Size(160, 30) };
             btnTestEmail.Click += async (s, e) =>
             {
-                var recipient = PromptForEmail(this, "Nhập địa chỉ email nhận báo cáo thử nghiệm:", "Gửi email kiểm tra hệ thống", txtSmtpFrom.Text);
+                var recipient = PromptForEmail(this,
+                    Strings.IsVi ? "Nhập địa chỉ email nhận báo cáo thử nghiệm:" : "Enter recipient email address for test message:",
+                    Strings.IsVi ? "Gửi email kiểm tra hệ thống" : "Send Test Email",
+                    txtSmtpFrom.Text);
                 if (string.IsNullOrWhiteSpace(recipient)) return;
 
                 btnTestEmail.Enabled = false;
-                btnTestEmail.Text = "Đang gửi...";
+                btnTestEmail.Text = Strings.IsVi ? "Đang gửi..." : "Sending...";
                 try
                 {
                     var testSettings = GetSmtpSettingsFromUi();
@@ -125,16 +196,25 @@ namespace FtpSysPro.Manager.UI
 
                     if (resp != null && resp.Success)
                     {
-                        MessageBox.Show(this, "Email thử nghiệm hệ thống đã được gửi thành công! Máy chủ SMTP sẵn sàng.", "Thông báo thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        MessageBox.Show(this,
+                            Strings.IsVi ? "Email thử nghiệm hệ thống đã được gửi thành công! Máy chủ SMTP sẵn sàng." : "Test email sent successfully! SMTP server is ready.",
+                            Strings.IsVi ? "Thông báo thành công" : "Success",
+                            MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                     else
                     {
-                        MessageBox.Show(this, "Gửi email thử nghiệm thất bại: " + resp?.ErrorMessage, "Lỗi kết nối SMTP", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show(this,
+                            (Strings.IsVi ? "Gửi email thử nghiệm thất bại: " : "Failed to send test email: ") + resp?.ErrorMessage,
+                            Strings.IsVi ? "Lỗi kết nối SMTP" : "SMTP Error",
+                            MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show(this, "Lỗi: " + ex.Message, "Lỗi kết nối", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show(this,
+                        (Strings.IsVi ? "Lỗi: " : "Error: ") + ex.Message,
+                        Strings.IsVi ? "Lỗi kết nối" : "Connection Error",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
                 finally
                 {
@@ -181,7 +261,7 @@ namespace FtpSysPro.Manager.UI
 
         private void LoadData()
         {
-            cboLanguage.SelectedIndex = string.Equals(_settings.Language, "en", StringComparison.OrdinalIgnoreCase) ? 1 : 0;
+            cboLanguage.SelectedIndex = string.Equals(_settings.Language, "vi", StringComparison.OrdinalIgnoreCase) ? 1 : 0;
             numMaxConcurrent.Value = Math.Max(1, _settings.MaxConcurrentJobs);
             numKeepLogsDays.Value = Math.Max(1, _settings.KeepLogsDays);
             chkStartMinimized.Checked = _settings.StartMinimizedToTray;
@@ -217,7 +297,7 @@ namespace FtpSysPro.Manager.UI
 
         private void SaveData()
         {
-            _settings.Language = cboLanguage.SelectedIndex == 1 ? "en" : "vi";
+            _settings.Language = cboLanguage.SelectedIndex == 1 ? "vi" : "en";
             _settings.MaxConcurrentJobs = (int)numMaxConcurrent.Value;
             _settings.KeepLogsDays = (int)numKeepLogsDays.Value;
             _settings.StartMinimizedToTray = chkStartMinimized.Checked;
@@ -237,13 +317,14 @@ namespace FtpSysPro.Manager.UI
                 FormBorderStyle = FormBorderStyle.FixedDialog,
                 StartPosition = FormStartPosition.CenterParent,
                 MaximizeBox = false,
-                MinimizeBox = false
+                MinimizeBox = false,
+                Font = new Font("Segoe UI", 9F)
             })
             {
                 var lbl = new Label { Left = 20, Top = 15, Text = prompt, AutoSize = true };
                 var txt = new TextBox { Left = 20, Top = 40, Width = 360, Text = defaultResponse ?? "" };
                 var btnOk = new Button { Text = "OK", Left = 200, Top = 75, Width = 85, DialogResult = DialogResult.OK };
-                var btnCancel = new Button { Text = "Cancel", Left = 295, Top = 75, Width = 85, DialogResult = DialogResult.Cancel };
+                var btnCancel = new Button { Text = Strings.Cancel, Left = 295, Top = 75, Width = 85, DialogResult = DialogResult.Cancel };
                 form.Controls.AddRange(new Control[] { lbl, txt, btnOk, btnCancel });
                 form.AcceptButton = btnOk;
                 form.CancelButton = btnCancel;
