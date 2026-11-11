@@ -281,10 +281,7 @@ namespace FtpSysPro.Manager.UI
             splitContainer = new SplitContainer
             {
                 Dock = DockStyle.Fill,
-                Orientation = Orientation.Vertical,
-                Panel1MinSize = 350,
-                Panel2MinSize = 270,
-                FixedPanel = FixedPanel.Panel2
+                Orientation = Orientation.Vertical
             };
             splitContainer.Panel1.Controls.Add(gridJobs);
             splitContainer.Panel2.Controls.Add(grpDetail);
@@ -343,6 +340,7 @@ namespace FtpSysPro.Manager.UI
                 AdjustSplitterDistance();
                 await RefreshAllAsync();
             };
+            Shown += (s, e) => AdjustSplitterDistance();
             Resize += (s, e) => AdjustSplitterDistance();
         }
 
@@ -656,12 +654,22 @@ namespace FtpSysPro.Manager.UI
         {
             try
             {
-                if (splitContainer != null && splitContainer.Width > (splitContainer.Panel1MinSize + splitContainer.Panel2MinSize))
+                if (splitContainer == null) return;
+
+                int width = splitContainer.Width;
+                int minPanel1 = 350;
+                int minPanel2 = 270;
+
+                if (width > (minPanel1 + minPanel2))
                 {
+                    splitContainer.Panel1MinSize = minPanel1;
+                    splitContainer.Panel2MinSize = minPanel2;
+                    splitContainer.FixedPanel = FixedPanel.Panel2;
+
                     int desiredDetailWidth = 320;
-                    int maxDistance = splitContainer.Width - splitContainer.Panel2MinSize;
+                    int maxDistance = width - splitContainer.Panel2MinSize;
                     int minDistance = splitContainer.Panel1MinSize;
-                    int calculated = splitContainer.Width - desiredDetailWidth;
+                    int calculated = width - desiredDetailWidth;
                     splitContainer.SplitterDistance = Math.Max(minDistance, Math.Min(calculated, maxDistance));
                 }
             }
