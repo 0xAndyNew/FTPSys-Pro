@@ -35,13 +35,35 @@ namespace FtpSysPro.Manager.UI
                     var hr = dialog.Show(owner != null ? owner.Handle : IntPtr.Zero);
                     if (hr == 0) // S_OK
                     {
-                        IShellItem item;
-                        dialog.GetResult(out item);
+                        IShellItem item = null;
+                        try { dialog.GetResult(out item); } catch { }
+                        if (item == null)
+                        {
+                            // If user is inside a root drive (e.g. D:\) without selecting a subfolder, GetFolder gets current folder
+                            try { dialog.GetFolder(out item); } catch { }
+                        }
+                        if (item == null)
+                        {
+                            try { dialog.GetCurrentSelection(out item); } catch { }
+                        }
+
                         if (item != null)
                         {
-                            string path;
-                            item.GetDisplayName(SIGDN_FILESYSPATH, out path);
-                            return path;
+                            string path = null;
+                            try { item.GetDisplayName(SIGDN_FILESYSPATH, out path); } catch { }
+                            if (string.IsNullOrEmpty(path))
+                            {
+                                try { item.GetDisplayName(SIGDN_DESKTOPABSOLUTEPARSING, out path); } catch { }
+                            }
+
+                            if (!string.IsNullOrEmpty(path))
+                            {
+                                path = NormalizeDrivePath(path);
+                                if (Directory.Exists(path))
+                                {
+                                    return path;
+                                }
+                            }
                         }
                     }
                     return null;
@@ -56,15 +78,27 @@ namespace FtpSysPro.Manager.UI
             {
                 Description = title,
                 SelectedPath = initialPath ?? string.Empty,
-                ShowNewFolderButton = true
+                ShowNewFolderButton = true,
+                RootFolder = Environment.SpecialFolder.MyComputer
             })
             {
                 if (fbd.ShowDialog(owner) == DialogResult.OK)
                 {
-                    return fbd.SelectedPath;
+                    return NormalizeDrivePath(fbd.SelectedPath);
                 }
             }
             return null;
+        }
+
+        private static string NormalizeDrivePath(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path)) return path;
+            path = path.Trim();
+            if (path.Length == 2 && char.IsLetter(path[0]) && path[1] == ':')
+            {
+                return path + "\\";
+            }
+            return path;
         }
 
         #region COM Interop for IFileDialog
@@ -72,6 +106,7 @@ namespace FtpSysPro.Manager.UI
         private const uint FOS_FORCEFILESYSTEM = 0x00000040;
         private const uint FOS_PATHMUSTEXIST = 0x00000800;
         private const uint SIGDN_FILESYSPATH = 0x80058000;
+        private const uint SIGDN_DESKTOPABSOLUTEPARSING = 0x80028000;
 
         [ComImport]
         [Guid("DC1C5A9C-E88A-4dde-A5A1-60F82A20AEF7")]

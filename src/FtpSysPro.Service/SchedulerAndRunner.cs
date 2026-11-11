@@ -213,8 +213,8 @@ namespace FtpSysPro.Service
                         var diff = (now - next.Value).TotalSeconds;
                         if (diff >= 0 && diff <= 40)
                         {
-                            Log.Information("[Job '{JobName}'] Lịch chạy '{ScheduleName}' được kích hoạt", job.Name, s.Name);
-                            _ = Task.Run(() => _runner.RunJobAsync(job, s.BackupType));
+                            Log.Information("[Job '{JobName}'] Lịch chạy '{ScheduleName}' được kích hoạt (Chế độ: {BackupType})", job.Name, s.Name, job.BackupType);
+                            _ = Task.Run(() => _runner.RunJobAsync(job, job.BackupType));
                             break;
                         }
                     }

@@ -24,6 +24,21 @@ namespace FtpSysPro.Core.Engine
 
     public static class FileScanner
     {
+        private static readonly HashSet<string> DefaultSystemFolders = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "$RECYCLE.BIN",
+            "System Volume Information",
+            "$Recycle.Bin"
+        };
+
+        private static readonly HashSet<string> DefaultSystemFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "pagefile.sys",
+            "swapfile.sys",
+            "hiberfil.sys",
+            "DumpStack.log"
+        };
+
         public static ScanResult Scan(
             IEnumerable<string> sourceDirectories,
             IEnumerable<string> excludePatterns,
@@ -60,9 +75,9 @@ namespace FtpSysPro.Core.Engine
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            // Check if directory itself is excluded
-            var dirName = Path.GetFileName(currentDir);
-            if (!string.IsNullOrEmpty(dirName) && IsExcluded(dirName, excludePatterns))
+            // Check if directory itself is excluded or special system volume directory
+            var dirName = Path.GetFileName(currentDir.TrimEnd('\\', '/'));
+            if (!string.IsNullOrEmpty(dirName) && (DefaultSystemFolders.Contains(dirName) || IsExcluded(dirName, excludePatterns)))
                 return;
 
             string[] subDirs = null;
@@ -93,7 +108,7 @@ namespace FtpSysPro.Core.Engine
                     cancellationToken.ThrowIfCancellationRequested();
 
                     var fileName = Path.GetFileName(file);
-                    if (IsExcluded(fileName, excludePatterns))
+                    if (DefaultSystemFiles.Contains(fileName) || IsExcluded(fileName, excludePatterns))
                         continue;
 
                     try

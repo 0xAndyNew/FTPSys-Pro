@@ -61,5 +61,42 @@ namespace FtpSysPro.Core.Tests
             Assert.Single(changes.UnchangedFiles);
             Assert.Equal("keep.txt", changes.UnchangedFiles[0].RelativePath);
         }
+
+        [Fact]
+        public void FileScanner_ExcludesSystemVolumeFoldersAndFiles()
+        {
+            var tempDir = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "FtpSysPro_ScannerTest_" + Guid.NewGuid().ToString("N"));
+            System.IO.Directory.CreateDirectory(tempDir);
+            try
+            {
+                var recycleBin = System.IO.Path.Combine(tempDir, "$RECYCLE.BIN");
+                var sysVolInfo = System.IO.Path.Combine(tempDir, "System Volume Information");
+                var docs = System.IO.Path.Combine(tempDir, "Documents");
+                System.IO.Directory.CreateDirectory(recycleBin);
+                System.IO.Directory.CreateDirectory(sysVolInfo);
+                System.IO.Directory.CreateDirectory(docs);
+
+                System.IO.File.WriteAllText(System.IO.Path.Combine(recycleBin, "deleted.bin"), "junk");
+                System.IO.File.WriteAllText(System.IO.Path.Combine(sysVolInfo, "tracking.log"), "log");
+                System.IO.File.WriteAllText(System.IO.Path.Combine(tempDir, "pagefile.sys"), "pagefile");
+                System.IO.File.WriteAllText(System.IO.Path.Combine(tempDir, "swapfile.sys"), "swapfile");
+                System.IO.File.WriteAllText(System.IO.Path.Combine(tempDir, "normal.txt"), "hello");
+                System.IO.File.WriteAllText(System.IO.Path.Combine(docs, "file.docx"), "data");
+
+                var scan = FileScanner.Scan(new[] { tempDir }, new string[0]);
+
+                Assert.Equal(2, scan.Files.Count);
+                var relPaths = new List<string>(scan.Files.ConvertAll(f => f.RelativePath.Replace('\\', '/')));
+                Assert.Contains("normal.txt", relPaths);
+                Assert.Contains("Documents/file.docx", relPaths);
+            }
+            finally
+            {
+                if (System.IO.Directory.Exists(tempDir))
+                {
+                    try { System.IO.Directory.Delete(tempDir, true); } catch { }
+                }
+            }
+        }
     }
 }
