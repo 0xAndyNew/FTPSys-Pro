@@ -1,0 +1,661 @@
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Drawing;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Windows.Forms;
+using FtpSysPro.Core.Config;
+using FtpSysPro.Core.Models;
+using FtpSysPro.Core.Resources;
+
+namespace FtpSysPro.Manager.UI
+{
+    public class LogViewerDialog : Form
+    {
+        private readonly ConfigStore _configStore;
+        private readonly AppConfig _config;
+        private readonly string _initialJobFilter;
+
+        private ComboBox cboLogFiles;
+        private ComboBox cboJobFilter;
+        private ComboBox cboLevel;
+        private TextBox txtSearch;
+        private Button btnRefresh;
+        private Button btnOpenInNotepad;
+        private Button btnOpenFolder;
+        private Button btnClear;
+        private CheckBox chkAutoRefresh;
+        private CheckBox chkAutoScroll;
+        private Label lblMatchCount;
+
+        private RichTextBox txtLog;
+        private StatusStrip statusStrip;
+        private ToolStripStatusLabel lblStatusFile;
+        private ToolStripStatusLabel lblStatusLines;
+        private ToolStripStatusLabel lblStatusSize;
+        private ToolStripStatusLabel lblStatusUpdated;
+
+        private Timer timerAutoRefresh;
+        private string _activeFilePath;
+        private long _lastLoadedLength;
+        private DateTime _lastLoadedTime;
+        private bool _isLoading;
+
+        private class LogFileItem
+        {
+            public string FullPath { get; set; }
+            public string FileName { get; set; }
+            public long Length { get; set; }
+            public DateTime LastWriteTime { get; set; }
+
+            public override string ToString()
+            {
+                return $"{FileName} ({FormatBytes(Length)} - {LastWriteTime:dd/MM/yyyy HH:mm:ss})";
+            }
+        }
+
+        private class JobFilterItem
+        {
+            public string JobId { get; set; }
+            public string JobName { get; set; }
+
+            public override string ToString()
+            {
+                return string.IsNullOrEmpty(JobId) ? Strings.AllJobs : JobName;
+            }
+        }
+
+        public LogViewerDialog(ConfigStore configStore, AppConfig config, string initialJobFilter = null)
+        {
+            _configStore = configStore ?? new ConfigStore();
+            _config = config ?? _configStore.LoadConfig();
+            _initialJobFilter = initialJobFilter;
+
+            InitializeComponents();
+            LoadJobFilterItems();
+            PopulateLogFileList();
+        }
+
+        private void InitializeComponents()
+        {
+            Text = Strings.LogViewerTitle;
+            Size = new Size(1180, 750);
+            MinimumSize = new Size(920, 560);
+            StartPosition = FormStartPosition.CenterParent;
+            Font = new Font("Segoe UI", 9F);
+            Icon = SystemIcons.Information;
+            MaximizeBox = true;
+            MinimizeBox = true;
+
+            // Top Control Bar (2 Rows)
+            var pnlTop = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 78,
+                BackColor = Color.FromArgb(242, 245, 249),
+                Padding = new Padding(10, 8, 10, 6)
+            };
+
+            // Row 1: File selection, Job filter, Level filter, Search
+            var lblFile = new Label
+            {
+                Text = Strings.SelectLogFile,
+                Location = new Point(10, 11),
+                AutoSize = true,
+                Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(40, 50, 70)
+            };
+
+            cboLogFiles = new ComboBox
+            {
+                Location = new Point(90, 8),
+                Width = 320,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                Font = new Font("Segoe UI", 8.5F)
+            };
+            cboLogFiles.SelectedIndexChanged += (s, e) =>
+            {
+                if (cboLogFiles.SelectedItem is LogFileItem item)
+                {
+                    _activeFilePath = item.FullPath;
+                    _lastLoadedLength = 0;
+                    LoadCurrentLog(appendOnly: false);
+                }
+            };
+
+            var lblJob = new Label
+            {
+                Text = Strings.FilterJob,
+                Location = new Point(425, 11),
+                AutoSize = true,
+                Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(40, 50, 70)
+            };
+
+            cboJobFilter = new ComboBox
+            {
+                Location = new Point(530, 8),
+                Width = 220,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                Font = new Font("Segoe UI", 8.5F)
+            };
+            cboJobFilter.SelectedIndexChanged += (s, e) =>
+            {
+                _lastLoadedLength = 0;
+                LoadCurrentLog(appendOnly: false);
+            };
+
+            var lblLvl = new Label
+            {
+                Text = Strings.FilterLevel,
+                Location = new Point(765, 11),
+                AutoSize = true,
+                Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(40, 50, 70)
+            };
+
+            cboLevel = new ComboBox
+            {
+                Location = new Point(830, 8),
+                Width = 140,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                Font = new Font("Segoe UI", 8.5F)
+            };
+            cboLevel.Items.AddRange(new object[] {
+                Strings.AllLevels,
+                "ERR (Lỗi)",
+                "WRN (Cảnh báo)",
+                "INF (Thông tin)"
+            });
+            cboLevel.SelectedIndex = 0;
+            cboLevel.SelectedIndexChanged += (s, e) =>
+            {
+                _lastLoadedLength = 0;
+                LoadCurrentLog(appendOnly: false);
+            };
+
+            txtSearch = new TextBox
+            {
+                Location = new Point(980, 8),
+                Width = 170,
+                Font = new Font("Segoe UI", 8.5F),
+                ForeColor = Color.Gray,
+                Text = Strings.SearchKeywords
+            };
+            txtSearch.GotFocus += (s, e) =>
+            {
+                if (txtSearch.Text == Strings.SearchKeywords)
+                {
+                    txtSearch.Text = "";
+                    txtSearch.ForeColor = Color.Black;
+                }
+            };
+            txtSearch.LostFocus += (s, e) =>
+            {
+                if (string.IsNullOrWhiteSpace(txtSearch.Text))
+                {
+                    txtSearch.Text = Strings.SearchKeywords;
+                    txtSearch.ForeColor = Color.Gray;
+                }
+            };
+            txtSearch.TextChanged += (s, e) =>
+            {
+                if (txtSearch.Focused && txtSearch.Text != Strings.SearchKeywords)
+                {
+                    _lastLoadedLength = 0;
+                    LoadCurrentLog(appendOnly: false);
+                }
+            };
+
+            // Row 2: Actions & Options
+            btnRefresh = new Button
+            {
+                Text = "↻ " + Strings.Refresh,
+                Location = new Point(10, 42),
+                Size = new Size(90, 28),
+                FlatStyle = FlatStyle.System
+            };
+            btnRefresh.Click += (s, e) =>
+            {
+                PopulateLogFileList();
+                _lastLoadedLength = 0;
+                LoadCurrentLog(appendOnly: false);
+            };
+
+            btnOpenInNotepad = new Button
+            {
+                Text = Strings.OpenInNotepad,
+                Location = new Point(108, 42),
+                Size = new Size(140, 28),
+                FlatStyle = FlatStyle.System
+            };
+            btnOpenInNotepad.Click += (s, e) => OpenActiveLogInNotepad();
+
+            btnOpenFolder = new Button
+            {
+                Text = Strings.OpenLogFolder,
+                Location = new Point(256, 42),
+                Size = new Size(150, 28),
+                FlatStyle = FlatStyle.System
+            };
+            btnOpenFolder.Click += (s, e) => OpenLogDirectoryInExplorer();
+
+            btnClear = new Button
+            {
+                Text = Strings.ClearScreen,
+                Location = new Point(414, 42),
+                Size = new Size(100, 28),
+                FlatStyle = FlatStyle.System
+            };
+            btnClear.Click += (s, e) => txtLog.Clear();
+
+            chkAutoRefresh = new CheckBox
+            {
+                Text = Strings.AutoRefresh,
+                Location = new Point(530, 47),
+                AutoSize = true,
+                Checked = true,
+                Font = new Font("Segoe UI", 8.5F)
+            };
+
+            chkAutoScroll = new CheckBox
+            {
+                Text = Strings.AutoScroll,
+                Location = new Point(680, 47),
+                AutoSize = true,
+                Checked = true,
+                Font = new Font("Segoe UI", 8.5F)
+            };
+
+            lblMatchCount = new Label
+            {
+                Text = "0 dòng",
+                Location = new Point(780, 48),
+                AutoSize = true,
+                Font = new Font("Segoe UI", 8.5F, FontStyle.Italic),
+                ForeColor = Color.FromArgb(70, 80, 100)
+            };
+
+            pnlTop.Controls.AddRange(new Control[] {
+                lblFile, cboLogFiles,
+                lblJob, cboJobFilter,
+                lblLvl, cboLevel,
+                txtSearch,
+                btnRefresh, btnOpenInNotepad, btnOpenFolder, btnClear,
+                chkAutoRefresh, chkAutoScroll, lblMatchCount
+            });
+
+            // Center: RichTextBox for high performance log rendering
+            txtLog = new RichTextBox
+            {
+                Dock = DockStyle.Fill,
+                BackColor = Color.FromArgb(18, 22, 30),
+                ForeColor = Color.FromArgb(220, 225, 235),
+                Font = new Font("Consolas", 9.5F),
+                ReadOnly = true,
+                WordWrap = false,
+                ScrollBars = RichTextBoxScrollBars.Both,
+                BorderStyle = BorderStyle.None
+            };
+
+            // Bottom Status Strip
+            statusStrip = new StatusStrip();
+            lblStatusFile = new ToolStripStatusLabel { Text = "Tệp: (Chưa chọn)", Width = 380, TextAlign = ContentAlignment.MiddleLeft };
+            lblStatusLines = new ToolStripStatusLabel { Text = "Hiển thị: 0 dòng", Width = 150 };
+            lblStatusSize = new ToolStripStatusLabel { Text = "Dung lượng: 0 B", Width = 150 };
+            lblStatusUpdated = new ToolStripStatusLabel { Text = "Cập nhật: -", Spring = true, TextAlign = ContentAlignment.MiddleRight };
+
+            statusStrip.Items.AddRange(new ToolStripItem[] {
+                lblStatusFile, lblStatusLines, lblStatusSize, lblStatusUpdated
+            });
+
+            Controls.Add(txtLog);
+            Controls.Add(pnlTop);
+            Controls.Add(statusStrip);
+
+            // Auto-refresh timer (every 3 seconds)
+            timerAutoRefresh = new Timer { Interval = 3000 };
+            timerAutoRefresh.Tick += (s, e) =>
+            {
+                if (chkAutoRefresh.Checked && !string.IsNullOrEmpty(_activeFilePath))
+                {
+                    // Only auto-poll if active file is the latest one
+                    if (cboLogFiles.SelectedIndex == 0)
+                    {
+                        LoadCurrentLog(appendOnly: true);
+                    }
+                }
+            };
+            timerAutoRefresh.Start();
+
+            FormClosing += (s, e) =>
+            {
+                timerAutoRefresh?.Stop();
+                timerAutoRefresh?.Dispose();
+            };
+        }
+
+        private void LoadJobFilterItems()
+        {
+            cboJobFilter.Items.Clear();
+            cboJobFilter.Items.Add(new JobFilterItem { JobId = null, JobName = Strings.AllJobs });
+
+            int selectIndex = 0;
+            if (_config?.Jobs != null)
+            {
+                for (int i = 0; i < _config.Jobs.Count; i++)
+                {
+                    var job = _config.Jobs[i];
+                    var item = new JobFilterItem { JobId = job.Id, JobName = job.Name };
+                    cboJobFilter.Items.Add(item);
+
+                    if (!string.IsNullOrEmpty(_initialJobFilter) &&
+                        (string.Equals(job.Id, _initialJobFilter, StringComparison.OrdinalIgnoreCase) ||
+                         string.Equals(job.Name, _initialJobFilter, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        selectIndex = i + 1;
+                    }
+                }
+            }
+
+            cboJobFilter.SelectedIndex = selectIndex;
+        }
+
+        public void PopulateLogFileList()
+        {
+            try
+            {
+                var logsDir = _configStore.LogsDirectory;
+                if (!Directory.Exists(logsDir))
+                {
+                    _configStore.EnsureDirectories();
+                }
+
+                if (!Directory.Exists(logsDir))
+                {
+                    cboLogFiles.Items.Clear();
+                    lblStatusFile.Text = Strings.NoLogsFound;
+                    return;
+                }
+
+                var dir = new DirectoryInfo(logsDir);
+                var files = dir.GetFiles("service-*.log")
+                               .OrderByDescending(f => f.LastWriteTimeUtc)
+                               .ToList();
+
+                var currentSelection = (cboLogFiles.SelectedItem as LogFileItem)?.FullPath;
+
+                cboLogFiles.Items.Clear();
+                if (files.Count == 0)
+                {
+                    lblStatusFile.Text = Strings.NoLogsFound;
+                    txtLog.Clear();
+                    AppendColorText(Strings.NoLogsFound + Environment.NewLine, Color.DarkGray);
+                    return;
+                }
+
+                int selectIdx = 0;
+                for (int i = 0; i < files.Count; i++)
+                {
+                    var f = files[i];
+                    var item = new LogFileItem
+                    {
+                        FullPath = f.FullName,
+                        FileName = f.Name,
+                        Length = f.Length,
+                        LastWriteTime = f.LastWriteTime
+                    };
+                    cboLogFiles.Items.Add(item);
+
+                    if (currentSelection != null && string.Equals(f.FullName, currentSelection, StringComparison.OrdinalIgnoreCase))
+                    {
+                        selectIdx = i;
+                    }
+                }
+
+                cboLogFiles.SelectedIndex = selectIdx;
+            }
+            catch (Exception ex)
+            {
+                lblStatusFile.Text = "Lỗi khi quét thư mục log: " + ex.Message;
+            }
+        }
+
+        private void LoadCurrentLog(bool appendOnly)
+        {
+            if (_isLoading) return;
+            if (string.IsNullOrEmpty(_activeFilePath) || !File.Exists(_activeFilePath))
+                return;
+
+            _isLoading = true;
+            try
+            {
+                var fi = new FileInfo(_activeFilePath);
+                if (appendOnly && fi.Length == _lastLoadedLength)
+                {
+                    return;
+                }
+
+                var selectedJobItem = cboJobFilter.SelectedItem as JobFilterItem;
+                string filterJobName = selectedJobItem?.JobName;
+                string filterJobId = selectedJobItem?.JobId;
+                bool filterByJob = !string.IsNullOrEmpty(filterJobId);
+
+                int levelIndex = cboLevel.SelectedIndex;
+                string searchKeyword = txtSearch.Text;
+                if (searchKeyword == Strings.SearchKeywords) searchKeyword = "";
+
+                if (!appendOnly)
+                {
+                    txtLog.Clear();
+                    _lastLoadedLength = 0;
+                }
+
+                int matchingLines = 0;
+                int totalLines = 0;
+
+                using (var fs = new FileStream(_activeFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                {
+                    if (appendOnly && _lastLoadedLength > 0 && fs.Length > _lastLoadedLength)
+                    {
+                        fs.Seek(_lastLoadedLength, SeekOrigin.Begin);
+                    }
+                    else if (!appendOnly)
+                    {
+                        // If file is larger than 1MB and no filter, load the last 512KB for smooth UI responsiveness
+                        if (fs.Length > 1024 * 1024 && !filterByJob && string.IsNullOrEmpty(searchKeyword))
+                        {
+                            fs.Seek(-524288, SeekOrigin.End);
+                            // Read past the partial first line
+                            while (fs.Position < fs.Length)
+                            {
+                                int b = fs.ReadByte();
+                                if (b == '\n') break;
+                            }
+                        }
+                    }
+
+                    using (var reader = new StreamReader(fs, Encoding.UTF8))
+                    {
+                        bool lastLineMatched = false;
+                        string line;
+
+                        while ((line = reader.ReadLine()) != null)
+                        {
+                            totalLines++;
+
+                            // Serilog log entry detection
+                            bool isLogHeader = line.StartsWith("[") && line.Length > 13 && line.Contains("]");
+
+                            bool isMatch = true;
+                            if (filterByJob)
+                            {
+                                if (isLogHeader)
+                                {
+                                    isMatch = LineMatchesJob(line, filterJobName, filterJobId);
+                                    lastLineMatched = isMatch;
+                                }
+                                else
+                                {
+                                    // Continuation line (e.g. exception stack trace) inherits previous line match
+                                    isMatch = lastLineMatched;
+                                }
+                            }
+
+                            if (isMatch && levelIndex > 0)
+                            {
+                                if (levelIndex == 1 && !line.Contains("[ERR]") && !line.Contains("[FTL]") && line.IndexOf("Exception", StringComparison.OrdinalIgnoreCase) < 0)
+                                    isMatch = false;
+                                else if (levelIndex == 2 && !line.Contains("[WRN]"))
+                                    isMatch = false;
+                                else if (levelIndex == 3 && !line.Contains("[INF]"))
+                                    isMatch = false;
+                            }
+
+                            if (isMatch && !string.IsNullOrWhiteSpace(searchKeyword))
+                            {
+                                if (line.IndexOf(searchKeyword, StringComparison.OrdinalIgnoreCase) < 0)
+                                    isMatch = false;
+                            }
+
+                            if (isMatch)
+                            {
+                                matchingLines++;
+                                Color color = DetermineLineColor(line);
+                                AppendColorText(line + Environment.NewLine, color);
+                            }
+                        }
+                    }
+
+                    _lastLoadedLength = fs.Length;
+                    _lastLoadedTime = DateTime.Now;
+                }
+
+                if (chkAutoScroll.Checked)
+                {
+                    txtLog.SelectionStart = txtLog.TextLength;
+                    txtLog.ScrollToCaret();
+                }
+
+                lblMatchCount.Text = $"{matchingLines} dòng hiển thị";
+                lblStatusFile.Text = $"Tệp: {Path.GetFileName(_activeFilePath)}";
+                lblStatusLines.Text = $"Hiển thị: {matchingLines} dòng";
+                lblStatusSize.Text = $"Dung lượng: {FormatBytes(fi.Length)}";
+                lblStatusUpdated.Text = $"Cập nhật: {_lastLoadedTime:HH:mm:ss}";
+            }
+            catch (Exception ex)
+            {
+                lblStatusFile.Text = "Lỗi khi đọc file: " + ex.Message;
+            }
+            finally
+            {
+                _isLoading = false;
+            }
+        }
+
+        private static bool LineMatchesJob(string line, string jobName, string jobId)
+        {
+            if (string.IsNullOrEmpty(jobName)) return true;
+
+            if (line.IndexOf("[Job '" + jobName + "']", StringComparison.OrdinalIgnoreCase) >= 0)
+                return true;
+
+            if (line.IndexOf("job '" + jobName + "'", StringComparison.OrdinalIgnoreCase) >= 0)
+                return true;
+
+            if (line.IndexOf("'" + jobName + "'", StringComparison.OrdinalIgnoreCase) >= 0)
+                return true;
+
+            if (line.IndexOf(jobName, StringComparison.OrdinalIgnoreCase) >= 0)
+                return true;
+
+            if (!string.IsNullOrEmpty(jobId) && line.IndexOf(jobId, StringComparison.OrdinalIgnoreCase) >= 0)
+                return true;
+
+            return false;
+        }
+
+        private static Color DetermineLineColor(string line)
+        {
+            if (line.Contains("[ERR]") || line.Contains("[FTL]") || line.IndexOf("Exception", StringComparison.OrdinalIgnoreCase) >= 0 || line.Contains("Thất bại"))
+            {
+                return Color.FromArgb(255, 115, 115); // Red / Pink
+            }
+            if (line.Contains("[WRN]") || line.Contains("Cảnh báo") || line.IndexOf("Warning", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return Color.FromArgb(255, 200, 80); // Orange / Yellow
+            }
+            if (line.Contains("Hoàn tất") || line.Contains("Thành công") || line.Contains("Success"))
+            {
+                return Color.FromArgb(130, 230, 140); // Soft Green
+            }
+            if (line.Contains("[INF]"))
+            {
+                return Color.FromArgb(215, 235, 255); // Soft Light Blue
+            }
+            return Color.FromArgb(220, 225, 235); // Clean White/Gray
+        }
+
+        private void AppendColorText(string text, Color color)
+        {
+            txtLog.SelectionStart = txtLog.TextLength;
+            txtLog.SelectionLength = 0;
+            txtLog.SelectionColor = color;
+            txtLog.AppendText(text);
+            txtLog.SelectionColor = txtLog.ForeColor;
+        }
+
+        private void OpenActiveLogInNotepad()
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(_activeFilePath) || !File.Exists(_activeFilePath))
+                {
+                    MessageBox.Show("Chưa chọn tệp nhật ký hoặc tệp không tồn tại.", Strings.AppName, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+
+                Process.Start("notepad.exe", $"\"{_activeFilePath}\"");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Không thể mở Notepad: " + ex.Message, Strings.AppName, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+        }
+
+        private void OpenLogDirectoryInExplorer()
+        {
+            try
+            {
+                var dir = _configStore.LogsDirectory;
+                if (!Directory.Exists(dir))
+                {
+                    _configStore.EnsureDirectories();
+                }
+
+                if (Directory.Exists(dir))
+                {
+                    Process.Start(new ProcessStartInfo("explorer.exe", $"\"{dir}\"") { UseShellExecute = true });
+                }
+                else
+                {
+                    MessageBox.Show("Thư mục nhật ký không tồn tại: " + dir, Strings.AppName, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Không thể mở thư mục nhật ký: " + ex.Message, Strings.AppName, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            }
+        }
+
+        private static string FormatBytes(long bytes)
+        {
+            if (bytes < 1024) return bytes + " B";
+            if (bytes < 1024 * 1024) return (bytes / 1024.0).ToString("N1") + " KB";
+            if (bytes < 1024 * 1024 * 1024) return (bytes / (1024.0 * 1024.0)).ToString("N1") + " MB";
+            return (bytes / (1024.0 * 1024.0 * 1024.0)).ToString("N2") + " GB";
+        }
+    }
+}

@@ -40,15 +40,6 @@ namespace FtpSysPro.Manager.UI
         private ToolStripStatusLabel lblServiceAction;
         private ToolStripProgressBar progressBar;
 
-        // Integrated Log Viewer
-        private Panel pnlLogViewer;
-        private Splitter logSplitter;
-        private Label lblLogStatus;
-        private CheckBox chkLogAutoScroll;
-        private RichTextBox txtLogViewer;
-        private long _lastLogFileLength = 0;
-        private string _lastLogFileName = null;
-
         // Side Detail Panel
         private SplitContainer splitContainer;
         private Label lblDetailName;
@@ -100,7 +91,7 @@ namespace FtpSysPro.Manager.UI
             sep2 = new ToolStripSeparator();
 
             btnRestore = new ToolStripButton("🔄 " + Strings.Restore) { DisplayStyle = ToolStripItemDisplayStyle.Text };
-            btnLogs = new ToolStripButton("📋 " + Strings.Logs) { DisplayStyle = ToolStripItemDisplayStyle.Text, CheckOnClick = true, Checked = true };
+            btnLogs = new ToolStripButton("📋 " + Strings.Logs) { DisplayStyle = ToolStripItemDisplayStyle.Text };
             btnSettings = new ToolStripButton("⚙ " + Strings.Settings) { DisplayStyle = ToolStripItemDisplayStyle.Text };
             btnRefresh = new ToolStripButton("↻ " + Strings.Refresh) { DisplayStyle = ToolStripItemDisplayStyle.Text };
 
@@ -141,6 +132,38 @@ namespace FtpSysPro.Manager.UI
 
             gridJobs.CellDoubleClick += (s, e) => EditSelectedJob();
             gridJobs.SelectionChanged += (s, e) => UpdateSelectedJobDetail();
+
+            var jobMenu = new ContextMenuStrip();
+            var itemRun = new ToolStripMenuItem("▶ " + Strings.Run, null, async (s, e) => await RunSelectedJobAsync());
+            var itemStop = new ToolStripMenuItem("■ " + Strings.Stop, null, async (s, e) => await StopSelectedJobAsync());
+            var itemEdit = new ToolStripMenuItem("✏ " + Strings.Edit, null, (s, e) => EditSelectedJob());
+            var itemClone = new ToolStripMenuItem("📋 " + Strings.Clone, null, (s, e) => CloneSelectedJob());
+            var itemDelete = new ToolStripMenuItem("🗑 " + Strings.Delete, null, (s, e) => DeleteSelectedJob());
+            var itemLogs = new ToolStripMenuItem("📋 " + Strings.ViewJobLog, null, (s, e) =>
+            {
+                var job = GetSelectedJob();
+                OpenLogViewer(job?.Name);
+            });
+            jobMenu.Items.AddRange(new ToolStripItem[] {
+                itemRun, itemStop, new ToolStripSeparator(),
+                itemEdit, itemClone, itemDelete, new ToolStripSeparator(),
+                itemLogs
+            });
+            gridJobs.ContextMenuStrip = jobMenu;
+
+            gridJobs.MouseDown += (s, e) =>
+            {
+                if (e.Button == MouseButtons.Right)
+                {
+                    var hit = gridJobs.HitTest(e.X, e.Y);
+                    if (hit.RowIndex >= 0)
+                    {
+                        gridJobs.ClearSelection();
+                        gridJobs.Rows[hit.RowIndex].Selected = true;
+                        UpdateSelectedJobDetail();
+                    }
+                }
+            };
 
             // Right side Job Detail Card
             var grpDetail = new GroupBox
@@ -323,132 +346,8 @@ namespace FtpSysPro.Manager.UI
             };
             trayIcon.DoubleClick += (s, e) => ShowMainWindow();
 
-            // Integrated Log Viewer Panel
-            pnlLogViewer = new Panel
-            {
-                Dock = DockStyle.Bottom,
-                Height = 180,
-                BackColor = Color.FromArgb(240, 243, 246)
-            };
-
-            var pnlLogHeader = new Panel
-            {
-                Dock = DockStyle.Top,
-                Height = 32,
-                BackColor = Color.FromArgb(230, 235, 242),
-                Padding = new Padding(8, 4, 8, 4)
-            };
-
-            var lblLogTitle = new Label
-            {
-                Text = "📋 " + Strings.Logs + " - Nhật ký hoạt động hệ thống (Service Logs)",
-                Location = new Point(8, 7),
-                AutoSize = true,
-                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
-                ForeColor = Color.FromArgb(30, 40, 60)
-            };
-
-            lblLogStatus = new Label
-            {
-                Text = "Đang tải...",
-                Location = new Point(340, 7),
-                AutoSize = true,
-                Font = new Font("Segoe UI", 8.5F, FontStyle.Italic),
-                ForeColor = Color.FromArgb(80, 90, 105)
-            };
-
-            chkLogAutoScroll = new CheckBox
-            {
-                Text = "Tự cuộn",
-                Location = new Point(560, 6),
-                AutoSize = true,
-                Checked = true,
-                Font = new Font("Segoe UI", 8.5F)
-            };
-
-            var btnLogRefresh = new Button
-            {
-                Text = "↻ Làm mới",
-                Size = new Size(80, 24),
-                Location = new Point(660, 4),
-                FlatStyle = FlatStyle.System
-            };
-            btnLogRefresh.Click += (s, e) => ReloadLogs(appendOnly: false);
-
-            var btnLogClear = new Button
-            {
-                Text = "Xoá màn hình",
-                Size = new Size(95, 24),
-                Location = new Point(745, 4),
-                FlatStyle = FlatStyle.System
-            };
-            btnLogClear.Click += (s, e) => txtLogViewer.Clear();
-
-            var btnOpenLogFolder = new Button
-            {
-                Text = "📁 Mở thư mục Log",
-                Size = new Size(130, 24),
-                Location = new Point(845, 4),
-                FlatStyle = FlatStyle.System
-            };
-            btnOpenLogFolder.Click += (s, e) =>
-            {
-                try
-                {
-                    var logsDir = _configStore.LogsDirectory;
-                    if (Directory.Exists(logsDir))
-                    {
-                        Process.Start(new ProcessStartInfo("explorer.exe", logsDir) { UseShellExecute = true });
-                    }
-                }
-                catch { }
-            };
-
-            var btnCloseLog = new Button
-            {
-                Text = "✕",
-                Size = new Size(30, 24),
-                Location = new Point(980, 4),
-                FlatStyle = FlatStyle.System
-            };
-            btnCloseLog.Click += (s, e) =>
-            {
-                pnlLogViewer.Visible = false;
-                logSplitter.Visible = false;
-                btnLogs.Checked = false;
-            };
-
-            pnlLogHeader.Controls.AddRange(new Control[] {
-                lblLogTitle, lblLogStatus, chkLogAutoScroll,
-                btnLogRefresh, btnLogClear, btnOpenLogFolder, btnCloseLog
-            });
-
-            txtLogViewer = new RichTextBox
-            {
-                Dock = DockStyle.Fill,
-                BackColor = Color.FromArgb(20, 24, 33),
-                ForeColor = Color.FromArgb(220, 225, 235),
-                Font = new Font("Consolas", 9F),
-                ReadOnly = true,
-                WordWrap = false,
-                ScrollBars = RichTextBoxScrollBars.Both,
-                BorderStyle = BorderStyle.None
-            };
-
-            pnlLogViewer.Controls.Add(txtLogViewer);
-            pnlLogViewer.Controls.Add(pnlLogHeader);
-
-            logSplitter = new Splitter
-            {
-                Dock = DockStyle.Bottom,
-                Height = 4,
-                BackColor = Color.FromArgb(200, 208, 220)
-            };
-
             // Layout
             Controls.Add(splitContainer);
-            Controls.Add(logSplitter);
-            Controls.Add(pnlLogViewer);
             Controls.Add(toolStrip);
             Controls.Add(statusStrip);
 
@@ -460,15 +359,7 @@ namespace FtpSysPro.Manager.UI
             btnRun.Click += async (s, e) => await RunSelectedJobAsync();
             btnStop.Click += async (s, e) => await StopSelectedJobAsync();
             btnRestore.Click += (s, e) => OpenRestoreWizard();
-            btnLogs.Click += (s, e) =>
-            {
-                pnlLogViewer.Visible = btnLogs.Checked;
-                logSplitter.Visible = btnLogs.Checked;
-                if (pnlLogViewer.Visible)
-                {
-                    ReloadLogs(appendOnly: false);
-                }
-            };
+            btnLogs.Click += (s, e) => OpenLogViewer();
             btnSettings.Click += (s, e) => OpenSettings();
             btnRefresh.Click += async (s, e) => await RefreshAllAsync();
 
@@ -676,11 +567,6 @@ namespace FtpSysPro.Manager.UI
                 _currentConfig = new AppConfig();
 
             RefreshJobGrid();
-
-            if (pnlLogViewer != null && pnlLogViewer.Visible)
-            {
-                ReloadLogs(appendOnly: false);
-            }
         }
 
         private async Task PeriodicCheckAsync()
@@ -732,110 +618,16 @@ namespace FtpSysPro.Manager.UI
                     lblServiceAction.Text = Strings.ServiceStartPrompt;
                     progressBar.Visible = false;
                 }
-
-                if (pnlLogViewer != null && pnlLogViewer.Visible)
-                {
-                    ReloadLogs(appendOnly: true);
-                }
             }
             catch { }
         }
 
-        private void ReloadLogs(bool appendOnly = false)
+        private void OpenLogViewer(string initialJob = null)
         {
-            try
+            using (var dlg = new LogViewerDialog(_configStore, _currentConfig, initialJob))
             {
-                var logsDir = _configStore.LogsDirectory;
-                if (!Directory.Exists(logsDir)) return;
-
-                var dir = new DirectoryInfo(logsDir);
-                var latestFile = dir.GetFiles("service-*.log")
-                    .OrderByDescending(f => f.LastWriteTimeUtc)
-                    .FirstOrDefault();
-
-                if (latestFile == null)
-                {
-                    if (!appendOnly)
-                    {
-                        txtLogViewer.Clear();
-                        AppendLogText("(Chưa có file nhật ký hoạt động)" + Environment.NewLine, Color.DarkGray);
-                        lblLogStatus.Text = "Không tìm thấy file nhật ký";
-                    }
-                    return;
-                }
-
-                lblLogStatus.Text = $"File: {latestFile.Name} ({JobViewModel.FormatBytes(latestFile.Length)})";
-
-                bool isNewFile = _lastLogFileName != latestFile.FullName;
-                if (isNewFile || !appendOnly)
-                {
-                    _lastLogFileName = latestFile.FullName;
-                    _lastLogFileLength = 0;
-                    txtLogViewer.Clear();
-                }
-
-                if (latestFile.Length == _lastLogFileLength && appendOnly)
-                {
-                    return;
-                }
-
-                using (var fs = new FileStream(latestFile.FullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
-                {
-                    if (appendOnly && _lastLogFileLength > 0 && fs.Length > _lastLogFileLength)
-                    {
-                        fs.Seek(_lastLogFileLength, SeekOrigin.Begin);
-                    }
-                    else
-                    {
-                        // Limit initial view to last 64 KB if file is large
-                        if (fs.Length > 65536 && !appendOnly)
-                        {
-                            fs.Seek(-65536, SeekOrigin.End);
-                        }
-                    }
-
-                    using (var reader = new StreamReader(fs, System.Text.Encoding.UTF8))
-                    {
-                        string line;
-                        while ((line = reader.ReadLine()) != null)
-                        {
-                            Color lineColor = Color.FromArgb(220, 225, 235);
-                            if (line.Contains("[ERR]") || line.Contains("[FTL]") || line.IndexOf("Exception", StringComparison.OrdinalIgnoreCase) >= 0)
-                            {
-                                lineColor = Color.FromArgb(255, 110, 110);
-                            }
-                            else if (line.Contains("[WRN]"))
-                            {
-                                lineColor = Color.FromArgb(255, 195, 75);
-                            }
-                            else if (line.Contains("[INF]"))
-                            {
-                                lineColor = Color.FromArgb(210, 230, 250);
-                            }
-
-                            AppendLogText(line + Environment.NewLine, lineColor);
-                        }
-                    }
-
-                    _lastLogFileLength = fs.Length;
-                }
-
-                if (chkLogAutoScroll.Checked)
-                {
-                    txtLogViewer.SelectionStart = txtLogViewer.TextLength;
-                    txtLogViewer.ScrollToCaret();
-                }
+                dlg.ShowDialog(this);
             }
-            catch { }
-        }
-
-        private void AppendLogText(string text, Color color)
-        {
-            txtLogViewer.SelectionStart = txtLogViewer.TextLength;
-            txtLogViewer.SelectionLength = 0;
-            txtLogViewer.SelectionColor = color;
-            txtLogViewer.AppendText(text);
-            txtLogViewer.SelectionColor = txtLogViewer.ForeColor;
         }
 
         private async Task StartOrRestartServiceAsync()

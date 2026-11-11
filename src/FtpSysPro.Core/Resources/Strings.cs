@@ -87,6 +87,22 @@ namespace FtpSysPro.Core.Resources
         public static string TrayBalloonSuccess => IsVi ? "Sao lưu thành công" : "Backup Succeeded";
         public static string TrayBalloonFailed => IsVi ? "Sao lưu thất bại" : "Backup Failed";
 
+        // Log Viewer
+        public static string LogViewerTitle => IsVi ? "FtpSysPro - Nhật ký hoạt động" : "FtpSysPro - Activity Logs";
+        public static string SelectLogFile => IsVi ? "Tệp nhật ký:" : "Log file:";
+        public static string FilterJob => IsVi ? "Lọc theo tác vụ:" : "Filter by job:";
+        public static string AllJobs => IsVi ? "-- Tất cả các tác vụ --" : "-- All Jobs --";
+        public static string OpenLogFolder => IsVi ? "📁 Mở thư mục Log" : "📁 Open Log Folder";
+        public static string OpenInNotepad => IsVi ? "📝 Mở bằng Notepad" : "📝 Open in Notepad";
+        public static string AutoScroll => IsVi ? "Tự cuộn" : "Auto-scroll";
+        public static string AutoRefresh => IsVi ? "Tự làm mới (3s)" : "Auto-refresh (3s)";
+        public static string SearchKeywords => IsVi ? "Tìm từ khoá..." : "Search keywords...";
+        public static string ViewJobLog => IsVi ? "Xem nhật ký tác vụ..." : "View Job Log...";
+        public static string NoLogsFound => IsVi ? "(Chưa có dữ liệu nhật ký)" : "(No log entries found)";
+        public static string ClearScreen => IsVi ? "Xoá màn hình" : "Clear Screen";
+        public static string FilterLevel => IsVi ? "Mức độ:" : "Level:";
+        public static string AllLevels => IsVi ? "-- Tất cả mức độ --" : "-- All Levels --";
+
         // Service
         public static string ServiceStatusConnected => IsVi ? "Service FtpSysPro: Đang chạy" : "FtpSysPro Service: Running";
         public static string ServiceStatusDisconnected => IsVi ? "Service FtpSysPro: Không kết nối được" : "FtpSysPro Service: Disconnected";

@@ -57,17 +57,22 @@ namespace FtpSysPro.Core.Config
 
         private static void EnsureDirectoryWithAcl(string path)
         {
-            if (Directory.Exists(path))
-                return;
-
-            var commonData = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
-            bool isProgramData = !string.IsNullOrEmpty(commonData) && path.StartsWith(commonData, StringComparison.OrdinalIgnoreCase);
-
-            if (isProgramData)
+            try
             {
-                try
+                if (!Directory.Exists(path))
                 {
-                    var sec = new DirectorySecurity();
+                    Directory.CreateDirectory(path);
+                }
+
+                var commonData = Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData);
+                bool isProgramData = !string.IsNullOrEmpty(commonData) && path.StartsWith(commonData, StringComparison.OrdinalIgnoreCase);
+
+                if (isProgramData)
+                {
+                    var dInfo = new DirectoryInfo(path);
+                    var sec = dInfo.GetAccessControl();
+
+                    // LocalSystem: Full control
                     sec.AddAccessRule(new FileSystemAccessRule(
                         new SecurityIdentifier(WellKnownSidType.LocalSystemSid, null),
                         FileSystemRights.FullControl,
@@ -75,6 +80,7 @@ namespace FtpSysPro.Core.Config
                         PropagationFlags.None,
                         AccessControlType.Allow));
 
+                    // Built-in Administrators: Full control
                     sec.AddAccessRule(new FileSystemAccessRule(
                         new SecurityIdentifier(WellKnownSidType.BuiltinAdministratorsSid, null),
                         FileSystemRights.FullControl,
@@ -82,13 +88,32 @@ namespace FtpSysPro.Core.Config
                         PropagationFlags.None,
                         AccessControlType.Allow));
 
-                    Directory.CreateDirectory(path, sec);
-                    return;
-                }
-                catch { }
-            }
+                    // Authenticated Users: Read and Execute, List, Read
+                    sec.AddAccessRule(new FileSystemAccessRule(
+                        new SecurityIdentifier(WellKnownSidType.AuthenticatedUserSid, null),
+                        FileSystemRights.ReadAndExecute | FileSystemRights.ListDirectory | FileSystemRights.Read,
+                        InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit,
+                        PropagationFlags.None,
+                        AccessControlType.Allow));
 
-            Directory.CreateDirectory(path);
+                    // Built-in Users: Read and Execute, List, Read
+                    sec.AddAccessRule(new FileSystemAccessRule(
+                        new SecurityIdentifier(WellKnownSidType.BuiltinUsersSid, null),
+                        FileSystemRights.ReadAndExecute | FileSystemRights.ListDirectory | FileSystemRights.Read,
+                        InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit,
+                        PropagationFlags.None,
+                        AccessControlType.Allow));
+
+                    dInfo.SetAccessControl(sec);
+                }
+            }
+            catch
+            {
+                if (!Directory.Exists(path))
+                {
+                    Directory.CreateDirectory(path);
+                }
+            }
         }
 
         public AppConfig LoadConfig()

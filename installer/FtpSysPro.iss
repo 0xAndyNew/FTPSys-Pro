@@ -2,7 +2,7 @@
 ; Requires Inno Setup 6 (free from jrsoftware.org)
 
 #define MyAppName "FtpSysPro"
-#define MyAppVersion "1.0.6"
+#define MyAppVersion "1.0.7"
 #define MyAppPublisher "0xAndyNew"
 #define MyAppURL "https://github.com/0xAndyNew/FTPSys-Pro"
 #define MyAppExeName "FtpSysPro.Manager.exe"
@@ -35,6 +35,10 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
 Name: "autostart"; Description: "Khởi động ứng dụng FtpSysPro Manager cùng Windows (trong khay hệ thống) / Start Manager with Windows"; GroupDescription: "Tự động khởi động / Startup"
+
+[Dirs]
+Name: "{commonappdata}\{#MyAppName}"; Permissions: users-modify
+Name: "{commonappdata}\{#MyAppName}\logs"; Permissions: users-modify
 
 [Files]
 ; Core, Service, and Manager output binaries from Release build

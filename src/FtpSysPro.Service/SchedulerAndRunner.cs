@@ -66,7 +66,7 @@ namespace FtpSysPro.Service
             await _concurrencySemaphore.WaitAsync(cts.Token);
             try
             {
-                Log.Information("Starting job '{JobName}' ({Type})", job.Name, backupType);
+                Log.Information("[Job '{JobName}'] Bắt đầu sao lưu ({Type})...", job.Name, backupType);
 
                 var progress = new Progress<JobProgressInfo>(p =>
                 {
@@ -90,6 +90,15 @@ namespace FtpSysPro.Service
                     _configStore.SaveConfig(cfg);
                 }
 
+                // Log warnings if any
+                if (result.Warnings != null && result.Warnings.Count > 0)
+                {
+                    foreach (var w in result.Warnings)
+                    {
+                        Log.Warning("[Job '{JobName}'] Cảnh báo: {Warning}", job.Name, w);
+                    }
+                }
+
                 // Send email notification
                 try
                 {
@@ -101,10 +110,18 @@ namespace FtpSysPro.Service
                 }
                 catch (Exception ex)
                 {
-                    Log.Warning(ex, "Failed to send email notification for job '{JobName}'", job.Name);
+                    Log.Warning(ex, "[Job '{JobName}'] Không thể gửi email thông báo", job.Name);
                 }
 
-                Log.Information("Finished job '{JobName}' with status {Status}: {Message}", job.Name, result.Status, result.Message);
+                if (result.Status == JobExecutionStatus.Failed)
+                {
+                    Log.Error("[Job '{JobName}'] Thất bại: {Message}", job.Name, result.Message);
+                }
+                else
+                {
+                    Log.Information("[Job '{JobName}'] Hoàn tất với trạng thái {Status}: {Message} (Sao lưu: {Files} tệp, {Size} bytes)",
+                        job.Name, result.Status, result.Message, result.BackedUpFiles, result.BackedUpBytes);
+                }
                 return result;
             }
             finally
@@ -196,7 +213,7 @@ namespace FtpSysPro.Service
                         var diff = (now - next.Value).TotalSeconds;
                         if (diff >= 0 && diff <= 40)
                         {
-                            Log.Information("Schedule '{ScheduleName}' triggered for job '{JobName}'", s.Name, job.Name);
+                            Log.Information("[Job '{JobName}'] Lịch chạy '{ScheduleName}' được kích hoạt", job.Name, s.Name);
                             _ = Task.Run(() => _runner.RunJobAsync(job, s.BackupType));
                             break;
                         }
