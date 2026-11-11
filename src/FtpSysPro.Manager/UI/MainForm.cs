@@ -282,8 +282,9 @@ namespace FtpSysPro.Manager.UI
             {
                 Dock = DockStyle.Fill,
                 Orientation = Orientation.Vertical,
-                SplitterDistance = 830,
-                Panel2MinSize = 270
+                Panel1MinSize = 350,
+                Panel2MinSize = 270,
+                FixedPanel = FixedPanel.Panel2
             };
             splitContainer.Panel1.Controls.Add(gridJobs);
             splitContainer.Panel2.Controls.Add(grpDetail);
@@ -337,7 +338,12 @@ namespace FtpSysPro.Manager.UI
             refreshTimer.Start();
 
             FormClosing += OnMainFormClosing;
-            Load += async (s, e) => await RefreshAllAsync();
+            Load += async (s, e) =>
+            {
+                AdjustSplitterDistance();
+                await RefreshAllAsync();
+            };
+            Resize += (s, e) => AdjustSplitterDistance();
         }
 
         private void ApplyLanguage()
@@ -644,6 +650,22 @@ namespace FtpSysPro.Manager.UI
                 lblDetailLast.Text = "-";
                 lblDetailNext.Text = "-";
             }
+        }
+
+        private void AdjustSplitterDistance()
+        {
+            try
+            {
+                if (splitContainer != null && splitContainer.Width > (splitContainer.Panel1MinSize + splitContainer.Panel2MinSize))
+                {
+                    int desiredDetailWidth = 320;
+                    int maxDistance = splitContainer.Width - splitContainer.Panel2MinSize;
+                    int minDistance = splitContainer.Panel1MinSize;
+                    int calculated = splitContainer.Width - desiredDetailWidth;
+                    splitContainer.SplitterDistance = Math.Max(minDistance, Math.Min(calculated, maxDistance));
+                }
+            }
+            catch { }
         }
 
         public void ShowMainWindow()
