@@ -9,7 +9,7 @@ param(
     [string]$RemoteUrl = "https://github.com/0xAndyNew/FTPSys-Pro.git",
     [string]$AuthorName = "0xAndyNew",
     [string]$AuthorEmail = "179321164+0xAndyNew@users.noreply.github.com",
-    [string]$Version = "v1.0.7"
+    [string]$Version = "v1.0.8"
 )
 
 $ErrorActionPreference = "Stop"
@@ -17,7 +17,7 @@ $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 Set-Location $ScriptDir
 
 Write-Host "==========================================================" -ForegroundColor Cyan
-Write-Host "  FTPSys-Pro: Build, Package & Push to GitHub             " -ForegroundColor Cyan
+Write-Host "  FTPSys Pro: Build, Package & Push to GitHub             " -ForegroundColor Cyan
 Write-Host "==========================================================" -ForegroundColor Cyan
 
 # 1. Build & Test
@@ -52,7 +52,7 @@ if ($iscc) {
 
     # Don dep cac file cai dat cu de giam dung luong repo
     if (Test-Path "dist") {
-        Get-ChildItem -Path "dist" -Filter "*.exe" | Where-Object { $_.Name -ne "FtpSysPro_Setup_$Version.exe" } | Remove-Item -Force -ErrorAction SilentlyContinue
+        Get-ChildItem -Path "dist" -Filter "*.exe" | Where-Object { $_.Name -ne "FTPSys_Pro_Setup_$Version.exe" } | Remove-Item -Force -ErrorAction SilentlyContinue
     }
 
     & $iscc "installer\FtpSysPro.iss"
@@ -102,7 +102,7 @@ Co-Authored-By: Claude Code <noreply@anthropic.com>"
 # Tag version
 $existingTag = git tag -l $Version
 if (-not $existingTag) {
-    git tag -a $Version -m "Release FTPSys-Pro $Version"
+    git tag -a $Version -m "Release FTPSys Pro $Version"
     Write-Host "Da tao Git tag $Version" -ForegroundColor Green
 }
 

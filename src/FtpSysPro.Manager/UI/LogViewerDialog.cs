@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using FtpSysPro.Core.Config;
+using FtpSysPro.Core.Logging;
 using FtpSysPro.Core.Models;
 using FtpSysPro.Core.Resources;
 
@@ -38,6 +39,7 @@ namespace FtpSysPro.Manager.UI
         private ToolStripStatusLabel lblStatusUpdated;
 
         private Timer timerAutoRefresh;
+        private Timer _searchTimer;
         private string _activeFilePath;
         private long _lastLoadedLength;
         private DateTime _lastLoadedTime;
@@ -202,8 +204,17 @@ namespace FtpSysPro.Manager.UI
             };
             txtSearch.TextChanged += (s, e) =>
             {
-                if (txtSearch.Focused && txtSearch.Text != Strings.SearchKeywords)
+                if (_isLoading) return;
+                if (txtSearch.Text == Strings.SearchKeywords) return;
+                _searchTimer.Stop();
+                _searchTimer.Start();
+            };
+            txtSearch.KeyDown += (s, e) =>
+            {
+                if (e.KeyCode == Keys.Enter)
                 {
+                    e.SuppressKeyPress = true;
+                    _searchTimer.Stop();
                     _lastLoadedLength = 0;
                     LoadCurrentLog(appendOnly: false);
                 }
@@ -315,6 +326,15 @@ namespace FtpSysPro.Manager.UI
             Controls.Add(pnlTop);
             Controls.Add(statusStrip);
 
+            // Debounce timer for search input (350 ms)
+            _searchTimer = new Timer { Interval = 350 };
+            _searchTimer.Tick += (s, e) =>
+            {
+                _searchTimer.Stop();
+                _lastLoadedLength = 0;
+                LoadCurrentLog(appendOnly: false);
+            };
+
             // Auto-refresh timer (every 3 seconds)
             timerAutoRefresh = new Timer { Interval = 3000 };
             timerAutoRefresh.Tick += (s, e) =>
@@ -332,6 +352,8 @@ namespace FtpSysPro.Manager.UI
 
             FormClosing += (s, e) =>
             {
+                _searchTimer?.Stop();
+                _searchTimer?.Dispose();
                 timerAutoRefresh?.Stop();
                 timerAutoRefresh?.Dispose();
             };
@@ -449,6 +471,7 @@ namespace FtpSysPro.Manager.UI
 
                 if (!appendOnly)
                 {
+                    txtLog.SuspendLayout();
                     txtLog.Clear();
                     _lastLoadedLength = 0;
                 }
@@ -458,18 +481,20 @@ namespace FtpSysPro.Manager.UI
 
                 using (var fs = new FileStream(_activeFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                 {
-                    if (appendOnly && _lastLoadedLength > 0 && fs.Length > _lastLoadedLength)
+                    long totalFileBytes = fs.Length;
+
+                    if (appendOnly && _lastLoadedLength > 0 && totalFileBytes > _lastLoadedLength)
                     {
                         fs.Seek(_lastLoadedLength, SeekOrigin.Begin);
                     }
                     else if (!appendOnly)
                     {
-                        // If file is larger than 1MB and no filter, load the last 512KB for smooth UI responsiveness
-                        if (fs.Length > 1024 * 1024 && !filterByJob && string.IsNullOrEmpty(searchKeyword))
+                        // If file is larger than 2MB and no filter, load the last 512KB for smooth UI responsiveness
+                        if (totalFileBytes > 2 * 1024 * 1024 && !filterByJob && levelIndex == 0 && string.IsNullOrEmpty(searchKeyword))
                         {
                             fs.Seek(-524288, SeekOrigin.End);
                             // Read past the partial first line
-                            while (fs.Position < fs.Length)
+                            while (fs.Position < totalFileBytes)
                             {
                                 int b = fs.ReadByte();
                                 if (b == '\n') break;
@@ -477,47 +502,60 @@ namespace FtpSysPro.Manager.UI
                         }
                     }
 
-                    using (var reader = new StreamReader(fs, Encoding.UTF8))
+                    // leaveOpen: true ensures reader.Dispose() does NOT close the underlying FileStream fs!
+                    using (var reader = new StreamReader(fs, Encoding.UTF8, true, 4096, leaveOpen: true))
                     {
-                        bool lastLineMatched = false;
+                        bool lastJobMatched = false;
+                        bool lastLevelMatched = true;
+                        bool lastSearchMatched = false;
                         string line;
 
                         while ((line = reader.ReadLine()) != null)
                         {
                             totalLines++;
-
-                            // Serilog log entry detection
-                            bool isLogHeader = line.StartsWith("[") && line.Length > 13 && line.Contains("]");
+                            bool isLogHeader = LogFilterHelper.IsLogEntryHeader(line);
 
                             bool isMatch = true;
                             if (filterByJob)
                             {
                                 if (isLogHeader)
                                 {
-                                    isMatch = LineMatchesJob(line, filterJobName, filterJobId);
-                                    lastLineMatched = isMatch;
+                                    isMatch = LogFilterHelper.LineMatchesJob(line, filterJobName, filterJobId);
+                                    lastJobMatched = isMatch;
                                 }
                                 else
                                 {
-                                    // Continuation line (e.g. exception stack trace) inherits previous line match
-                                    isMatch = lastLineMatched;
+                                    // Continuation line (e.g. exception stack trace) inherits previous job match
+                                    isMatch = lastJobMatched;
                                 }
                             }
 
                             if (isMatch && levelIndex > 0)
                             {
-                                if (levelIndex == 1 && !line.Contains("[ERR]") && !line.Contains("[FTL]") && line.IndexOf("Exception", StringComparison.OrdinalIgnoreCase) < 0)
-                                    isMatch = false;
-                                else if (levelIndex == 2 && !line.Contains("[WRN]"))
-                                    isMatch = false;
-                                else if (levelIndex == 3 && !line.Contains("[INF]"))
-                                    isMatch = false;
+                                if (isLogHeader)
+                                {
+                                    bool levelMatch = LogFilterHelper.LineMatchesLevel(line, levelIndex);
+                                    lastLevelMatched = levelMatch;
+                                    isMatch = levelMatch;
+                                }
+                                else
+                                {
+                                    // Stack trace / continuation lines inherit level match
+                                    isMatch = lastLevelMatched;
+                                }
                             }
 
                             if (isMatch && !string.IsNullOrWhiteSpace(searchKeyword))
                             {
-                                if (line.IndexOf(searchKeyword, StringComparison.OrdinalIgnoreCase) < 0)
+                                if (line.IndexOf(searchKeyword, StringComparison.OrdinalIgnoreCase) >= 0)
+                                {
+                                    lastSearchMatched = true;
+                                }
+                                else if (isLogHeader || !lastSearchMatched)
+                                {
                                     isMatch = false;
+                                    lastSearchMatched = false;
+                                }
                             }
 
                             if (isMatch)
@@ -529,11 +567,19 @@ namespace FtpSysPro.Manager.UI
                         }
                     }
 
-                    _lastLoadedLength = fs.Length;
+                    _lastLoadedLength = totalFileBytes;
                     _lastLoadedTime = DateTime.Now;
                 }
 
-                if (chkAutoScroll.Checked)
+                if (!appendOnly && matchingLines == 0)
+                {
+                    if (filterByJob || levelIndex > 0 || !string.IsNullOrWhiteSpace(searchKeyword))
+                    {
+                        AppendColorText("(Không có dòng nhật ký nào phù hợp với bộ lọc đã chọn)" + Environment.NewLine, Color.DarkGray);
+                    }
+                }
+
+                if (chkAutoScroll.Checked && matchingLines > 0)
                 {
                     txtLog.SelectionStart = txtLog.TextLength;
                     txtLog.ScrollToCaret();
@@ -551,30 +597,12 @@ namespace FtpSysPro.Manager.UI
             }
             finally
             {
+                if (!appendOnly)
+                {
+                    txtLog.ResumeLayout();
+                }
                 _isLoading = false;
             }
-        }
-
-        private static bool LineMatchesJob(string line, string jobName, string jobId)
-        {
-            if (string.IsNullOrEmpty(jobName)) return true;
-
-            if (line.IndexOf("[Job '" + jobName + "']", StringComparison.OrdinalIgnoreCase) >= 0)
-                return true;
-
-            if (line.IndexOf("job '" + jobName + "'", StringComparison.OrdinalIgnoreCase) >= 0)
-                return true;
-
-            if (line.IndexOf("'" + jobName + "'", StringComparison.OrdinalIgnoreCase) >= 0)
-                return true;
-
-            if (line.IndexOf(jobName, StringComparison.OrdinalIgnoreCase) >= 0)
-                return true;
-
-            if (!string.IsNullOrEmpty(jobId) && line.IndexOf(jobId, StringComparison.OrdinalIgnoreCase) >= 0)
-                return true;
-
-            return false;
         }
 
         private static Color DetermineLineColor(string line)

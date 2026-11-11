@@ -5,7 +5,7 @@ namespace FtpSysPro.Core.Resources
 {
     public static class Strings
     {
-        public static string AppName => IsVi ? "FtpSysPro - Sao lưu Dữ liệu" : "FtpSysPro - Backup Solution";
+        public static string AppName => IsVi ? "FTPSys Pro - Sao lưu Dữ liệu" : "FTPSys Pro - Backup Solution";
 
         // Navigation / Tabs
         public static string TabGeneral => IsVi ? "Chung" : "General";
@@ -81,14 +81,14 @@ namespace FtpSysPro.Core.Resources
             : "Connection failed: ";
 
         // Tray
-        public static string TrayOpen => IsVi ? "Mở giao diện FtpSysPro" : "Open FtpSysPro";
+        public static string TrayOpen => IsVi ? "Mở giao diện FTPSys Pro" : "Open FTPSys Pro";
         public static string TrayExit => IsVi ? "Thoát ứng dụng quản lý" : "Exit Manager";
         public static string TrayRunJob => IsVi ? "Chạy tác vụ" : "Run Job";
         public static string TrayBalloonSuccess => IsVi ? "Sao lưu thành công" : "Backup Succeeded";
         public static string TrayBalloonFailed => IsVi ? "Sao lưu thất bại" : "Backup Failed";
 
         // Log Viewer
-        public static string LogViewerTitle => IsVi ? "FtpSysPro - Nhật ký hoạt động" : "FtpSysPro - Activity Logs";
+        public static string LogViewerTitle => IsVi ? "FTPSys Pro - Nhật ký hoạt động" : "FTPSys Pro - Activity Logs";
         public static string SelectLogFile => IsVi ? "Tệp nhật ký:" : "Log file:";
         public static string FilterJob => IsVi ? "Lọc theo tác vụ:" : "Filter by job:";
         public static string AllJobs => IsVi ? "-- Tất cả các tác vụ --" : "-- All Jobs --";
@@ -104,8 +104,8 @@ namespace FtpSysPro.Core.Resources
         public static string AllLevels => IsVi ? "-- Tất cả mức độ --" : "-- All Levels --";
 
         // Service
-        public static string ServiceStatusConnected => IsVi ? "Service FtpSysPro: Đang chạy" : "FtpSysPro Service: Running";
-        public static string ServiceStatusDisconnected => IsVi ? "Service FtpSysPro: Không kết nối được" : "FtpSysPro Service: Disconnected";
+        public static string ServiceStatusConnected => IsVi ? "Service FTPSys Pro: Đang chạy" : "FTPSys Pro Service: Running";
+        public static string ServiceStatusDisconnected => IsVi ? "Service FTPSys Pro: Không kết nối được" : "FTPSys Pro Service: Disconnected";
         public static string ServiceStartPrompt => IsVi ? "Bật Service" : "Start Service";
 
         private static bool IsVi

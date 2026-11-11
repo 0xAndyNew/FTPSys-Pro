@@ -1,8 +1,8 @@
-; Script generated for FtpSysPro Backup Solution
+; Script generated for FTPSys Pro Backup Solution
 ; Requires Inno Setup 6 (free from jrsoftware.org)
 
-#define MyAppName "FtpSysPro"
-#define MyAppVersion "1.0.7"
+#define MyAppName "FTPSys Pro"
+#define MyAppVersion "1.0.8"
 #define MyAppPublisher "0xAndyNew"
 #define MyAppURL "https://github.com/0xAndyNew/FTPSys-Pro"
 #define MyAppExeName "FtpSysPro.Manager.exe"
@@ -21,7 +21,7 @@ DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
 PrivilegesRequired=admin
 OutputDir=..\dist
-OutputBaseFilename=FtpSysPro_Setup_v{#MyAppVersion}
+OutputBaseFilename=FTPSys_Pro_Setup_v{#MyAppVersion}
 Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern
@@ -37,8 +37,8 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 Name: "autostart"; Description: "Khởi động ứng dụng FtpSysPro Manager cùng Windows (trong khay hệ thống) / Start Manager with Windows"; GroupDescription: "Tự động khởi động / Startup"
 
 [Dirs]
-Name: "{commonappdata}\{#MyAppName}"; Permissions: users-modify
-Name: "{commonappdata}\{#MyAppName}\logs"; Permissions: users-modify
+Name: "{commonappdata}\FtpSysPro"; Permissions: users-modify
+Name: "{commonappdata}\FtpSysPro\logs"; Permissions: users-modify
 
 [Files]
 ; Core, Service, and Manager output binaries from Release build
@@ -56,13 +56,14 @@ Filename: "{app}\{#MyServiceExeName}"; Parameters: "--install"; Flags: runhidden
 ; Start Windows Service
 Filename: "sc.exe"; Parameters: "start FtpSysProService"; Flags: runhidden; StatusMsg: "Đang khởi động Windows Service..."
 ; Register Scheduled Task to auto-start Manager with highest privileges upon user logon
-Filename: "schtasks.exe"; Parameters: "/Create /TN ""FtpSysPro Manager Startup"" /TR ""\""{app}\{#MyAppExeName}\"" --minimized"" /SC ONLOGON /RL HIGHEST /F"; Tasks: autostart; Flags: runhidden
+Filename: "schtasks.exe"; Parameters: "/Create /TN ""FTPSys Pro Manager Startup"" /TR ""\""{app}\{#MyAppExeName}\"" --minimized"" /SC ONLOGON /RL HIGHEST /F"; Tasks: autostart; Flags: runhidden
 ; Run Manager at end of setup with elevated admin privileges using ShellExecuteEx (shellexec prevents code 740 elevation error)
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; WorkingDir: "{app}"; Flags: nowait postinstall skipifsilent shellexec
 
 [UninstallRun]
 ; Stop and uninstall Manager auto-start task
-Filename: "schtasks.exe"; Parameters: "/Delete /TN ""FtpSysPro Manager Startup"" /F"; Flags: runhidden; RunOnceId: "DelStartupTask"
+Filename: "schtasks.exe"; Parameters: "/Delete /TN ""FTPSys Pro Manager Startup"" /F"; Flags: runhidden; RunOnceId: "DelStartupTask"
+Filename: "schtasks.exe"; Parameters: "/Delete /TN ""FtpSysPro Manager Startup"" /F"; Flags: runhidden; RunOnceId: "DelStartupTaskOld"
 ; Terminate running Manager
 Filename: "taskkill.exe"; Parameters: "/F /IM {#MyAppExeName}"; Flags: runhidden; RunOnceId: "KillManager"
 ; Stop Windows Service

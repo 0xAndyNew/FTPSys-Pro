@@ -1,9 +1,9 @@
 @echo off
 setlocal enabledelayedexpansion
-title FTPSys-Pro: Build, Package Installer and Push to Git
+title FTPSys Pro: Build, Package Installer and Push to Git
 
 echo ====================================================
-echo   FTPSys-Pro: Build, Package Installer and Push
+echo   FTPSys Pro: Build, Package Installer and Push
 echo ====================================================
 echo.
 

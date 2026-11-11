@@ -646,9 +646,29 @@ namespace FtpSysPro.Manager.UI
                         }
                     }
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
-                    MessageBox.Show(this, "Không thể khởi động Windows Service: " + ex.Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    // Fallback: If current process is not elevated, request UAC elevation specifically for starting the service
+                    try
+                    {
+                        var psi = new System.Diagnostics.ProcessStartInfo("sc.exe", "start FtpSysProService")
+                        {
+                            Verb = "runas",
+                            UseShellExecute = true,
+                            WindowStyle = System.Diagnostics.ProcessWindowStyle.Hidden
+                        };
+                        var proc = System.Diagnostics.Process.Start(psi);
+                        proc?.WaitForExit(15000);
+
+                        using (var sc = new ServiceController("FtpSysProService"))
+                        {
+                            sc.WaitForStatus(ServiceControllerStatus.Running, TimeSpan.FromSeconds(10));
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show(this, "Không thể khởi động Windows Service: " + ex.Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
                 }
             });
             await RefreshAllAsync();
