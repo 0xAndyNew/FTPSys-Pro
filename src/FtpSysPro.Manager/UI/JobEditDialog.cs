@@ -34,24 +34,24 @@ namespace FtpSysPro.Manager.UI
 
         private static readonly string[] StepNames = new[]
         {
-            "1. Chung",
+            "1. Tổng quan",
             "2. Nguồn",
-            "3. Đích đến",
-            "4. Tuỳ chọn",
-            "5. Lập lịch",
-            "6. Giữ bản",
-            "7. Email"
+            "3. Kho lưu trữ",
+            "4. Đóng gói & Nén",
+            "5. Lịch thực thi",
+            "6. Chính sách lưu",
+            "7. Cảnh báo"
         };
 
         private static readonly string[] StepDescriptions = new[]
         {
-            "Thông tin chung & Chế độ",
-            "Thư mục nguồn dữ liệu",
-            "Đích đến sao lưu",
-            "Nén & Độ tin cậy",
-            "Lập lịch chạy tự động",
-            "Chính sách giữ bản sao",
-            "Cấu hình thông báo Email"
+            "Cấu hình định danh & Chế độ sao lưu",
+            "Lựa chọn dữ liệu nguồn sao lưu",
+            "Kho lưu trữ đích (Backup Repository)",
+            "Cơ chế đóng gói, Nén & Bảo toàn dữ liệu",
+            "Lịch thực thi sao lưu tự động",
+            "Chính sách lưu giữ điểm phục hồi (Retention Policy)",
+            "Cảnh báo & Báo cáo vận hành qua Email"
         };
 
         // Sources
@@ -336,7 +336,7 @@ namespace FtpSysPro.Manager.UI
                 {
                     if (showWarning)
                     {
-                        MessageBox.Show(this, "Vui lòng nhập tên tác vụ sao lưu.", "Thiếu thông tin", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        MessageBox.Show(this, "Vui lòng nhập tên Job sao lưu.", "Thiếu thông tin", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                         txtName.Focus();
                     }
                     return false;
@@ -348,7 +348,7 @@ namespace FtpSysPro.Manager.UI
                 {
                     if (showWarning)
                     {
-                        MessageBox.Show(this, "Vui lòng chọn ít nhất một thư mục nguồn cần sao lưu.", "Thiếu thông tin", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                        MessageBox.Show(this, "Vui lòng chọn ít nhất một thư mục hoặc ổ đĩa nguồn cần sao lưu.", "Thiếu thông tin", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     }
                     return false;
                 }
@@ -361,7 +361,7 @@ namespace FtpSysPro.Manager.UI
                     {
                         if (showWarning)
                         {
-                            MessageBox.Show(this, "Vui lòng nhập đường dẫn thư mục đích đến.", "Thiếu thông tin", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            MessageBox.Show(this, "Vui lòng nhập hoặc chọn đường dẫn kho lưu trữ đích.", "Thiếu thông tin", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                             txtLocalPath.Focus();
                         }
                         return false;
@@ -494,25 +494,25 @@ namespace FtpSysPro.Manager.UI
         {
             var page = new TabPage(Strings.TabGeneral) { Padding = new Padding(15) };
 
-            var lblName = new Label { Text = "Tên tác vụ / Job Name (*):", Location = new Point(15, 20), AutoSize = true };
+            var lblName = new Label { Text = "Tên Job sao lưu / Backup Job Name (*):", Location = new Point(15, 20), AutoSize = true };
             txtName = new TextBox { Location = new Point(15, 42), Width = 450 };
 
-            var lblDesc = new Label { Text = "Mô tả / Description:", Location = new Point(15, 80), AutoSize = true };
-            txtDescription = new TextBox { Location = new Point(15, 102), Width = 580, Height = 75, Multiline = true };
+            var lblDesc = new Label { Text = "Mô tả mục đích / Description:", Location = new Point(15, 80), AutoSize = true };
+            txtDescription = new TextBox { Location = new Point(15, 102), Width = 685, Height = 75, Multiline = true };
 
-            chkEnabled = new CheckBox { Text = "Kích hoạt tác vụ này (Enabled)", Location = new Point(15, 195), AutoSize = true, Checked = true };
+            chkEnabled = new CheckBox { Text = "Kích hoạt Job sao lưu này (Job Enabled)", Location = new Point(15, 195), AutoSize = true, Checked = true };
 
             var grpMode = new GroupBox
             {
-                Text = "Chế độ sao lưu mặc định / Default Backup Mode (*)",
+                Text = "Chế độ sao lưu mặc định / Backup Mode (*)",
                 Location = new Point(15, 230),
-                Size = new Size(580, 130),
+                Size = new Size(685, 140),
                 Font = new Font("Segoe UI", 9F, FontStyle.Bold)
             };
 
             rbModeIncremental = new RadioButton
             {
-                Text = "Sao lưu tăng dần (Incremental) - Chỉ copy file mới / đã sửa đổi (Khuyên dùng)",
+                Text = "Sao lưu gia tăng (Incremental Backup) - Tối ưu hóa dữ liệu mới & thay đổi (Khuyến nghị)",
                 Location = new Point(20, 28),
                 AutoSize = true,
                 Checked = true,
@@ -520,7 +520,7 @@ namespace FtpSysPro.Manager.UI
             };
             var lblIncrDesc = new Label
             {
-                Text = "Tối ưu tốc độ và dung lượng đường truyền. File không đổi sẽ không truyền lại.",
+                Text = "Tối ưu hóa thời gian thực thi và dung lượng lưu trữ. Tệp tin không thay đổi sẽ không truyền lại.",
                 Location = new Point(42, 52),
                 AutoSize = true,
                 ForeColor = Color.DimGray,
@@ -529,15 +529,15 @@ namespace FtpSysPro.Manager.UI
 
             rbModeFull = new RadioButton
             {
-                Text = "Sao lưu toàn bộ (Full) - Quét và sao lưu toàn bộ tất cả file mỗi lần chạy",
-                Location = new Point(20, 76),
+                Text = "Sao lưu toàn phần (Full Backup) - Độc lập toàn bộ dữ liệu nguồn tại mỗi chu kỳ",
+                Location = new Point(20, 80),
                 AutoSize = true,
                 Font = new Font("Segoe UI", 9F, FontStyle.Regular)
             };
             var lblFullDesc = new Label
             {
-                Text = "Đảm bảo tính độc lập hoàn toàn cho mỗi bản sao lưu nhưng tốn thời gian và dung lượng hơn.",
-                Location = new Point(42, 100),
+                Text = "Đảm bảo tính toàn vẹn và độc lập tuyệt đối cho mỗi điểm phục hồi. Yêu cầu băng thông và dung lượng lưu trữ lớn hơn.",
+                Location = new Point(42, 104),
                 AutoSize = true,
                 ForeColor = Color.DimGray,
                 Font = new Font("Segoe UI", 8.25F, FontStyle.Italic)
@@ -556,18 +556,18 @@ namespace FtpSysPro.Manager.UI
         {
             var page = new TabPage(Strings.TabSources) { Padding = new Padding(15) };
 
-            var lblSources = new Label { Text = "Danh sách nguồn sao lưu (thư mục, cả ổ đĩa hoặc đường dẫn mạng UNC):", Location = new Point(15, 15), AutoSize = true };
+            var lblSources = new Label { Text = "Danh sách dữ liệu nguồn cần bảo vệ (Thư mục, Ổ đĩa cục bộ hoặc Chia sẻ mạng UNC):", Location = new Point(15, 15), AutoSize = true };
             lstSources = new ListBox { Location = new Point(15, 38), Size = new Size(490, 190) };
 
             var btnAddFolder = new Button { Text = "📁 Thêm thư mục...", Location = new Point(515, 38), Size = new Size(140, 28) };
             var btnAddDrive = new Button { Text = "💾 Thêm ổ đĩa...", Location = new Point(515, 71), Size = new Size(140, 28) };
             var btnAddPath = new Button { Text = "✏ Nhập đường dẫn...", Location = new Point(515, 104), Size = new Size(140, 28) };
             var btnRemove = new Button { Text = "🗑 " + Strings.Delete, Location = new Point(515, 137), Size = new Size(140, 28) };
-            var btnClear = new Button { Text = "✖ Xoá tất cả", Location = new Point(515, 170), Size = new Size(140, 28) };
+            var btnClear = new Button { Text = "✖ Xóa tất cả", Location = new Point(515, 170), Size = new Size(140, 28) };
 
             lblSourceSummary = new Label
             {
-                Text = "Tổng dung lượng cần backup: 0 B (0 files)",
+                Text = "Tổng dung lượng dữ liệu nguồn: 0 B (0 tệp)",
                 Location = new Point(15, 235),
                 AutoSize = true,
                 Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
@@ -576,7 +576,7 @@ namespace FtpSysPro.Manager.UI
 
             btnAddFolder.Click += (s, e) =>
             {
-                var folder = FolderBrowserEx.SelectFolder(this, null, "Chọn thư mục hoặc ổ đĩa nguồn cần backup");
+                var folder = FolderBrowserEx.SelectFolder(this, null, "Chọn thư mục hoặc ổ đĩa nguồn cần sao lưu");
                 if (!string.IsNullOrEmpty(folder) && !lstSources.Items.Contains(folder))
                 {
                     lstSources.Items.Add(folder);
@@ -617,7 +617,7 @@ namespace FtpSysPro.Manager.UI
                 }
                 else
                 {
-                    MessageBox.Show(this, "Không tìm thấy ổ đĩa sẵn sàng.", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show(this, "Không tìm thấy ổ đĩa cục bộ sẵn sàng.", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
             };
 
@@ -625,7 +625,7 @@ namespace FtpSysPro.Manager.UI
             {
                 using (var prompt = new Form
                 {
-                    Text = "Nhập đường dẫn nguồn sao lưu",
+                    Text = "Nhập đường dẫn dữ liệu nguồn sao lưu",
                     Size = new Size(520, 175),
                     StartPosition = FormStartPosition.CenterParent,
                     FormBorderStyle = FormBorderStyle.FixedDialog,
@@ -636,13 +636,13 @@ namespace FtpSysPro.Manager.UI
                 {
                     var lbl = new Label
                     {
-                        Text = "Nhập đường dẫn ổ đĩa (vd: D:\\, E:\\), thư mục hoặc đường dẫn mạng (\\\\server\\share):",
+                        Text = "Nhập đường dẫn ổ đĩa (vd: D:\\, E:\\), thư mục hoặc đường dẫn mạng UNC (\\\\server\\share):",
                         Location = new Point(15, 15),
                         AutoSize = true
                     };
                     var txt = new TextBox { Location = new Point(15, 42), Width = 475 };
                     var btnOk = new Button { Text = "Thêm", DialogResult = DialogResult.OK, Location = new Point(305, 85), Size = new Size(85, 30) };
-                    var btnCancel = new Button { Text = "Huỷ", DialogResult = DialogResult.Cancel, Location = new Point(400, 85), Size = new Size(85, 30) };
+                    var btnCancel = new Button { Text = "Hủy", DialogResult = DialogResult.Cancel, Location = new Point(400, 85), Size = new Size(85, 30) };
                     prompt.Controls.AddRange(new Control[] { lbl, txt, btnOk, btnCancel });
                     prompt.AcceptButton = btnOk;
                     prompt.CancelButton = btnCancel;
@@ -676,7 +676,7 @@ namespace FtpSysPro.Manager.UI
             {
                 if (lstSources.Items.Count > 0)
                 {
-                    if (MessageBox.Show(this, "Bạn có chắc chắn muốn xoá toàn bộ danh sách nguồn không?", "Xác nhận", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+                    if (MessageBox.Show(this, "Bạn có chắc chắn muốn xóa toàn bộ danh sách nguồn sao lưu không?", "Xác nhận", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
                     {
                         lstSources.Items.Clear();
                         UpdateSourceSummary();
@@ -684,7 +684,7 @@ namespace FtpSysPro.Manager.UI
                 }
             };
 
-            var lblExclude = new Label { Text = "Mẫu file loại trừ (phân cách dấu phẩy, vd: *.tmp, ~$*, Thumbs.db):", Location = new Point(15, 265), AutoSize = true };
+            var lblExclude = new Label { Text = "Mẫu tệp tin loại trừ (Exclude Patterns - phân cách bằng dấu phẩy, vd: *.tmp, ~$*, Thumbs.db):", Location = new Point(15, 265), AutoSize = true };
             txtExcludePatterns = new TextBox { Location = new Point(15, 288), Width = 500 };
             txtExcludePatterns.TextChanged += (s, e) => UpdateSourceSummary();
 
@@ -705,7 +705,7 @@ namespace FtpSysPro.Manager.UI
 
                 if (dirs.Count == 0)
                 {
-                    lblSourceSummary.Text = "Tổng dung lượng cần backup: 0 B (0 files)";
+                    lblSourceSummary.Text = "Tổng dung lượng dữ liệu nguồn: 0 B (0 tệp)";
                     return;
                 }
 
@@ -716,11 +716,11 @@ namespace FtpSysPro.Manager.UI
                     .ToList();
 
                 var scan = FileScanner.Scan(dirs, patterns);
-                lblSourceSummary.Text = $"Tổng dung lượng cần backup ước tính: {FormatBytes(scan.TotalSizeBytes)} ({scan.Files.Count:N0} files)";
+                lblSourceSummary.Text = $"Tổng dung lượng dữ liệu nguồn ước tính: {FormatBytes(scan.TotalSizeBytes)} ({scan.Files.Count:N0} tệp)";
             }
             catch
             {
-                lblSourceSummary.Text = "Tổng dung lượng cần backup: -";
+                lblSourceSummary.Text = "Tổng dung lượng dữ liệu nguồn: -";
             }
         }
 
@@ -741,8 +741,8 @@ namespace FtpSysPro.Manager.UI
         {
             var page = new TabPage(Strings.TabDestination) { Padding = new Padding(15) };
 
-            var lblType = new Label { Text = "Loại đích đến / Destination Type:", Location = new Point(15, 15), AutoSize = true };
-            cboDestType = new ComboBox { Location = new Point(15, 38), Width = 300, DropDownStyle = ComboBoxStyle.DropDownList };
+            var lblType = new Label { Text = "Loại kho lưu trữ đích / Destination Repository Type:", Location = new Point(15, 15), AutoSize = true };
+            cboDestType = new ComboBox { Location = new Point(15, 38), Width = 350, DropDownStyle = ComboBoxStyle.DropDownList };
             cboDestType.Items.Add(Strings.DestLocal);
             cboDestType.Items.Add(Strings.DestFtp);
             cboDestType.Items.Add(Strings.DestSftp);
@@ -770,16 +770,16 @@ namespace FtpSysPro.Manager.UI
 
         private Panel CreateLocalPanel()
         {
-            var pnl = new Panel { Size = new Size(620, 320), Visible = true };
+            var pnl = new Panel { Size = new Size(685, 320), Visible = true };
 
-            var lblPath = new Label { Text = "Đường dẫn thư mục hoặc ổ đĩa đích (Local / Ổ đĩa / \\\\server\\share):", Location = new Point(0, 5), AutoSize = true };
-            txtLocalPath = new TextBox { Location = new Point(0, 28), Width = 380 };
-            var btnBrowse = new Button { Text = "📁 " + Strings.Browse + "...", Location = new Point(390, 26), Size = new Size(95, 27) };
-            var btnDrive = new Button { Text = "💾 Ổ đĩa...", Location = new Point(495, 26), Size = new Size(85, 27) };
+            var lblPath = new Label { Text = "Đường dẫn kho lưu trữ đích (Thư mục cục bộ / Ổ đĩa / Mạng UNC):", Location = new Point(0, 5), AutoSize = true };
+            txtLocalPath = new TextBox { Location = new Point(0, 28), Width = 440 };
+            var btnBrowse = new Button { Text = "📁 " + Strings.Browse, Location = new Point(450, 26), Size = new Size(100, 27) };
+            var btnDrive = new Button { Text = "💾 Ổ đĩa...", Location = new Point(555, 26), Size = new Size(90, 27) };
 
             btnBrowse.Click += (s, e) =>
             {
-                var folder = FolderBrowserEx.SelectFolder(this, txtLocalPath.Text, "Chọn thư mục hoặc ổ đĩa đích sao lưu");
+                var folder = FolderBrowserEx.SelectFolder(this, txtLocalPath.Text, "Chọn thư mục hoặc ổ đĩa làm kho lưu trữ đích");
                 if (!string.IsNullOrEmpty(folder)) txtLocalPath.Text = folder;
             };
 
@@ -808,15 +808,15 @@ namespace FtpSysPro.Manager.UI
                 }
                 else
                 {
-                    MessageBox.Show(this, "Không tìm thấy ổ đĩa sẵn sàng.", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show(this, "Không tìm thấy ổ đĩa cục bộ sẵn sàng.", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
             };
 
-            var grpUnc = new GroupBox { Text = "Thông tin đăng nhập mạng UNC (nếu có)", Location = new Point(0, 70), Size = new Size(570, 110) };
-            var lblUncUser = new Label { Text = "Tài khoản (Domain\\User):", Location = new Point(15, 28), AutoSize = true };
-            txtUncUser = new TextBox { Location = new Point(180, 25), Width = 250 };
-            var lblUncPass = new Label { Text = "Mật khẩu:", Location = new Point(15, 63), AutoSize = true };
-            txtUncPass = new TextBox { Location = new Point(180, 60), Width = 250, UseSystemPasswordChar = true };
+            var grpUnc = new GroupBox { Text = "Thông tin xác thực mạng chia sẻ UNC (Network Credentials)", Location = new Point(0, 70), Size = new Size(685, 110) };
+            var lblUncUser = new Label { Text = "Tài khoản xác thực (Domain\\Username):", Location = new Point(15, 28), AutoSize = true };
+            txtUncUser = new TextBox { Location = new Point(230, 25), Width = 250 };
+            var lblUncPass = new Label { Text = "Mật khẩu xác thực:", Location = new Point(15, 63), AutoSize = true };
+            txtUncPass = new TextBox { Location = new Point(230, 60), Width = 250, UseSystemPasswordChar = true };
             grpUnc.Controls.AddRange(new Control[] { lblUncUser, txtUncUser, lblUncPass, txtUncPass });
 
             pnl.Controls.AddRange(new Control[] { lblPath, txtLocalPath, btnBrowse, btnDrive, grpUnc });
@@ -825,27 +825,27 @@ namespace FtpSysPro.Manager.UI
 
         private Panel CreateFtpPanel()
         {
-            var pnl = new Panel { Size = new Size(620, 320), Visible = false };
+            var pnl = new Panel { Size = new Size(685, 320), Visible = false };
 
             var lblHost = new Label { Text = "Máy chủ FTP / Host:", Location = new Point(0, 5), AutoSize = true };
             txtFtpHost = new TextBox { Location = new Point(0, 28), Width = 320 };
-            var lblPort = new Label { Text = "Cổng / Port:", Location = new Point(335, 5), AutoSize = true };
+            var lblPort = new Label { Text = "Cổng dịch vụ / Port:", Location = new Point(335, 5), AutoSize = true };
             numFtpPort = new NumericUpDown { Location = new Point(335, 28), Width = 80, Minimum = 1, Maximum = 65535, Value = 21 };
 
-            var lblUser = new Label { Text = "Tài khoản / User:", Location = new Point(0, 65), AutoSize = true };
+            var lblUser = new Label { Text = "Tài khoản đăng nhập / Username:", Location = new Point(0, 65), AutoSize = true };
             txtFtpUser = new TextBox { Location = new Point(0, 88), Width = 250 };
-            var lblPass = new Label { Text = "Mật khẩu / Pass:", Location = new Point(265, 65), AutoSize = true };
+            var lblPass = new Label { Text = "Mật khẩu / Password:", Location = new Point(265, 65), AutoSize = true };
             txtFtpPass = new TextBox { Location = new Point(265, 88), Width = 250, UseSystemPasswordChar = true };
 
-            var lblRemote = new Label { Text = "Thư mục từ xa / Remote path:", Location = new Point(0, 125), AutoSize = true };
+            var lblRemote = new Label { Text = "Thư mục lưu trữ từ xa / Remote Path:", Location = new Point(0, 125), AutoSize = true };
             txtFtpRemotePath = new TextBox { Location = new Point(0, 148), Width = 350, Text = "/" };
 
-            var lblEnc = new Label { Text = "Mã hoá / Encryption:", Location = new Point(0, 185), AutoSize = true };
-            cboFtpEncryption = new ComboBox { Location = new Point(0, 208), Width = 200, DropDownStyle = ComboBoxStyle.DropDownList };
-            cboFtpEncryption.Items.AddRange(new object[] { "None (FTP thường)", "Explicit (FTPS TLS)", "Implicit (Port 990)" });
+            var lblEnc = new Label { Text = "Giao thức bảo mật / Security Protocol:", Location = new Point(0, 185), AutoSize = true };
+            cboFtpEncryption = new ComboBox { Location = new Point(0, 208), Width = 240, DropDownStyle = ComboBoxStyle.DropDownList };
+            cboFtpEncryption.Items.AddRange(new object[] { "None (FTP tiêu chuẩn)", "Explicit TLS (FTPS chuẩn bảo mật)", "Implicit TLS (Cổng 990)" });
             cboFtpEncryption.SelectedIndex = 0;
 
-            chkFtpPassive = new CheckBox { Text = "Passive Mode (Khuyến nghị)", Location = new Point(220, 210), AutoSize = true, Checked = true };
+            chkFtpPassive = new CheckBox { Text = "Chế độ truyền thụ động / Passive Mode (Khuyến nghị)", Location = new Point(260, 210), AutoSize = true, Checked = true };
 
             pnl.Controls.AddRange(new Control[] {
                 lblHost, txtFtpHost, lblPort, numFtpPort,
@@ -858,19 +858,19 @@ namespace FtpSysPro.Manager.UI
 
         private Panel CreateSftpPanel()
         {
-            var pnl = new Panel { Size = new Size(620, 320), Visible = false };
+            var pnl = new Panel { Size = new Size(685, 320), Visible = false };
 
             var lblHost = new Label { Text = "Máy chủ SFTP / Host:", Location = new Point(0, 5), AutoSize = true };
             txtSftpHost = new TextBox { Location = new Point(0, 28), Width = 320 };
-            var lblPort = new Label { Text = "Cổng / Port:", Location = new Point(335, 5), AutoSize = true };
+            var lblPort = new Label { Text = "Cổng dịch vụ / Port:", Location = new Point(335, 5), AutoSize = true };
             numSftpPort = new NumericUpDown { Location = new Point(335, 28), Width = 80, Minimum = 1, Maximum = 65535, Value = 22 };
 
-            var lblUser = new Label { Text = "Tài khoản / User:", Location = new Point(0, 65), AutoSize = true };
+            var lblUser = new Label { Text = "Tài khoản đăng nhập / Username:", Location = new Point(0, 65), AutoSize = true };
             txtSftpUser = new TextBox { Location = new Point(0, 88), Width = 250 };
             var lblPass = new Label { Text = "Mật khẩu / Password:", Location = new Point(265, 65), AutoSize = true };
             txtSftpPass = new TextBox { Location = new Point(265, 88), Width = 250, UseSystemPasswordChar = true };
 
-            var lblKey = new Label { Text = "Private Key File (tuỳ chọn nếu dùng key):", Location = new Point(0, 125), AutoSize = true };
+            var lblKey = new Label { Text = "Tệp khóa bảo mật Private Key (Nếu sử dụng xác thực bằng khóa):", Location = new Point(0, 125), AutoSize = true };
             txtSftpKeyPath = new TextBox { Location = new Point(0, 148), Width = 400 };
             var btnKeyBrowse = new Button { Text = Strings.Browse, Location = new Point(410, 146), Size = new Size(80, 26) };
             btnKeyBrowse.Click += (s, e) =>
@@ -882,10 +882,10 @@ namespace FtpSysPro.Manager.UI
                 }
             };
 
-            var lblKeyPass = new Label { Text = "Passphrase của Key (nếu có):", Location = new Point(0, 185), AutoSize = true };
+            var lblKeyPass = new Label { Text = "Mật khẩu giải mã khóa / Passphrase (nếu có):", Location = new Point(0, 185), AutoSize = true };
             txtSftpKeyPass = new TextBox { Location = new Point(0, 208), Width = 250, UseSystemPasswordChar = true };
 
-            var lblRemote = new Label { Text = "Thư mục từ xa / Remote path:", Location = new Point(265, 185), AutoSize = true };
+            var lblRemote = new Label { Text = "Thư mục lưu trữ từ xa / Remote Path:", Location = new Point(265, 185), AutoSize = true };
             txtSftpRemotePath = new TextBox { Location = new Point(265, 208), Width = 250, Text = "/" };
 
             pnl.Controls.AddRange(new Control[] {
@@ -903,34 +903,34 @@ namespace FtpSysPro.Manager.UI
 
             chkCompressionEnabled = new CheckBox
             {
-                Text = "Nén thành file .ZIP (Nếu KHÔNG chọn: hệ thống sẽ đẩy thẳng cả thư mục sang đích)",
+                Text = "Đóng gói nén thành tệp lưu trữ .ZIP (Nếu KHÔNG chọn: hệ thống sẽ đồng bộ trực tiếp cấu trúc thư mục sang đích)",
                 Location = new Point(15, 20),
                 AutoSize = true,
                 Checked = false
             };
 
-            grpZip = new GroupBox { Text = "Tuỳ chọn nén ZIP", Location = new Point(15, 55), Size = new Size(685, 170) };
+            grpZip = new GroupBox { Text = "Cấu hình nén & Mã hóa bảo mật tệp ZIP / Compression & Encryption", Location = new Point(15, 55), Size = new Size(685, 170) };
 
-            var lblLevel = new Label { Text = "Mức độ nén:", Location = new Point(15, 30), AutoSize = true };
-            cboCompressionLevel = new ComboBox { Location = new Point(130, 27), Width = 180, DropDownStyle = ComboBoxStyle.DropDownList };
-            cboCompressionLevel.Items.AddRange(new object[] { "Không nén (Store)", "Nhanh nhất (Fastest)", "Bình thường (Normal)", "Tối đa (Maximum)" });
+            var lblLevel = new Label { Text = "Mức độ nén dữ liệu:", Location = new Point(15, 30), AutoSize = true };
+            cboCompressionLevel = new ComboBox { Location = new Point(145, 27), Width = 220, DropDownStyle = ComboBoxStyle.DropDownList };
+            cboCompressionLevel.Items.AddRange(new object[] { "Không nén (Store)", "Nhanh nhất (Fastest)", "Tiêu chuẩn (Normal - Khuyến nghị)", "Tối đa (Maximum)" });
             cboCompressionLevel.SelectedIndex = 2;
 
-            chkEncryptZip = new CheckBox { Text = "Mã hoá file ZIP bằng mật khẩu (AES-256)", Location = new Point(15, 75), AutoSize = true };
+            chkEncryptZip = new CheckBox { Text = "Mã hóa dữ liệu bằng mật khẩu tiêu chuẩn quân sự AES-256", Location = new Point(15, 75), AutoSize = true };
 
-            var lblZipPass = new Label { Text = "Mật khẩu:", Location = new Point(35, 108), AutoSize = true };
-            txtZipPassword = new TextBox { Location = new Point(130, 105), Width = 250, UseSystemPasswordChar = true, Enabled = false };
+            var lblZipPass = new Label { Text = "Mật khẩu mã hóa:", Location = new Point(35, 108), AutoSize = true };
+            txtZipPassword = new TextBox { Location = new Point(145, 105), Width = 250, UseSystemPasswordChar = true, Enabled = false };
 
             chkEncryptZip.CheckedChanged += (s, e) => txtZipPassword.Enabled = chkEncryptZip.Checked;
             chkCompressionEnabled.CheckedChanged += (s, e) => grpZip.Enabled = chkCompressionEnabled.Checked;
 
             grpZip.Controls.AddRange(new Control[] { lblLevel, cboCompressionLevel, chkEncryptZip, lblZipPass, txtZipPassword });
 
-            var grpIntegrity = new GroupBox { Text = "Độ tin cậy & Đảm bảo an toàn dữ liệu (Khuyên dùng)", Location = new Point(15, 235), Size = new Size(685, 160) };
+            var grpIntegrity = new GroupBox { Text = "Cơ chế an toàn & Toàn vẹn dữ liệu vận hành (Enterprise Data Protection)", Location = new Point(15, 235), Size = new Size(685, 160) };
 
             chkEnableVss = new CheckBox
             {
-                Text = "Volume Shadow Copy (VSS): Tự động chụp snapshot để backup file đang bị khoá / đang mở",
+                Text = "Volume Shadow Copy Service (VSS): Tự động chụp snapshot sao lưu tệp đang mở / đang khóa",
                 Location = new Point(15, 25),
                 AutoSize = true,
                 Checked = true
@@ -938,7 +938,7 @@ namespace FtpSysPro.Manager.UI
 
             chkCheckDiskSpace = new CheckBox
             {
-                Text = "Kiểm tra dung lượng trống trước khi chạy (chống tràn ổ đĩa Temp và ổ đích)",
+                Text = "Kiểm tra dung lượng khả dụng trước khi thực thi (Pre-flight disk space check chống tràn đĩa)",
                 Location = new Point(15, 55),
                 AutoSize = true,
                 Checked = true
@@ -946,15 +946,15 @@ namespace FtpSysPro.Manager.UI
 
             chkVerifyChecksum = new CheckBox
             {
-                Text = "Xác thực mã băm SHA-256 sau khi upload (đảm bảo file ở đích không bị lỗi/hỏng)",
+                Text = "Xác thực tính toàn vẹn SHA-256 sau khi truyền dữ liệu (Data Integrity Checksum verification)",
                 Location = new Point(15, 85),
                 AutoSize = true,
                 Checked = true
             };
 
-            var lblRetry = new Label { Text = "Tự động thử lại khi mất mạng:", Location = new Point(15, 118), AutoSize = true };
-            numNetworkRetry = new NumericUpDown { Location = new Point(210, 115), Width = 60, Minimum = 1, Maximum = 10, Value = 3 };
-            var lblRetrySuffix = new Label { Text = "lần (với khoảng chờ tăng dần)", Location = new Point(275, 118), AutoSize = true };
+            var lblRetry = new Label { Text = "Tự động thử lại khi gián đoạn mạng:", Location = new Point(15, 118), AutoSize = true };
+            numNetworkRetry = new NumericUpDown { Location = new Point(235, 115), Width = 60, Minimum = 1, Maximum = 10, Value = 3 };
+            var lblRetrySuffix = new Label { Text = "lần (với khoảng chờ tăng dần theo cấp số nhân / Exponential backoff)", Location = new Point(300, 118), AutoSize = true };
 
             grpIntegrity.Controls.AddRange(new Control[] {
                 chkEnableVss, chkCheckDiskSpace, chkVerifyChecksum,
@@ -969,7 +969,7 @@ namespace FtpSysPro.Manager.UI
         {
             var page = new TabPage(Strings.TabSchedule) { Padding = new Padding(15) };
 
-            var lblTitle = new Label { Text = "Các lịch chạy tự động của tác vụ này (chế độ sao lưu kế thừa theo Bước 1):", Location = new Point(15, 15), AutoSize = true };
+            var lblTitle = new Label { Text = "Danh sách lịch thực thi tự động của Job sao lưu (Kế thừa chế độ sao lưu từ Bước 1):", Location = new Point(15, 15), AutoSize = true };
 
             lvSchedules = new ListView
             {
@@ -979,9 +979,9 @@ namespace FtpSysPro.Manager.UI
                 FullRowSelect = true,
                 MultiSelect = false
             };
-            lvSchedules.Columns.Add("Lịch chạy / Schedule", 145);
+            lvSchedules.Columns.Add("Kiểu lịch / Schedule Type", 150);
             lvSchedules.Columns.Add("Thời gian / Time", 130);
-            lvSchedules.Columns.Add("Chi tiết / Detail", 160);
+            lvSchedules.Columns.Add("Chi tiết chu kỳ / Details", 160);
             lvSchedules.Columns.Add("Trạng thái", 70);
 
             var btnAdd = new Button { Text = "➕ " + Strings.Add + "...", Location = new Point(530, 40), Size = new Size(105, 32) };
@@ -1041,7 +1041,7 @@ namespace FtpSysPro.Manager.UI
                 var item = new ListViewItem(FormatIntervalType(s.IntervalType));
                 item.SubItems.Add(FormatScheduleTimeDisplay(s));
                 item.SubItems.Add(FormatScheduleDetail(s));
-                item.SubItems.Add(s.Enabled ? "🟢 Bật" : "⚪ Tắt");
+                item.SubItems.Add(s.Enabled ? "🟢 Hoạt động" : "⚪ Tạm dừng");
                 lvSchedules.Items.Add(item);
             }
         }
@@ -1082,13 +1082,13 @@ namespace FtpSysPro.Manager.UI
             switch (s.IntervalType)
             {
                 case ScheduleIntervalType.Daily:
-                    return $"Mỗi ngày lúc {s.TimeOfDay}";
+                    return $"Hằng ngày vào lúc {s.TimeOfDay}";
                 case ScheduleIntervalType.Weekly:
-                    return $"Thứ {string.Join(",", s.DaysOfWeek)} lúc {s.TimeOfDay}";
+                    return $"Thứ {string.Join(", ", s.DaysOfWeek)} vào lúc {s.TimeOfDay}";
                 case ScheduleIntervalType.Monthly:
-                    return $"Ngày {s.DayOfMonth} hàng tháng lúc {s.TimeOfDay}";
+                    return $"Ngày {s.DayOfMonth} hằng tháng vào lúc {s.TimeOfDay}";
                 case ScheduleIntervalType.RepeatEvery:
-                    return $"Lặp mỗi {s.RepeatIntervalMinutes}p ({s.RepeatStartTime}-{s.RepeatEndTime})";
+                    return $"Lặp mỗi {s.RepeatIntervalMinutes}p ({s.RepeatStartTime} - {s.RepeatEndTime})";
                 case ScheduleIntervalType.Once:
                     return s.RunOnceLocalTime.HasValue ? s.RunOnceLocalTime.Value.ToString("yyyy-MM-dd HH:mm") : "Một lần";
                 default:
@@ -1118,7 +1118,7 @@ namespace FtpSysPro.Manager.UI
 
             lblRetentionModeTitle = new Label
             {
-                Text = "🔵 Tác vụ đang ở chế độ: Sao lưu toàn bộ (Full Backup)",
+                Text = "🔵 Job đang ở chế độ: Sao lưu toàn phần (Full Backup)",
                 Location = new Point(10, 8),
                 AutoSize = true,
                 Font = new Font("Segoe UI", 9F, FontStyle.Bold),
@@ -1126,7 +1126,7 @@ namespace FtpSysPro.Manager.UI
             };
             lblRetentionModeDesc = new Label
             {
-                Text = "Mỗi lần chạy tạo một bản sao lưu độc lập, chứa toàn bộ dữ liệu nguồn.",
+                Text = "Mỗi lần thực thi tạo ra một điểm phục hồi hoàn chỉnh và độc lập tại kho lưu trữ đích.",
                 Location = new Point(10, 29),
                 AutoSize = true,
                 Font = new Font("Segoe UI", 8.25F, FontStyle.Italic),
@@ -1136,19 +1136,19 @@ namespace FtpSysPro.Manager.UI
 
             grpRetention = new GroupBox
             {
-                Text = "Chính sách lưu trữ bản sao lưu trên nơi lưu trữ đích",
+                Text = "Chính sách lưu giữ điểm phục hồi trên kho lưu trữ đích (Retention Policy)",
                 Location = new Point(15, 78),
                 Size = new Size(685, 275),
                 Font = new Font("Segoe UI", 9F)
             };
 
             // Option 1: Keep Count
-            rbKeepFullCount = new RadioButton { Text = "Chỉ giữ lại", Location = new Point(20, 28), AutoSize = true, Checked = true };
-            numKeepFullCount = new NumericUpDown { Location = new Point(115, 26), Width = 65, Minimum = 1, Maximum = 100, Value = 5 };
-            lblKeepFullCountSuffix = new Label { Text = "bản sao lưu gần nhất", Location = new Point(188, 28), AutoSize = true };
+            rbKeepFullCount = new RadioButton { Text = "Duy trì số lượng:", Location = new Point(20, 28), AutoSize = true, Checked = true };
+            numKeepFullCount = new NumericUpDown { Location = new Point(145, 26), Width = 65, Minimum = 1, Maximum = 100, Value = 5 };
+            lblKeepFullCountSuffix = new Label { Text = "điểm phục hồi gần nhất", Location = new Point(218, 28), AutoSize = true };
             lblKeepFullCountDetail = new Label
             {
-                Text = "Hệ thống sẽ giữ lại N bản sao lưu Full mới nhất và tự động xoá các bản Full cũ hơn.",
+                Text = "Hệ thống sẽ duy trì N điểm phục hồi mới nhất và tự động dọn dẹp các điểm phục hồi cũ hơn.",
                 Location = new Point(42, 54),
                 AutoSize = true,
                 MaximumSize = new Size(620, 0),
@@ -1157,12 +1157,12 @@ namespace FtpSysPro.Manager.UI
             };
 
             // Option 2: Keep Days
-            rbKeepDays = new RadioButton { Text = "Chỉ giữ trong", Location = new Point(20, 100), AutoSize = true };
-            numKeepDays = new NumericUpDown { Location = new Point(115, 98), Width = 65, Minimum = 1, Maximum = 3650, Value = 30, Enabled = false };
-            lblKeepDaysSuffix = new Label { Text = "ngày gần nhất", Location = new Point(188, 100), AutoSize = true };
+            rbKeepDays = new RadioButton { Text = "Duy trì theo thời gian:", Location = new Point(20, 100), AutoSize = true };
+            numKeepDays = new NumericUpDown { Location = new Point(165, 98), Width = 65, Minimum = 1, Maximum = 3650, Value = 30, Enabled = false };
+            lblKeepDaysSuffix = new Label { Text = "ngày gần nhất", Location = new Point(238, 100), AutoSize = true };
             lblKeepDaysDetail = new Label
             {
-                Text = "Tự động dọn dẹp các bản sao lưu có thời gian tạo cũ hơn số ngày quy định.",
+                Text = "Tự động dọn dẹp các điểm phục hồi có thời gian tạo vượt quá số ngày quy định.",
                 Location = new Point(42, 126),
                 AutoSize = true,
                 MaximumSize = new Size(620, 0),
@@ -1171,10 +1171,10 @@ namespace FtpSysPro.Manager.UI
             };
 
             // Option 3: Keep All
-            rbKeepAll = new RadioButton { Text = "Giữ tất cả bản sao lưu (Không bao giờ tự động xoá)", Location = new Point(20, 172), AutoSize = true };
+            rbKeepAll = new RadioButton { Text = "Lưu giữ toàn bộ điểm phục hồi (Không tự động dọn dẹp)", Location = new Point(20, 172), AutoSize = true };
             lblKeepAllDetail = new Label
             {
-                Text = "Dữ liệu sao lưu sẽ tích luỹ liên tục trên nơi lưu trữ đích.",
+                Text = "Dữ liệu sao lưu sẽ được lưu giữ vĩnh viễn trên kho lưu trữ đích. Cần chủ động theo dõi dung lượng ổ lưu trữ.",
                 Location = new Point(42, 198),
                 AutoSize = true,
                 MaximumSize = new Size(620, 0),
@@ -1201,50 +1201,50 @@ namespace FtpSysPro.Manager.UI
 
             bool isFull = rbModeFull != null && rbModeFull.Checked;
 
-            grpRetention.Text = "Chính sách lưu trữ bản sao lưu trên nơi lưu trữ đích";
+            grpRetention.Text = "Chính sách lưu giữ điểm phục hồi trên kho lưu trữ đích (Retention Policy)";
 
             if (isFull)
             {
                 pnlRetentionModeBanner.BackColor = Color.FromArgb(238, 245, 255);
-                lblRetentionModeTitle.Text = "🔵 Tác vụ đang ở chế độ: Sao lưu toàn bộ (Full Backup)";
+                lblRetentionModeTitle.Text = "🔵 Job đang ở chế độ: Sao lưu toàn phần (Full Backup)";
                 lblRetentionModeTitle.ForeColor = Color.FromArgb(0, 76, 153);
-                lblRetentionModeDesc.Text = "Mỗi lần chạy tạo ra một bản sao lưu hoàn chỉnh, độc lập ở đích.";
+                lblRetentionModeDesc.Text = "Mỗi lần thực thi tạo ra một điểm phục hồi hoàn chỉnh và độc lập tại kho lưu trữ đích.";
 
-                rbKeepFullCount.Text = "Chỉ giữ lại";
-                lblKeepFullCountSuffix.Text = "bản sao lưu Full gần nhất";
-                lblKeepFullCountDetail.Text = "Hệ thống sẽ giữ lại N bản sao lưu Full mới nhất và tự động xoá các bản Full cũ hơn để giải phóng dung lượng.";
+                rbKeepFullCount.Text = "Duy trì số lượng:";
+                lblKeepFullCountSuffix.Text = "điểm phục hồi Full gần nhất";
+                lblKeepFullCountDetail.Text = "Hệ thống sẽ duy trì N điểm phục hồi Full mới nhất và tự động dọn dẹp các điểm phục hồi Full cũ hơn để tối ưu hóa dung lượng kho lưu trữ.";
 
-                rbKeepDays.Text = "Chỉ giữ trong";
+                rbKeepDays.Text = "Duy trì theo thời gian:";
                 lblKeepDaysSuffix.Text = "ngày gần nhất";
-                lblKeepDaysDetail.Text = "Tự động dọn dẹp các bản sao lưu Full có thời gian tạo cũ hơn số ngày quy định.";
+                lblKeepDaysDetail.Text = "Tự động dọn dẹp các điểm phục hồi Full có thời gian tạo vượt quá số ngày quy định.";
 
-                rbKeepAll.Text = "Giữ tất cả bản sao lưu (Không bao giờ tự động xoá)";
-                lblKeepAllDetail.Text = "Dữ liệu sao lưu sẽ tích luỹ liên tục trên nơi lưu trữ đích. Cần theo dõi dung lượng ổ cứng.";
+                rbKeepAll.Text = "Lưu giữ toàn bộ điểm phục hồi (Không tự động dọn dẹp)";
+                lblKeepAllDetail.Text = "Dữ liệu sao lưu sẽ được lưu giữ vĩnh viễn trên kho lưu trữ đích. Cần chủ động theo dõi dung lượng ổ lưu trữ.";
             }
             else
             {
                 pnlRetentionModeBanner.BackColor = Color.FromArgb(236, 253, 245);
-                lblRetentionModeTitle.Text = "🟢 Tác vụ đang ở chế độ: Sao lưu tăng dần (Incremental Backup)";
+                lblRetentionModeTitle.Text = "🟢 Job đang ở chế độ: Sao lưu gia tăng (Incremental Backup)";
                 lblRetentionModeTitle.ForeColor = Color.FromArgb(6, 95, 70);
-                lblRetentionModeDesc.Text = "Gồm 1 bản Full mốc ban đầu và chuỗi các bản Incremental chỉ lưu file mới hoặc thay đổi.";
+                lblRetentionModeDesc.Text = "Gồm 1 điểm phục hồi Full mốc cơ sở và chuỗi các điểm phục hồi Incremental chứa dữ liệu mới hoặc thay đổi.";
 
-                rbKeepFullCount.Text = "Chỉ giữ lại";
-                lblKeepFullCountSuffix.Text = "chu kỳ sao lưu (Full + Incremental) gần nhất";
-                lblKeepFullCountDetail.Text = "Mỗi chu kỳ gồm 1 bản Full mốc và các bản Incremental. Hệ thống luôn bảo toàn bản Full gốc chừng nào các bản Incremental phụ thuộc vẫn còn được lưu.";
+                rbKeepFullCount.Text = "Duy trì số lượng:";
+                lblKeepFullCountSuffix.Text = "chuỗi sao lưu (Full + Incremental) gần nhất";
+                lblKeepFullCountDetail.Text = "Mỗi chuỗi sao lưu gồm 1 điểm Full cơ sở và các điểm Incremental phụ thuộc. Hệ thống tuyệt đối bảo toàn điểm Full cơ sở khi các điểm Incremental liên quan vẫn còn hiệu lực lưu trữ.";
 
-                rbKeepDays.Text = "Chỉ giữ trong";
+                rbKeepDays.Text = "Duy trì theo thời gian:";
                 lblKeepDaysSuffix.Text = "ngày gần nhất";
-                lblKeepDaysDetail.Text = "Tự động dọn dẹp các bản sao lưu quá hạn ngày, đảm bảo không xoá bản Full mốc khi các bản Incremental phụ thuộc vẫn còn trong thời hạn lưu trữ.";
+                lblKeepDaysDetail.Text = "Tự động dọn dẹp các chuỗi sao lưu quá hạn ngày, đảm bảo không xóa điểm Full cơ sở khi các điểm Incremental phụ thuộc vẫn còn trong thời hạn lưu giữ.";
 
-                rbKeepAll.Text = "Giữ tất cả bản sao lưu (Không bao giờ tự động xoá)";
-                lblKeepAllDetail.Text = "Lưu trữ toàn bộ bản Full và tất cả các bản Incremental từ trước đến nay để bảo toàn lịch sử sao lưu.";
+                rbKeepAll.Text = "Lưu giữ toàn bộ chuỗi sao lưu (Không tự động dọn dẹp)";
+                lblKeepAllDetail.Text = "Lưu trữ toàn bộ các điểm phục hồi Full và toàn bộ chuỗi Incremental để bảo toàn tuyệt đối toàn bộ lịch sử sao lưu.";
             }
 
             // Always dynamically position numeric inputs and suffix labels based on actual radio button width to prevent any clipping/overlap
-            numKeepFullCount.Location = new Point(Math.Max(115, rbKeepFullCount.Right + 8), 26);
+            numKeepFullCount.Location = new Point(Math.Max(140, rbKeepFullCount.Right + 8), 26);
             lblKeepFullCountSuffix.Location = new Point(numKeepFullCount.Right + 8, 28);
 
-            numKeepDays.Location = new Point(Math.Max(115, rbKeepDays.Right + 8), 98);
+            numKeepDays.Location = new Point(Math.Max(160, rbKeepDays.Right + 8), 98);
             lblKeepDaysSuffix.Location = new Point(numKeepDays.Right + 8, 100);
 
             pnlRetentionModeBanner.Invalidate();
@@ -1256,22 +1256,22 @@ namespace FtpSysPro.Manager.UI
 
             chkNotificationEnabled = new CheckBox
             {
-                Text = "Gửi thông báo email sau khi tác vụ hoàn thành",
+                Text = "Gửi báo cáo & cảnh báo qua Email sau khi Job sao lưu hoàn tất",
                 Location = new Point(15, 20),
                 AutoSize = true
             };
 
-            var grp = new GroupBox { Text = "Chi tiết thông báo", Location = new Point(15, 55), Size = new Size(685, 220) };
+            var grp = new GroupBox { Text = "Cấu hình cảnh báo Email / Email Notification Settings", Location = new Point(15, 55), Size = new Size(685, 220) };
 
-            var lblCond = new Label { Text = "Điều kiện gửi:", Location = new Point(15, 30), AutoSize = true };
-            cboNotificationCondition = new ComboBox { Location = new Point(150, 27), Width = 250, DropDownStyle = ComboBoxStyle.DropDownList };
-            cboNotificationCondition.Items.AddRange(new object[] { "Luôn luôn gửi (Always)", "Chỉ khi thất bại (On Failure Only)", "Chỉ khi thành công (On Success Only)" });
+            var lblCond = new Label { Text = "Điều kiện gửi thông báo:", Location = new Point(15, 30), AutoSize = true };
+            cboNotificationCondition = new ComboBox { Location = new Point(175, 27), Width = 280, DropDownStyle = ComboBoxStyle.DropDownList };
+            cboNotificationCondition.Items.AddRange(new object[] { "Luôn luôn gửi báo cáo (Always)", "Chỉ gửi khi có cảnh báo hoặc lỗi (On Warning or Failure)", "Chỉ gửi khi thực thi thành công (On Success Only)" });
             cboNotificationCondition.SelectedIndex = 0;
 
-            var lblRecipients = new Label { Text = "Email người nhận (phân cách bằng dấu phẩy):", Location = new Point(15, 75), AutoSize = true };
+            var lblRecipients = new Label { Text = "Danh sách email nhận thông báo (phân cách bằng dấu phẩy):", Location = new Point(15, 75), AutoSize = true };
             txtNotificationRecipients = new TextBox { Location = new Point(15, 98), Width = 645 };
 
-            var lblSubject = new Label { Text = "Tiền tố tiêu đề email:", Location = new Point(15, 140), AutoSize = true };
+            var lblSubject = new Label { Text = "Tiền tố tiêu đề email (Subject Prefix):", Location = new Point(15, 140), AutoSize = true };
             txtNotificationSubject = new TextBox { Location = new Point(15, 163), Width = 250, Text = "[FtpSysPro]" };
 
             chkNotificationEnabled.CheckedChanged += (s, e) => grp.Enabled = chkNotificationEnabled.Checked;
@@ -1296,7 +1296,7 @@ namespace FtpSysPro.Manager.UI
 
             var lblFinishTitle = new Label
             {
-                Text = "✔ Đã hoàn tất các bước cấu hình!",
+                Text = "✔ Đã hoàn tất cấu hình Job sao lưu doanh nghiệp!",
                 Location = new Point(12, 12),
                 AutoSize = true,
                 Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
@@ -1305,7 +1305,7 @@ namespace FtpSysPro.Manager.UI
 
             var lblFinishDesc = new Label
             {
-                Text = "Nhấn nút '✔ Hoàn tất' ở góc dưới bên phải để lưu tác vụ sao lưu này vào hệ thống và kích hoạt lịch chạy tự động.",
+                Text = "Nhấn nút '✔ Hoàn tất' ở góc dưới bên phải để lưu cấu hình Job vào hệ thống và kích hoạt lịch thực thi tự động của dịch vụ FtpSysProService.",
                 Location = new Point(12, 36),
                 Size = new Size(655, 32),
                 ForeColor = Color.FromArgb(21, 87, 36),
@@ -1571,7 +1571,7 @@ namespace FtpSysPro.Manager.UI
 
         private void InitializeComponents()
         {
-            Text = _isNew ? "Thêm lịch chạy / Add Schedule" : "Sửa lịch chạy / Edit Schedule";
+            Text = _isNew ? "Thêm lịch thực thi sao lưu / Add Schedule" : "Chỉnh sửa lịch thực thi sao lưu / Edit Schedule";
             Size = new Size(530, 440);
             StartPosition = FormStartPosition.CenterParent;
             FormBorderStyle = FormBorderStyle.FixedDialog;
@@ -1599,7 +1599,7 @@ namespace FtpSysPro.Manager.UI
 
             var lblModeTitle = new Label
             {
-                Text = isFull ? "🔵 Chế độ sao lưu: Sao lưu toàn bộ (Full Backup)" : "🟢 Chế độ sao lưu: Sao lưu tăng dần (Incremental Backup)",
+                Text = isFull ? "🔵 Chế độ sao lưu: Sao lưu toàn phần (Full Backup)" : "🟢 Chế độ sao lưu: Sao lưu gia tăng (Incremental Backup)",
                 Location = new Point(12, 6),
                 AutoSize = true,
                 Font = new Font("Segoe UI", 9F, FontStyle.Bold),
@@ -1607,7 +1607,7 @@ namespace FtpSysPro.Manager.UI
             };
             var lblModeSub = new Label
             {
-                Text = "Tự động kế thừa theo cấu hình tại Bước 1 (không cần chọn lại ở đây)",
+                Text = "Kế thừa trực tiếp từ cấu hình Job tại Bước 1 (không cần chọn lại)",
                 Location = new Point(12, 25),
                 AutoSize = true,
                 Font = new Font("Segoe UI", 8.25F, FontStyle.Regular),
@@ -1618,7 +1618,7 @@ namespace FtpSysPro.Manager.UI
             // 2. Schedule Interval Selection Row
             var lblInterval = new Label
             {
-                Text = "Tần suất lặp:",
+                Text = "Chu kỳ lặp:",
                 Location = new Point(20, 72),
                 AutoSize = true,
                 Font = new Font("Segoe UI", 9F, FontStyle.Bold)
@@ -1664,7 +1664,7 @@ namespace FtpSysPro.Manager.UI
             // 4. Main Settings GroupBox
             var grpSettings = new GroupBox
             {
-                Text = "Thiết lập thời gian & chu kỳ chạy",
+                Text = "Thiết lập thời gian & Chu kỳ thực thi",
                 Location = new Point(20, 105),
                 Size = new Size(475, 230),
                 Font = new Font("Segoe UI", 9F)
@@ -1857,13 +1857,13 @@ namespace FtpSysPro.Manager.UI
         private Panel CreateDailyPanel()
         {
             var pnl = new Panel { Size = new Size(445, 190), Visible = true };
-            var lblTime = new Label { Text = "Thời gian chạy:", Location = new Point(0, 15), AutoSize = true, Font = new Font("Segoe UI", 9F, FontStyle.Bold) };
-            dtpTimeOfDay = new DateTimePicker { Location = new Point(115, 12), Format = DateTimePickerFormat.Custom, CustomFormat = "HH:mm", ShowUpDown = true, Width = 90 };
+            var lblTime = new Label { Text = "Thời điểm thực thi:", Location = new Point(0, 15), AutoSize = true, Font = new Font("Segoe UI", 9F, FontStyle.Bold) };
+            dtpTimeOfDay = new DateTimePicker { Location = new Point(125, 12), Format = DateTimePickerFormat.Custom, CustomFormat = "HH:mm", ShowUpDown = true, Width = 90 };
             dtpTimeOfDay.ValueChanged += (s, e) => SyncTimePickers(dtpTimeOfDay);
 
             var lblDesc = new Label
             {
-                Text = "ℹ Tác vụ sao lưu sẽ được hệ thống tự động kích hoạt hằng ngày vào thời điểm này.",
+                Text = "ℹ Job sao lưu sẽ được dịch vụ hệ thống tự động kích hoạt hằng ngày vào thời điểm này.",
                 Location = new Point(0, 60),
                 AutoSize = true,
                 ForeColor = Color.FromArgb(100, 100, 100),
@@ -1877,11 +1877,11 @@ namespace FtpSysPro.Manager.UI
         private Panel CreateWeeklyPanel()
         {
             var pnl = new Panel { Size = new Size(445, 190), Visible = false };
-            var lblTime = new Label { Text = "Thời gian chạy:", Location = new Point(0, 12), AutoSize = true, Font = new Font("Segoe UI", 9F, FontStyle.Bold) };
-            dtpTimeOfDayWeekly = new DateTimePicker { Location = new Point(115, 10), Format = DateTimePickerFormat.Custom, CustomFormat = "HH:mm", ShowUpDown = true, Width = 90 };
+            var lblTime = new Label { Text = "Thời điểm thực thi:", Location = new Point(0, 12), AutoSize = true, Font = new Font("Segoe UI", 9F, FontStyle.Bold) };
+            dtpTimeOfDayWeekly = new DateTimePicker { Location = new Point(125, 10), Format = DateTimePickerFormat.Custom, CustomFormat = "HH:mm", ShowUpDown = true, Width = 90 };
             dtpTimeOfDayWeekly.ValueChanged += (s, e) => SyncTimePickers(dtpTimeOfDayWeekly);
 
-            var lblDays = new Label { Text = "Chọn các ngày chạy trong tuần:", Location = new Point(0, 45), AutoSize = true, Font = new Font("Segoe UI", 9F, FontStyle.Bold) };
+            var lblDays = new Label { Text = "Chọn các ngày thực thi trong tuần:", Location = new Point(0, 45), AutoSize = true, Font = new Font("Segoe UI", 9F, FontStyle.Bold) };
             clbDaysOfWeek = new CheckedListBox
             {
                 Location = new Point(0, 68),
@@ -1892,14 +1892,14 @@ namespace FtpSysPro.Manager.UI
             };
             clbDaysOfWeek.Items.AddRange(new object[] { "Chủ nhật", "Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy" });
 
-            var btnWeekdays = new LinkLabel { Text = "Chọn T2 - T6", Location = new Point(220, 46), AutoSize = true };
+            var btnWeekdays = new LinkLabel { Text = "Chọn T2 - T6", Location = new Point(230, 46), AutoSize = true };
             btnWeekdays.LinkClicked += (s, e) =>
             {
                 for (int i = 0; i < 7; i++)
                     clbDaysOfWeek.SetItemChecked(i, i >= 1 && i <= 5);
             };
 
-            var btnAllWeek = new LinkLabel { Text = "Chọn cả tuần", Location = new Point(310, 46), AutoSize = true };
+            var btnAllWeek = new LinkLabel { Text = "Chọn cả tuần", Location = new Point(320, 46), AutoSize = true };
             btnAllWeek.LinkClicked += (s, e) =>
             {
                 for (int i = 0; i < 7; i++)
@@ -1908,7 +1908,7 @@ namespace FtpSysPro.Manager.UI
 
             var lblDesc = new Label
             {
-                Text = "ℹ Tác vụ sẽ chạy vào giờ đã chọn của các ngày được đánh dấu.",
+                Text = "ℹ Job sao lưu sẽ tự động kích hoạt vào thời điểm đã chọn của các ngày được đánh dấu.",
                 Location = new Point(0, 150),
                 AutoSize = true,
                 ForeColor = Color.FromArgb(100, 100, 100),
@@ -1922,16 +1922,16 @@ namespace FtpSysPro.Manager.UI
         private Panel CreateMonthlyPanel()
         {
             var pnl = new Panel { Size = new Size(445, 190), Visible = false };
-            var lblDay = new Label { Text = "Ngày trong tháng (1-31):", Location = new Point(0, 15), AutoSize = true, Font = new Font("Segoe UI", 9F, FontStyle.Bold) };
+            var lblDay = new Label { Text = "Ngày trong tháng (1 - 31):", Location = new Point(0, 15), AutoSize = true, Font = new Font("Segoe UI", 9F, FontStyle.Bold) };
             numDayOfMonth = new NumericUpDown { Location = new Point(175, 12), Width = 65, Minimum = 1, Maximum = 31, Value = 1 };
 
-            var lblTime = new Label { Text = "Thời gian chạy trong ngày:", Location = new Point(0, 52), AutoSize = true, Font = new Font("Segoe UI", 9F, FontStyle.Bold) };
+            var lblTime = new Label { Text = "Thời điểm thực thi trong ngày:", Location = new Point(0, 52), AutoSize = true, Font = new Font("Segoe UI", 9F, FontStyle.Bold) };
             dtpTimeOfDayMonthly = new DateTimePicker { Location = new Point(175, 48), Format = DateTimePickerFormat.Custom, CustomFormat = "HH:mm", ShowUpDown = true, Width = 90 };
             dtpTimeOfDayMonthly.ValueChanged += (s, e) => SyncTimePickers(dtpTimeOfDayMonthly);
 
             var lblDesc = new Label
             {
-                Text = "ℹ Nếu tháng có ít hơn ngày đã chọn (ví dụ ngày 31 trong tháng 30 ngày), tác vụ sẽ tự động chạy vào ngày cuối cùng của tháng đó.",
+                Text = "ℹ Nếu tháng có ít hơn số ngày đã chọn (ví dụ ngày 31 trong tháng 30 ngày hoặc tháng 2), hệ thống sẽ tự động thực thi vào ngày cuối cùng của tháng đó.",
                 Location = new Point(0, 95),
                 Size = new Size(440, 36),
                 ForeColor = Color.FromArgb(100, 100, 100),
@@ -1945,7 +1945,7 @@ namespace FtpSysPro.Manager.UI
         private Panel CreateRepeatPanel()
         {
             var pnl = new Panel { Size = new Size(445, 190), Visible = false };
-            var lblEvery = new Label { Text = "Lặp lại sau mỗi:", Location = new Point(0, 15), AutoSize = true, Font = new Font("Segoe UI", 9F, FontStyle.Bold) };
+            var lblEvery = new Label { Text = "Chu kỳ lặp lại:", Location = new Point(0, 15), AutoSize = true, Font = new Font("Segoe UI", 9F, FontStyle.Bold) };
             numRepeatInterval = new NumericUpDown { Location = new Point(115, 12), Width = 70, Minimum = 1, Maximum = 1440, Value = 60 };
             var lblUnit = new Label { Text = "phút (1 - 1440)", Location = new Point(190, 15), AutoSize = true };
 
@@ -1956,7 +1956,7 @@ namespace FtpSysPro.Manager.UI
 
             var lblDesc = new Label
             {
-                Text = "ℹ Tác vụ sẽ tự động lặp lại sau mỗi khoảng phút đã chỉ định trong khung giờ quy định.",
+                Text = "ℹ Job sao lưu sẽ tự động lặp lại sau mỗi khoảng phút đã chỉ định trong khung giờ quy định.",
                 Location = new Point(0, 95),
                 AutoSize = true,
                 ForeColor = Color.FromArgb(100, 100, 100),
@@ -1970,12 +1970,12 @@ namespace FtpSysPro.Manager.UI
         private Panel CreateOncePanel()
         {
             var pnl = new Panel { Size = new Size(445, 190), Visible = false };
-            var lblOnce = new Label { Text = "Thời điểm chạy:", Location = new Point(0, 15), AutoSize = true, Font = new Font("Segoe UI", 9F, FontStyle.Bold) };
-            dtpOnce = new DateTimePicker { Location = new Point(115, 12), CustomFormat = "yyyy-MM-dd HH:mm", Format = DateTimePickerFormat.Custom, Width = 155 };
+            var lblOnce = new Label { Text = "Thời điểm thực thi:", Location = new Point(0, 15), AutoSize = true, Font = new Font("Segoe UI", 9F, FontStyle.Bold) };
+            dtpOnce = new DateTimePicker { Location = new Point(125, 12), CustomFormat = "yyyy-MM-dd HH:mm", Format = DateTimePickerFormat.Custom, Width = 155 };
 
             var lblDesc = new Label
             {
-                Text = "ℹ Tác vụ sẽ chỉ chạy duy nhất 1 lần vào thời điểm đã đặt, sau đó tự động chuyển sang trạng thái tắt.",
+                Text = "ℹ Job sao lưu sẽ chỉ thực thi duy nhất 1 lần vào thời điểm đã đặt, sau đó lịch này sẽ tự động chuyển sang trạng thái tắt.",
                 Location = new Point(0, 60),
                 AutoSize = true,
                 ForeColor = Color.FromArgb(100, 100, 100),

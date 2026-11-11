@@ -168,7 +168,7 @@ namespace FtpSysPro.Manager.UI
             // Right side Job Detail Card
             var grpDetail = new GroupBox
             {
-                Text = "Chi tiết tác vụ / Job Details",
+                Text = "Thông tin chi tiết Job sao lưu / Backup Job Details",
                 Dock = DockStyle.Fill,
                 Font = new Font("Segoe UI", 9F, FontStyle.Bold),
                 Padding = new Padding(12),
@@ -183,7 +183,7 @@ namespace FtpSysPro.Manager.UI
 
             lblDetailName = new Label
             {
-                Text = "(Chưa chọn job)",
+                Text = "(Chưa chọn Job)",
                 Font = new Font("Segoe UI", 11F, FontStyle.Bold),
                 ForeColor = Color.FromArgb(15, 30, 60),
                 Location = new Point(5, 5),
@@ -192,7 +192,7 @@ namespace FtpSysPro.Manager.UI
 
             var lblHeaderSourceSize = new Label
             {
-                Text = "TỔNG DUNG LƯỢNG CẦN BACKUP:",
+                Text = "TỔNG DUNG LƯỢNG NGUỒN:",
                 Font = new Font("Segoe UI", 8F, FontStyle.Bold),
                 ForeColor = Color.DimGray,
                 Location = new Point(5, 38),
@@ -210,7 +210,7 @@ namespace FtpSysPro.Manager.UI
 
             var lblHeaderTransfer = new Label
             {
-                Text = "PHƯƠNG THỨC TRUYỀN DỮ LIỆU:",
+                Text = "CƠ CHẾ ĐÓNG GÓI & TRUYỀN:",
                 Font = new Font("Segoe UI", 8F, FontStyle.Bold),
                 ForeColor = Color.DimGray,
                 Location = new Point(5, 90),
@@ -228,7 +228,7 @@ namespace FtpSysPro.Manager.UI
 
             var lblHeaderDest = new Label
             {
-                Text = "NƠI LƯU TRỮ (ĐÍCH ĐẾN):",
+                Text = "KHO LƯU TRỮ ĐÍCH (REPOSITORY):",
                 Font = new Font("Segoe UI", 8F, FontStyle.Bold),
                 ForeColor = Color.DimGray,
                 Location = new Point(5, 138),
@@ -246,7 +246,7 @@ namespace FtpSysPro.Manager.UI
 
             var lblHeaderSources = new Label
             {
-                Text = "THƯ MỤC NGUỒN:",
+                Text = "DỮ LIỆU NGUỒN SAO LƯU:",
                 Font = new Font("Segoe UI", 8F, FontStyle.Bold),
                 ForeColor = Color.DimGray,
                 Location = new Point(5, 186),
@@ -266,7 +266,7 @@ namespace FtpSysPro.Manager.UI
 
             var lblHeaderLast = new Label
             {
-                Text = "LẦN CHẠY GẦN NHẤT:",
+                Text = "LẦN THỰC THI GẦN NHẤT:",
                 Font = new Font("Segoe UI", 8F, FontStyle.Bold),
                 ForeColor = Color.DimGray,
                 Location = new Point(5, 308),
@@ -284,7 +284,7 @@ namespace FtpSysPro.Manager.UI
 
             var lblHeaderNext = new Label
             {
-                Text = "LỊCH CHẠY KẾ TIẾP:",
+                Text = "LỊCH THỰC THI TIẾP THEO:",
                 Font = new Font("Segoe UI", 8F, FontStyle.Bold),
                 ForeColor = Color.DimGray,
                 Location = new Point(5, 356),
@@ -393,7 +393,7 @@ namespace FtpSysPro.Manager.UI
 
         private void AddNewJob()
         {
-            var newJob = new BackupJob { Name = "Tác vụ sao lưu " + (_currentConfig.Jobs.Count + 1) };
+            var newJob = new BackupJob { Name = "Job sao lưu " + (_currentConfig.Jobs.Count + 1) };
             using (var dlg = new JobEditDialog(newJob, true))
             {
                 if (dlg.ShowDialog(this) == DialogResult.OK)
@@ -441,7 +441,7 @@ namespace FtpSysPro.Manager.UI
             var job = GetSelectedJob();
             if (job == null) return;
 
-            if (MessageBox.Show(this, $"{Strings.ConfirmDeleteJob}\n({job.Name})", "Xác nhận", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+            if (MessageBox.Show(this, $"{Strings.ConfirmDeleteJob}\n\nJob: {job.Name}", "Xác nhận xóa Job", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
             {
                 _currentConfig.Jobs.RemoveAll(j => j.Id == job.Id);
                 SaveConfigToService();
@@ -472,7 +472,7 @@ namespace FtpSysPro.Manager.UI
                 }
                 else
                 {
-                    MessageBox.Show(this, "Không thể khởi động tác vụ: " + resp?.ErrorMessage, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show(this, "Không thể khởi động Job sao lưu: " + resp?.ErrorMessage, "Lỗi thực thi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
             finally
@@ -486,7 +486,7 @@ namespace FtpSysPro.Manager.UI
             var job = GetSelectedJob();
             if (job == null) return;
 
-            if (MessageBox.Show(this, Strings.ConfirmStopJob, "Dừng tác vụ", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
+            if (MessageBox.Show(this, Strings.ConfirmStopJob, "Dừng Job sao lưu", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
             {
                 await _pipeClient.SendAsync(new IpcMessage
                 {
@@ -604,7 +604,7 @@ namespace FtpSysPro.Manager.UI
                                 await RefreshAllAsync();
                                 try
                                 {
-                                    trayIcon.ShowBalloonTip(3000, Strings.AppName, "Tiến trình sao lưu đã hoàn tất.", ToolTipIcon.Info);
+                                    trayIcon.ShowBalloonTip(3000, Strings.AppName, "Tiến trình sao lưu đã hoàn tất thành công.", ToolTipIcon.Info);
                                 }
                                 catch { }
                             }
@@ -632,7 +632,7 @@ namespace FtpSysPro.Manager.UI
 
         private async Task StartOrRestartServiceAsync()
         {
-            lblServiceAction.Text = "Đang bật service...";
+            lblServiceAction.Text = "Đang khởi động dịch vụ...";
             await Task.Run(() =>
             {
                 try
@@ -667,7 +667,7 @@ namespace FtpSysPro.Manager.UI
                     }
                     catch (Exception ex)
                     {
-                        MessageBox.Show(this, "Không thể khởi động Windows Service: " + ex.Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show(this, "Không thể khởi động Windows Service: " + ex.Message, "Lỗi dịch vụ", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 }
             });
@@ -688,21 +688,21 @@ namespace FtpSysPro.Manager.UI
                 var job = vm.Job;
                 lblDetailName.Text = $"{job.Name} ({vm.BackupTypeDisplay})";
                 lblDetailSourceSize.Text = job.SourceSizeBytes > 0
-                    ? $"{JobViewModel.FormatBytes(job.SourceSizeBytes)} ({job.SourceFileCount:N0} files)"
+                    ? $"{JobViewModel.FormatBytes(job.SourceSizeBytes)} ({job.SourceFileCount:N0} tệp)"
                     : (job.SourceDirectories != null && job.SourceDirectories.Count > 0 ? "(Chưa quét hoặc 0 B)" : "-");
                 lblDetailTransfer.Text = job.Compression.Enabled
-                    ? $"Nén file .ZIP (Mức: {job.Compression.Level})" + (job.Compression.EncryptWithPassword ? " + AES-256" : "")
-                    : "Đẩy cả thư mục (Không nén)";
+                    ? $"Nén đóng gói .ZIP (Mức: {job.Compression.Level})" + (job.Compression.EncryptWithPassword ? " [Mã hóa AES-256]" : "")
+                    : "Sao chép trực tiếp (Không nén)";
                 lblDetailDest.Text = vm.DestinationDisplay;
                 txtDetailSources.Lines = job.SourceDirectories != null ? job.SourceDirectories.ToArray() : new string[0];
                 lblDetailLast.Text = job.LastRunUtc.HasValue
                     ? $"{job.LastRunUtc.Value.ToLocalTime():yyyy-MM-dd HH:mm} ({vm.StatusDisplay})"
-                    : "Chưa chạy";
+                    : "Chưa thực thi";
                 lblDetailNext.Text = vm.NextRunDisplay;
             }
             else
             {
-                lblDetailName.Text = "(Chưa chọn job)";
+                lblDetailName.Text = "(Chưa chọn Job)";
                 lblDetailSourceSize.Text = "-";
                 lblDetailTransfer.Text = "-";
                 lblDetailDest.Text = "-";
@@ -782,7 +782,7 @@ namespace FtpSysPro.Manager.UI
                 Hide();
                 try
                 {
-                    trayIcon.ShowBalloonTip(2000, Strings.AppName, "Ứng dụng đang chạy ngầm trong khay hệ thống.", ToolTipIcon.Info);
+                    trayIcon.ShowBalloonTip(2000, Strings.AppName, "Ứng dụng đang chạy nền trong khay hệ thống.", ToolTipIcon.Info);
                 }
                 catch { }
             }
@@ -807,12 +807,12 @@ namespace FtpSysPro.Manager.UI
             : "-";
 
         public string SourceSizeDisplay => Job.SourceSizeBytes > 0
-            ? $"{FormatBytes(Job.SourceSizeBytes)} ({Job.SourceFileCount:N0} files)"
+            ? $"{FormatBytes(Job.SourceSizeBytes)} ({Job.SourceFileCount:N0} tệp)"
             : (Job.SourceDirectories != null && Job.SourceDirectories.Count > 0 ? "Chưa quét" : "-");
 
         public string CompressionDisplay => Job.Compression.Enabled
-            ? "Nén ZIP" + (Job.Compression.EncryptWithPassword ? " (AES)" : "")
-            : "Đẩy cả thư mục";
+            ? "Nén ZIP" + (Job.Compression.EncryptWithPassword ? " [AES-256]" : "")
+            : "Sao chép trực tiếp";
 
         public string DestinationDisplay
         {

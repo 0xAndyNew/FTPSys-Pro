@@ -25,16 +25,17 @@ namespace FtpSysPro.Core.Notification
             var message = new MimeMessage();
             message.From.Add(new MailboxAddress(_settings.FromDisplayName, _settings.FromAddress));
             message.To.Add(MailboxAddress.Parse(recipientEmail));
-            message.Subject = "[FtpSysPro] Test Email / Email thử nghiệm";
+            message.Subject = "[FtpSysPro] Báo cáo kiểm tra kết nối Email / Test Email Report";
 
             var body = new BodyBuilder
             {
                 HtmlBody = @"
-<h2>FtpSysPro - Kiểm tra cấu hình Email thành công</h2>
-<p>Email này được gửi từ ứng dụng <b>FtpSysPro</b> để xác nhận cấu hình máy chủ SMTP hoạt động chính xác.</p>
+<h2>FTPSys Pro Enterprise Backup - Kiểm tra dịch vụ gửi thư SMTP</h2>
+<p>Hệ thống gửi thư cảnh báo tự động của <b>FTPSys Pro Enterprise Backup</b> đã được thiết lập và kiểm tra kết nối thành công.</p>
+<p>Máy chủ SMTP đã sẵn sàng gửi báo cáo kết quả và cảnh báo vận hành sau mỗi lần Job sao lưu thực thi.</p>
 <hr/>
-<h2>FtpSysPro - Email Configuration Test Succeeded</h2>
-<p>This email was sent from <b>FtpSysPro</b> to confirm your SMTP server configuration is working properly.</p>"
+<h2>FTPSys Pro Enterprise Backup - SMTP Service Test Succeeded</h2>
+<p>The automated alert notification system of <b>FTPSys Pro Enterprise Backup</b> has been successfully configured and tested.</p>"
             };
 
             message.Body = body.ToMessageBody();
@@ -77,10 +78,11 @@ namespace FtpSysPro.Core.Notification
                 : job.Notification.CustomSubjectPrefix.Trim();
 
             var statusText = result.Status == JobExecutionStatus.Success ? "SUCCESS / THÀNH CÔNG"
-                : result.Status == JobExecutionStatus.Warning ? "WARNING / CẢNH BÁO"
-                : "FAILED / THẤT BÀI";
+                : result.Status == JobExecutionStatus.Warning ? "WARNING / CÓ CẢNH BÁO"
+                : "FAILED / PHÁT SINH LỖI";
 
-            message.Subject = $"{prefix} [{statusText}] {job.Name} ({result.BackupType})";
+            var backupModeStr = result.BackupType == BackupType.Full ? "Full Backup" : "Incremental Backup";
+            message.Subject = $"{prefix} [{statusText}] {job.Name} ({backupModeStr})";
 
             var html = BuildHtmlReport(job, result);
             var body = new BodyBuilder { HtmlBody = html };
@@ -127,28 +129,32 @@ namespace FtpSysPro.Core.Notification
                 : result.Status == JobExecutionStatus.Warning ? "#ffc107"
                 : "#dc3545";
 
+            var modeVietnamese = result.BackupType == BackupType.Full
+                ? "Sao lưu toàn phần (Full Backup)"
+                : "Sao lưu gia tăng (Incremental Backup)";
+
             var sb = new StringBuilder();
             sb.Append("<html><body style='font-family: Arial, sans-serif; color: #333; line-height: 1.5;'>");
             sb.Append($"<div style='background-color: {statusColor}; color: white; padding: 15px; border-radius: 4px;'>");
-            sb.Append($"<h2 style='margin: 0;'>FtpSysPro Backup Report: {job.Name}</h2>");
-            sb.Append($"<p style='margin: 5px 0 0 0;'>Trạng thái / Status: <b>{result.Status}</b></p>");
+            sb.Append($"<h2 style='margin: 0;'>Báo cáo vận hành Job sao lưu: {job.Name}</h2>");
+            sb.Append($"<p style='margin: 5px 0 0 0;'>Kết quả vận hành / Status: <b>{result.Status}</b></p>");
             sb.Append("</div>");
 
             sb.Append("<table style='width: 100%; border-collapse: collapse; margin-top: 20px;'>");
-            AddRow(sb, "Tác vụ / Job", job.Name);
-            AddRow(sb, "Loại sao lưu / Type", result.BackupType.ToString());
-            AddRow(sb, "Bắt đầu / Start Time (UTC)", result.StartTimeUtc.ToString("yyyy-MM-dd HH:mm:ss"));
-            AddRow(sb, "Kết thúc / End Time (UTC)", result.EndTimeUtc.ToString("yyyy-MM-dd HH:mm:ss"));
-            AddRow(sb, "Thời lượng / Duration", result.Duration.ToString(@"hh\:mm\:ss"));
-            AddRow(sb, "Số file quét / Scanned Files", $"{result.ScannedFiles:N0} ({FormatBytes(result.ScannedBytes)})");
-            AddRow(sb, "Số file sao lưu / Backed Up Files", $"{result.BackedUpFiles:N0} ({FormatBytes(result.BackedUpBytes)})");
-            AddRow(sb, "Bộ sao lưu / Backup Set", result.BackupSetName);
-            AddRow(sb, "Thông điệp / Message", result.Message);
+            AddRow(sb, "Tên Job sao lưu / Backup Job", job.Name);
+            AddRow(sb, "Chế độ sao lưu / Backup Mode", modeVietnamese);
+            AddRow(sb, "Thời điểm bắt đầu / Start Time (UTC)", result.StartTimeUtc.ToString("yyyy-MM-dd HH:mm:ss"));
+            AddRow(sb, "Thời điểm kết thúc / End Time (UTC)", result.EndTimeUtc.ToString("yyyy-MM-dd HH:mm:ss"));
+            AddRow(sb, "Thời lượng thực thi / Duration", result.Duration.ToString(@"hh\:mm\:ss"));
+            AddRow(sb, "Tổng dữ liệu nguồn quét / Scanned", $"{result.ScannedFiles:N0} tệp ({FormatBytes(result.ScannedBytes)})");
+            AddRow(sb, "Dữ liệu đã sao lưu / Backed Up", $"{result.BackedUpFiles:N0} tệp ({FormatBytes(result.BackedUpBytes)})");
+            AddRow(sb, "Điểm phục hồi / Restore Point", result.BackupSetName);
+            AddRow(sb, "Thông điệp vận hành / Message", result.Message);
             sb.Append("</table>");
 
             if (result.Warnings.Count > 0)
             {
-                sb.Append("<h3 style='color: #856404; margin-top: 20px;'>Cảnh báo / Warnings:</h3><ul>");
+                sb.Append("<h3 style='color: #856404; margin-top: 20px;'>Chi tiết cảnh báo / Warnings:</h3><ul>");
                 foreach (var w in result.Warnings)
                 {
                     sb.Append($"<li>{System.Net.WebUtility.HtmlEncode(w)}</li>");
@@ -158,7 +164,7 @@ namespace FtpSysPro.Core.Notification
 
             if (result.Errors.Count > 0)
             {
-                sb.Append("<h3 style='color: #721c24; margin-top: 20px;'>Lỗi / Errors:</h3><ul>");
+                sb.Append("<h3 style='color: #721c24; margin-top: 20px;'>Chi tiết lỗi vận hành / Execution Errors:</h3><ul>");
                 foreach (var e in result.Errors)
                 {
                     sb.Append($"<li><pre style='background:#f8d7da; padding: 5px;'>{System.Net.WebUtility.HtmlEncode(e)}</pre></li>");
@@ -167,7 +173,7 @@ namespace FtpSysPro.Core.Notification
             }
 
             sb.Append("<hr style='margin-top: 30px;'/>");
-            sb.Append("<p style='font-size: 12px; color: #777;'>Email được gửi tự động bởi FtpSysPro Windows Backup Service.</p>");
+            sb.Append("<p style='font-size: 12px; color: #777;'>Email được gửi tự động bởi dịch vụ hệ thống FtpSysProService (FTPSys Pro Enterprise Backup Solution).</p>");
             sb.Append("</body></html>");
 
             return sb.ToString();

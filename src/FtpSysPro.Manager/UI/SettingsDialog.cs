@@ -44,8 +44,8 @@ namespace FtpSysPro.Manager.UI
 
         private void InitializeComponents()
         {
-            Text = Strings.AppName + " - " + Strings.Settings;
-            Size = new Size(580, 520);
+            Text = Strings.AppName + " - Cài đặt hệ thống / System Settings";
+            Size = new Size(620, 530);
             StartPosition = FormStartPosition.CenterParent;
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
@@ -57,19 +57,19 @@ namespace FtpSysPro.Manager.UI
             // General Tab
             var pageGeneral = new TabPage(Strings.TabGeneral) { Padding = new Padding(15) };
 
-            var lblLang = new Label { Text = "Ngôn ngữ giao diện / Language:", Location = new Point(15, 20), AutoSize = true };
-            cboLanguage = new ComboBox { Location = new Point(220, 17), Width = 150, DropDownStyle = ComboBoxStyle.DropDownList };
-            cboLanguage.Items.AddRange(new object[] { "Tiếng Việt", "English" });
+            var lblLang = new Label { Text = "Ngôn ngữ hiển thị / UI Language:", Location = new Point(15, 20), AutoSize = true };
+            cboLanguage = new ComboBox { Location = new Point(250, 17), Width = 160, DropDownStyle = ComboBoxStyle.DropDownList };
+            cboLanguage.Items.AddRange(new object[] { "Tiếng Việt (Mặc định)", "English" });
             cboLanguage.SelectedIndex = 0;
 
-            var lblConcurrent = new Label { Text = "Số tác vụ chạy song song tối đa:", Location = new Point(15, 60), AutoSize = true };
-            numMaxConcurrent = new NumericUpDown { Location = new Point(220, 58), Width = 80, Minimum = 1, Maximum = 10, Value = 2 };
+            var lblConcurrent = new Label { Text = "Giới hạn số Job chạy đồng thời:", Location = new Point(15, 60), AutoSize = true };
+            numMaxConcurrent = new NumericUpDown { Location = new Point(250, 58), Width = 80, Minimum = 1, Maximum = 10, Value = 2 };
 
-            var lblKeepLogs = new Label { Text = "Số ngày lưu trữ file nhật ký (log):", Location = new Point(15, 100), AutoSize = true };
-            numKeepLogsDays = new NumericUpDown { Location = new Point(220, 98), Width = 80, Minimum = 1, Maximum = 365, Value = 30 };
+            var lblKeepLogs = new Label { Text = "Thời hạn lưu trữ nhật ký vận hành (ngày):", Location = new Point(15, 100), AutoSize = true };
+            numKeepLogsDays = new NumericUpDown { Location = new Point(250, 98), Width = 80, Minimum = 1, Maximum = 365, Value = 30 };
 
-            chkStartMinimized = new CheckBox { Text = "Khởi động cùng Windows thu nhỏ xuống khay", Location = new Point(15, 145), AutoSize = true, Checked = true };
-            chkMinimizeOnClose = new CheckBox { Text = "Thu nhỏ xuống khay khi nhấn nút đóng (X)", Location = new Point(15, 175), AutoSize = true, Checked = true };
+            chkStartMinimized = new CheckBox { Text = "Tự động khởi động cùng Windows và thu nhỏ xuống khay hệ thống", Location = new Point(15, 145), AutoSize = true, Checked = true };
+            chkMinimizeOnClose = new CheckBox { Text = "Duy trì chạy ngầm trong khay hệ thống khi đóng cửa sổ chính (X)", Location = new Point(15, 175), AutoSize = true, Checked = true };
 
             pageGeneral.Controls.AddRange(new Control[] {
                 lblLang, cboLanguage,
@@ -79,36 +79,36 @@ namespace FtpSysPro.Manager.UI
             });
 
             // SMTP Tab
-            var pageSmtp = new TabPage("Email (SMTP)") { Padding = new Padding(15) };
+            var pageSmtp = new TabPage("Máy chủ Email (SMTP)") { Padding = new Padding(15) };
 
-            chkSmtpEnabled = new CheckBox { Text = "Bật tính năng gửi email thông báo", Location = new Point(15, 15), AutoSize = true };
+            chkSmtpEnabled = new CheckBox { Text = "Kích hoạt dịch vụ thông báo & cảnh báo vận hành qua Email", Location = new Point(15, 15), AutoSize = true };
 
-            var grp = new GroupBox { Text = "Cấu hình máy chủ SMTP", Location = new Point(15, 45), Size = new Size(520, 290) };
+            var grp = new GroupBox { Text = "Cấu hình máy chủ gửi thư SMTP / SMTP Server Settings", Location = new Point(15, 45), Size = new Size(560, 290) };
 
             var lblHost = new Label { Text = "Máy chủ SMTP / Host:", Location = new Point(15, 28), AutoSize = true };
-            txtSmtpHost = new TextBox { Location = new Point(160, 25), Width = 230 };
-            var lblPort = new Label { Text = "Port:", Location = new Point(400, 28), AutoSize = true };
-            numSmtpPort = new NumericUpDown { Location = new Point(440, 25), Width = 65, Minimum = 1, Maximum = 65535, Value = 587 };
+            txtSmtpHost = new TextBox { Location = new Point(180, 25), Width = 230 };
+            var lblPort = new Label { Text = "Cổng / Port:", Location = new Point(420, 28), AutoSize = true };
+            numSmtpPort = new NumericUpDown { Location = new Point(475, 25), Width = 65, Minimum = 1, Maximum = 65535, Value = 587 };
 
-            chkSmtpSsl = new CheckBox { Text = "SSL (Port 465)", Location = new Point(160, 60), AutoSize = true };
-            chkSmtpStartTls = new CheckBox { Text = "STARTTLS (Khuyên dùng - Port 587)", Location = new Point(280, 60), AutoSize = true, Checked = true };
+            chkSmtpSsl = new CheckBox { Text = "SSL trực tiếp (Port 465)", Location = new Point(180, 60), AutoSize = true };
+            chkSmtpStartTls = new CheckBox { Text = "STARTTLS mã hóa TLS (Khuyến nghị - Port 587)", Location = new Point(320, 60), AutoSize = true, Checked = true };
 
-            var lblUser = new Label { Text = "Tài khoản đăng nhập:", Location = new Point(15, 95), AutoSize = true };
-            txtSmtpUser = new TextBox { Location = new Point(160, 92), Width = 250 };
+            var lblUser = new Label { Text = "Tài khoản xác thực SMTP / User:", Location = new Point(15, 95), AutoSize = true };
+            txtSmtpUser = new TextBox { Location = new Point(180, 92), Width = 280 };
 
-            var lblPass = new Label { Text = "Mật khẩu (App password):", Location = new Point(15, 130), AutoSize = true };
-            txtSmtpPass = new TextBox { Location = new Point(160, 127), Width = 250, UseSystemPasswordChar = true };
+            var lblPass = new Label { Text = "Mật khẩu / App Password:", Location = new Point(15, 130), AutoSize = true };
+            txtSmtpPass = new TextBox { Location = new Point(180, 127), Width = 280, UseSystemPasswordChar = true };
 
             var lblFrom = new Label { Text = "Địa chỉ email gửi (From):", Location = new Point(15, 165), AutoSize = true };
-            txtSmtpFrom = new TextBox { Location = new Point(160, 162), Width = 250 };
+            txtSmtpFrom = new TextBox { Location = new Point(180, 162), Width = 280 };
 
-            var lblDisplayName = new Label { Text = "Tên người gửi hiển thị:", Location = new Point(15, 200), AutoSize = true };
-            txtSmtpDisplayName = new TextBox { Location = new Point(160, 197), Width = 250, Text = "FtpSysPro Backup" };
+            var lblDisplayName = new Label { Text = "Tên hiển thị người gửi:", Location = new Point(15, 200), AutoSize = true };
+            txtSmtpDisplayName = new TextBox { Location = new Point(180, 197), Width = 280, Text = "FtpSysPro Enterprise Backup" };
 
-            btnTestEmail = new Button { Text = Strings.SendTestEmail + "...", Location = new Point(160, 240), Size = new Size(150, 30) };
+            btnTestEmail = new Button { Text = Strings.SendTestEmail + "...", Location = new Point(180, 240), Size = new Size(160, 30) };
             btnTestEmail.Click += async (s, e) =>
             {
-                var recipient = PromptForEmail(this, "Nhập địa chỉ email nhận thư thử nghiệm:", "Gửi email thử", txtSmtpFrom.Text);
+                var recipient = PromptForEmail(this, "Nhập địa chỉ email nhận báo cáo thử nghiệm:", "Gửi email kiểm tra hệ thống", txtSmtpFrom.Text);
                 if (string.IsNullOrWhiteSpace(recipient)) return;
 
                 btnTestEmail.Enabled = false;
@@ -125,16 +125,16 @@ namespace FtpSysPro.Manager.UI
 
                     if (resp != null && resp.Success)
                     {
-                        MessageBox.Show(this, "Email thử nghiệm đã được gửi thành công!", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        MessageBox.Show(this, "Email thử nghiệm hệ thống đã được gửi thành công! Máy chủ SMTP sẵn sàng.", "Thông báo thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     }
                     else
                     {
-                        MessageBox.Show(this, "Gửi email thất bại: " + resp?.ErrorMessage, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show(this, "Gửi email thử nghiệm thất bại: " + resp?.ErrorMessage, "Lỗi kết nối SMTP", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show(this, "Lỗi: " + ex.Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show(this, "Lỗi: " + ex.Message, "Lỗi kết nối", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
                 finally
                 {
@@ -159,8 +159,8 @@ namespace FtpSysPro.Manager.UI
             tabControl.TabPages.Add(pageSmtp);
 
             var pnlBottom = new Panel { Dock = DockStyle.Bottom, Height = 48 };
-            var btnOk = new Button { Text = Strings.Save, DialogResult = DialogResult.OK, Location = new Point(380, 10), Size = new Size(85, 30) };
-            var btnCancel = new Button { Text = Strings.Cancel, DialogResult = DialogResult.Cancel, Location = new Point(475, 10), Size = new Size(80, 30) };
+            var btnOk = new Button { Text = "💾 " + Strings.Save, DialogResult = DialogResult.OK, Location = new Point(410, 10), Size = new Size(95, 30), BackColor = Color.FromArgb(0, 120, 215), ForeColor = Color.White, FlatStyle = FlatStyle.Flat, Font = new Font(Font, FontStyle.Bold) };
+            var btnCancel = new Button { Text = Strings.Cancel, DialogResult = DialogResult.Cancel, Location = new Point(515, 10), Size = new Size(80, 30) };
 
             btnOk.Click += (s, e) =>
             {

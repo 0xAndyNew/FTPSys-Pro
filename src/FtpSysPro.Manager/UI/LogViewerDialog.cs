@@ -167,9 +167,9 @@ namespace FtpSysPro.Manager.UI
             };
             cboLevel.Items.AddRange(new object[] {
                 Strings.AllLevels,
-                "ERR (Lỗi)",
+                "ERR (Lỗi vận hành)",
                 "WRN (Cảnh báo)",
-                "INF (Thông tin)"
+                "INF (Thông tin vận hành)"
             });
             cboLevel.SelectedIndex = 0;
             cboLevel.SelectedIndexChanged += (s, e) =>
@@ -282,7 +282,7 @@ namespace FtpSysPro.Manager.UI
 
             lblMatchCount = new Label
             {
-                Text = "0 dòng",
+                Text = "0 dòng nhật ký",
                 Location = new Point(780, 48),
                 AutoSize = true,
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Italic),
@@ -313,7 +313,7 @@ namespace FtpSysPro.Manager.UI
 
             // Bottom Status Strip
             statusStrip = new StatusStrip();
-            lblStatusFile = new ToolStripStatusLabel { Text = "Tệp: (Chưa chọn)", Width = 380, TextAlign = ContentAlignment.MiddleLeft };
+            lblStatusFile = new ToolStripStatusLabel { Text = "Tệp nhật ký: (Chưa chọn)", Width = 380, TextAlign = ContentAlignment.MiddleLeft };
             lblStatusLines = new ToolStripStatusLabel { Text = "Hiển thị: 0 dòng", Width = 150 };
             lblStatusSize = new ToolStripStatusLabel { Text = "Dung lượng: 0 B", Width = 150 };
             lblStatusUpdated = new ToolStripStatusLabel { Text = "Cập nhật: -", Spring = true, TextAlign = ContentAlignment.MiddleRight };
@@ -575,7 +575,7 @@ namespace FtpSysPro.Manager.UI
                 {
                     if (filterByJob || levelIndex > 0 || !string.IsNullOrWhiteSpace(searchKeyword))
                     {
-                        AppendColorText("(Không có dòng nhật ký nào phù hợp với bộ lọc đã chọn)" + Environment.NewLine, Color.DarkGray);
+                        AppendColorText("(Không có dòng nhật ký vận hành nào phù hợp với bộ lọc đã chọn)" + Environment.NewLine, Color.DarkGray);
                     }
                 }
 
@@ -585,15 +585,15 @@ namespace FtpSysPro.Manager.UI
                     txtLog.ScrollToCaret();
                 }
 
-                lblMatchCount.Text = $"{matchingLines} dòng hiển thị";
-                lblStatusFile.Text = $"Tệp: {Path.GetFileName(_activeFilePath)}";
-                lblStatusLines.Text = $"Hiển thị: {matchingLines} dòng";
+                lblMatchCount.Text = $"{matchingLines:N0} dòng hiển thị";
+                lblStatusFile.Text = $"Tệp nhật ký: {Path.GetFileName(_activeFilePath)}";
+                lblStatusLines.Text = $"Dòng hiển thị: {matchingLines:N0}";
                 lblStatusSize.Text = $"Dung lượng: {FormatBytes(fi.Length)}";
                 lblStatusUpdated.Text = $"Cập nhật: {_lastLoadedTime:HH:mm:ss}";
             }
             catch (Exception ex)
             {
-                lblStatusFile.Text = "Lỗi khi đọc file: " + ex.Message;
+                lblStatusFile.Text = "Lỗi khi đọc tệp nhật ký: " + ex.Message;
             }
             finally
             {
