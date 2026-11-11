@@ -1,256 +1,288 @@
-# HƯỚNG DẪN SỬ DỤNG PHẦN MỀM FTPSYS-PRO
+# HƯỚNG DẪN VẬN HÀNH HỆ THỐNG FTPSYS-PRO
+## Enterprise Backup & Disaster Recovery Solution for Windows
 
-Chào mừng bạn đến với tài liệu hướng dẫn sử dụng phần mềm sao lưu **FTPSys-Pro**. Tài liệu này cung cấp hướng dẫn chi tiết từng bước từ cài đặt, cấu hình các tác vụ sao lưu, thiết lập bảo vệ dữ liệu nâng cao đến quy trình khôi phục dữ liệu khi gặp sự cố.
+Chào mừng bạn đến với tài liệu hướng dẫn vận hành hệ thống phần mềm sao lưu chuyên dụng **FTPSys-Pro**. Tài liệu này hướng dẫn chi tiết từng bước từ cài đặt, cấu hình Job sao lưu, thiết lập các cơ chế bảo vệ dữ liệu doanh nghiệp nâng cao cho đến quy trình phục hồi dữ liệu khi xảy ra sự cố.
 
 ---
 
 ## 📑 Mục lục
-1. [Giới thiệu tổng quan](#1-giới-thiệu-tổng-quan)
+1. [Giới thiệu tổng quan kiến trúc](#1-giới-thiệu-tổng-quan-kiến-trúc)
 2. [Cài đặt và Khởi động hệ thống](#2-cài-đặt-và-khởi-động-hệ-thống)
-3. [Giao diện điều khiển chính](#3-giao-diện-điều-khiển-chính)
-4. [Hướng dẫn tạo tác vụ sao lưu mới (Backup Job)](#4-hướng-dẫn-tạo-tác-vụ-sao-lưu-mới-backup-job)
-   - [Tab 1: Thông tin chung (General)](#tab-1-thông-tin-chung-general)
-   - [Tab 2: Nguồn dữ liệu (Source Folders)](#tab-2-nguồn-dữ-liệu-source-folders)
-   - [Tab 3: Đích đến sao lưu (Destination)](#tab-3-đích-đến-sao-lưu-destination)
-   - [Tab 4: Tuỳ chọn nén & Độ tin cậy (Options & Integrity)](#tab-4-tuỳ-chọn-nén--độ-tin-cậy-options--integrity)
-   - [Tab 5: Lập lịch tự động (Schedule)](#tab-5-lập-lịch-tự-động-schedule)
-   - [Tab 6: Chính sách lưu giữ bản sao lưu (Retention)](#tab-6-chính-sách-lưu-giữ-bản-sao-lưu-retention)
-   - [Tab 7: Cấu hình thông báo Email (Notification)](#tab-7-cấu-hình-thông-báo-email-notification)
-5. [Các tính năng bảo vệ độ tin cậy nâng cao](#5-các-tính-năng-bảo-vệ-độ-tin-cậy-nâng-cao)
-   - [Volume Shadow Copy (VSS) cho file bị khóa](#volume-shadow-copy-vss-cho-file-bị-khóa)
-   - [Kiểm tra dung lượng đĩa trước khi chạy (Pre-flight Disk Check)](#kiểm-tra-dung-lượng-đĩa-trước-khi-chạy-pre-flight-disk-check)
-   - [Xác minh mã băm SHA-256 đầu cuối](#xác-minh-mã-băm-sha-256-đầu-cuối)
-   - [Tự động thử lại khi rớt mạng (Exponential Backoff)](#tự-động-thử-lại-khi-rớt-mạng-exponential-backoff)
-6. [Hướng dẫn Khôi phục dữ liệu (Restore Wizard)](#6-hướng-dẫn-khôi-phục-dữ-liệu-restore-wizard)
-7. [Cấu hình hệ thống (Settings)](#7-cấu-hình-hệ-thống-settings)
-8. [Quản trị Windows Service và Khay hệ thống](#8-quản-trị-windows-service-và-khay-hệ-thống)
-9. [Xử lý sự cố thường gặp (Troubleshooting)](#9-xử-lý-sự-cố-thường-gặp-troubleshooting)
+3. [Giao diện điều khiển & Quản trị trung tâm](#3-giao-diện-điều-khiển--quản-trị-trung-tâm)
+4. [Quy trình cấu hình Job sao lưu mới (Backup Job Wizard)](#4-quy-trình-cấu-hình-job-sao-lưu-mới-backup-job-wizard)
+   - [Bước 1: Cấu hình thông tin chung (General)](#bước-1-cấu-hình-thông-tin-chung-general)
+   - [Bước 2: Nguồn dữ liệu & Hỗ trợ ổ đĩa gốc (Source Folders & Root Drives)](#bước-2-nguồn-dữ-liệu--hỗ-trợ-ổ-đĩa-gốc-source-folders--root-drives)
+   - [Bước 3: Kho lưu trữ đích (Backup Repository)](#bước-3-kho-lưu-trữ-đích-backup-repository)
+   - [Bước 4: Cơ chế đóng gói & Bảo vệ dữ liệu (Options & Integrity)](#bước-4-cơ-chế-đóng-gói--bảo-vệ-dữ-liệu-options--integrity)
+   - [Bước 5: Lập lịch thực thi tự động (Schedule & 12h/24h Format)](#bước-5-lập-lịch-thực-thi-tự-động-schedule--12h24h-format)
+   - [Bước 6: Chính sách lưu giữ điểm phục hồi (Retention Policy)](#bước-6-chính-sách-lưu-giữ-điểm-phục-hồi-retention-policy)
+   - [Bước 7: Thông báo & Cảnh báo vận hành qua Email (Alerts & Reports)](#bước-7-thông-báo--cảnh-báo-vận-hành-qua-email-alerts--reports)
+5. [Cơ chế bảo vệ dữ liệu vận hành chuẩn Enterprise](#5-cơ-chế-bảo-vệ-dữ-liệu-vận-hành-chuẩn-enterprise)
+   - [Volume Shadow Copy Service (VSS) cho tệp đang mở](#volume-shadow-copy-service-vss-cho-tệp-đang-mở)
+   - [Kiểm tra dung lượng khả dụng trước khi thực thi (Pre-flight Disk Check)](#kiểm-tra-dung-lượng-khả-dụng-trước-khi-thực-thi-pre-flight-disk-check)
+   - [Xác minh tính toàn vẹn SHA-256 đầu cuối](#xác-minh-tính-toàn-vẹn-sha-256-đầu-cuối)
+   - [Tự động thử lại luỹ tiến khi mất kết nối mạng](#tự-động-thử-lại-luỹ-tiến-khi-mất-kết-nối-mạng)
+6. [Quy trình Phục hồi dữ liệu (Data Restoration Wizard)](#6-quy-trình-phục-hồi-dữ-liệu-data-restoration-wizard)
+7. [Tra cứu & Phân tích Nhật ký vận hành (Operation Logs Viewer)](#7-tra-cứu--phân-tích-nhật-ký-vận-hành-operation-logs-viewer)
+8. [Cài đặt hệ thống (System Settings)](#8-cài-đặt-hệ-thống-system-settings)
+9. [Quản trị dịch vụ Windows Service và Khay hệ thống](#9-quản-trị-dịch-vụ-windows-service-và-khay-hệ-thống)
+10. [Xử lý sự cố thường gặp (Troubleshooting)](#10-xử-lý-sự-cố-thường-gặp-troubleshooting)
 
 ---
 
-## 1. Giới thiệu tổng quan
+## 1. Giới thiệu tổng quan kiến trúc
 
-**FTPSys-Pro** là giải pháp sao lưu độc lập, chạy trên 2 thành phần chính:
-1. **Windows Service (`FtpSysProService`)**: Chạy ngầm với quyền `LocalSystem`, thực thi các lịch sao lưu tự động ngay cả khi máy chủ chưa đăng nhập người dùng.
-2. **Tray Manager (`FtpSysPro.Manager.exe`)**: Ứng dụng giao diện đồ hoạ WinForms nằm trên khay hệ thống, dùng để cấu hình, kiểm tra tiến độ và thực hiện khôi phục.
+**FTPSys-Pro** được thiết kế theo kiến trúc chuẩn của các giải pháp Enterprise Backup hàng đầu, phân tách rõ ràng giữa tầng dịch vụ thực thi nền và tầng quản trị giao diện người dùng:
 
-Hai thành phần giao tiếp qua **Named Pipe IPC** bảo mật cao, đảm bảo tốc độ phản hồi tức thì và ngăn chặn truy cập trái phép.
+1. **Dịch vụ hệ thống Windows Service (`FtpSysProService`)**:
+   - Chạy nền liên tục dưới tài khoản đặc quyền `LocalSystem`.
+   - Chịu trách nhiệm thực thi các Job sao lưu độc lập theo lịch định kỳ, quản lý kết nối VSS, truyền dữ liệu qua mạng, tính toán SHA-256, áp dụng chính sách lưu giữ (Retention) và gửi email báo cáo mà không phụ thuộc vào việc người dùng có đăng nhập Windows hay không (Unattended Execution).
+2. **Ứng dụng quản trị khay hệ thống (`FtpSysPro.Manager.exe`)**:
+   - Giao diện đồ hoạ WinForms hiện đại chạy dưới khay hệ thống (System Tray).
+   - Dùng để thiết lập cấu hình Job, giám sát tiến độ thực thi trực tiếp, tra cứu nhật ký và thực hiện quy trình phục hồi dữ liệu (Restore).
+
+Hai thành phần giao tiếp an toàn qua giao thức **Named Pipe IPC (`\\.\pipe\FtpSysPro.Pipe`)** với danh sách kiểm soát truy cập (ACL) hạn chế nghiêm ngặt chỉ cấp phép cho nhóm `Administrators` và `SYSTEM`.
 
 ---
 
 ## 2. Cài đặt và Khởi động hệ thống
 
 ### Cài đặt qua bộ cài đặt Setup (.exe)
-1. Tải bộ cài đặt `FtpSysPro_Setup_v1.0.0.exe` từ trang [Releases của GitHub](https://github.com/0xAndyNew/FTPSys-Pro/releases).
+1. Tải bộ cài đặt mới nhất `FTPSys_Pro_Setup_v1.1.0.exe` từ trang [Releases của GitHub](https://github.com/0xAndyNew/FTPSys-Pro/releases).
 2. Nhấp chuột phải vào file cài đặt và chọn **Run as administrator**.
-3. Tiến hành các bước cài đặt thông thường. Trình cài đặt sẽ:
-   - Cài đặt phần mềm vào thư mục `C:\Program Files\FtpSysPro\`.
+3. Thực hiện theo hướng dẫn trên màn hình. Trình cài đặt sẽ tự động:
+   - Cài đặt các tệp thực thi vào thư mục hệ thống `C:\Program Files\FTPSys Pro\`.
    - Tạo thư mục dữ liệu bảo mật tại `C:\ProgramData\FtpSysPro\`.
-   - Tự động đăng ký và khởi chạy dịch vụ Windows Service `FtpSysProService`.
-   - Tạo tác vụ tự khởi động ứng dụng khay khi Windows đăng nhập.
+   - Đăng ký và kích hoạt Windows Service `FtpSysProService` ở chế độ tự động bật cùng Windows (`Automatic Startup`).
+   - Đăng ký Scheduled Task khởi động ứng dụng khay khi người dùng đăng nhập hệ thống.
+   - Tạo biểu tượng lối tắt trên Desktop và Start Menu.
 
-### Khởi động ứng dụng quản lý
-- Nhấp đúp vào biểu tượng **FTPSys-Pro** trên màn hình Desktop hoặc tìm trong menu Start.
-- Khi ứng dụng mở ra, biểu tượng khiên bảo vệ sẽ xuất hiện tại **khay hệ thống (System Tray)** góc dưới bên phải màn hình.
+### Khởi động ứng dụng quản trị
+- Nhấp đúp vào biểu tượng **FTPSys Pro** trên màn hình Desktop hoặc tìm trong menu Start.
+- Biểu tượng ứng dụng sẽ xuất hiện tại **khay hệ thống (System Tray)** góc dưới bên phải màn hình.
 
 ---
 
-## 3. Giao diện điều khiển chính
+## 3. Giao diện điều khiển & Quản trị trung tâm
 
-Màn hình chính của FTPSys-Pro được thiết kế theo cấu trúc chia đôi (Split View) hiện đại:
+Cửa sổ chính của FTPSys-Pro được thiết kế theo cấu trúc chia đôi (Split View) chuyên nghiệp:
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
-│ [Thêm Job] [Sửa] [Nhân bản] [Xoá] | [Chạy Full] [Chạy Incr] [Dừng] | [Khôi phục] [Cài đặt]
+│ [Thêm Job] [Sửa] [Nhân bản] [Xoá] | [Chạy Full] [Chạy Incr] [Dừng] | [Phục hồi] [Cài đặt]
 ├───────────────────────────────────────────────────────────────┬────────────────────────┤
-│ Tên tác vụ  │ Bật │ Dung lượng cần backup │ Chế độ truyền   │ ... │ CHI TIẾT TÁC VỤ        │
-├─────────────┼─────┼───────────────────────┼─────────────────┼─────┤ ────────────────────── │
-│ Backup_DB   │  ✓  │ 12.4 GB (1,250 files) │ Đẩy cả thư mục  │ ... │ Tên: Backup_DB         │
-│ Web_Upload  │  ✓  │ 450.2 MB (5,400 files)│ Nén ZIP (AES)   │ ... │ Dung lượng: 12.4 GB    │
-│             │     │                       │                 │     │ Truyền: Đẩy cả thư mục │
-│             │     │                       │                 │     │ Đích: \\backup\data    │
-│             │     │                       │                 │     │ Nguồn: D:\Database     │
-└─────────────┴─────┴───────────────────────┴─────────────────┴─────┴────────────────────────┘
-│ Service FtpSysPro: Đang chạy                                       [Tiến độ: 100%]     │
+│ Tên Job sao lưu │ Bật │ Dung lượng nguồn │ Chế độ sao lưu │ ... │ THÔNG TIN JOB SAO LƯU  │
+├─────────────────┼─────┼──────────────────┼────────────────┼─────┤ ────────────────────── │
+│ Backup_Database │  ✓  │ 12.4 GB (1,250)  │ Sao lưu toàn...│ ... │ Tên: Backup_Database   │
+│ Source_Code_App │  ✓  │ 450.2 MB (5,400) │ Sao lưu gia... │ ... │ Dung lượng: 12.4 GB    │
+│                 │     │                  │                │     │ Chế độ: Full Backup    │
+│                 │     │                  │                │     │ Kho đích: \\nas\backup │
+│                 │     │                  │                │     │ Nguồn: D:\Database     │
+└─────────────────┴─────┴──────────────────┴────────────────┴─────┴────────────────────────┘
+│ Dịch vụ FtpSysProService: Đang hoạt động bình thường               [Tiến độ: 100%]     │
 └────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-- **Thanh công cụ (Toolbar)**: Các nút thao tác nhanh: Thêm, Sửa, Nhân bản, Xoá, Chạy Full, Chạy Incremental, Dừng tác vụ đang chạy, Mở trình Khôi phục, Cài đặt hệ thống.
-- **Bảng danh sách Job (Bên trái)**:
-  - Cột `Dung lượng cần backup`: Hiển thị tổng dung lượng nguồn được tính toán ngay khi lưu cấu hình job.
-  - Cột `Chế độ truyền`: Hiển thị rõ ràng chế độ đẩy thẳng thư mục hay nén ZIP AES-256.
-  - Cột `Trạng thái`: Hiển thị trạng thái lần chạy gần nhất (Sẵn sàng, Đang chạy, Thành công, Cảnh báo, Thất bại).
-- **Khung thông tin chi tiết (Bên phải - Info Card)**:
-  - Khi nhấp chuột vào bất kỳ job nào, khung bên phải sẽ hiển thị toàn bộ chi tiết: tên, dung lượng cần backup cỡ chữ lớn, chế độ truyền, đích đến, danh sách thư mục nguồn và lịch chạy kế tiếp.
-- **Thanh trạng thái (Status Bar)**: Báo hiệu kết nối với Windows Service (`Service FtpSysPro: Đang chạy`). Nếu service bị dừng, sẽ hiển thị nút bấm để khởi động lại ngay.
+- **Thanh công cụ (Toolbar)**: Cung cấp đầy đủ thao tác: *Thêm Job, Sửa Job, Nhân bản, Xoá, Thực thi Full Backup, Thực thi Incremental Backup, Dừng Job, Phục hồi dữ liệu, Xem Nhật ký vận hành, Cài đặt hệ thống*.
+- **Danh sách Job sao lưu (Bên trái)**: Hiển thị đầy đủ thông tin: *Tên Job, Trạng thái kích hoạt, Dung lượng nguồn, Chế độ sao lưu, Kho lưu trữ đích, Thực thi gần nhất, Kết quả vận hành, Lịch chạy tiếp theo*.
+- **Thẻ thông tin chi tiết (Bên phải - Info Card)**: Xem nhanh dung lượng nguồn, chế độ thực thi, kho lưu trữ đích, danh sách thư mục nguồn và lịch thực thi kế tiếp.
+- **Thanh trạng thái (Status Bar)**: Báo hiệu kết nối IPC với dịch vụ Windows Service `FtpSysProService`.
 
 ---
 
-## 4. Hướng dẫn tạo tác vụ sao lưu mới (Backup Job)
+## 4. Quy trình cấu hình Job sao lưu mới (Backup Job Wizard)
 
-Trên thanh công cụ, nhấn nút **Thêm (Add)** để mở hộp thoại cấu hình tác vụ.
+Trên thanh công cụ, nhấn nút **Thêm (Add)** để mở Wizard cấu hình Job gồm 7 bước với các nút điều hướng **Quay lại (Back)**, **Tiếp tục (Next)** và **Hoàn tất (Finish)** ở bước cuối.
 
-### Tab 1: Thông tin chung (General)
-- **Tên tác vụ (Job Name)**: Đặt tên gợi nhớ cho tác vụ (ví dụ: `Sao_Luu_SQL_Server`, `Backup_Ke_Toan`).
-- **Mô tả (Description)**: Ghi chú mục đích của tác vụ.
-- **Bật tác vụ này (Enabled)**: Tích chọn để tác vụ tự động thực thi theo lịch.
+### Bước 1: Cấu hình thông tin chung (General)
+- **Tên Job sao lưu (Backup Job Name)**: Đặt tên gợi nhớ cho Job (ví dụ: `Job_Backup_SQL_Database`, `Job_Backup_KeToan`).
+- **Mô tả Job (Description)**: Ghi chú mục đích hoặc phân hệ dữ liệu.
+- **Kích hoạt Job sao lưu này (Enabled)**: Tích chọn để Job sẵn sàng thực thi theo lịch tự động.
+- **Chế độ sao lưu mặc định (Backup Mode)**:
+  - `Sao lưu toàn phần (Full Backup)`: Mỗi lần thực thi tạo ra một điểm phục hồi hoàn chỉnh và độc lập tại kho lưu trữ đích.
+  - `Sao lưu gia tăng (Incremental Backup)`: Gồm 1 điểm phục hồi Full cơ sở và chuỗi các điểm Incremental chỉ chứa dữ liệu mới hoặc sửa đổi.
 
-### Tab 2: Nguồn dữ liệu (Source Folders)
-- Nhấn nút **Chọn thư mục... (Browse...)** để mở trình duyệt thư mục dạng Windows Explorer chọn các thư mục cần sao lưu. Có thể thêm nhiều thư mục nguồn khác nhau.
-- **Mẫu loại trừ (Exclude Patterns)**: Nhập các mẫu file không cần sao lưu, phân cách bằng dấu phẩy (ví dụ: `*.tmp, ~$*, *.log, node_modules, bin, obj`).
-- **Dòng tổng kết dung lượng thời gian thực**: Ngay bên dưới danh sách thư mục, hệ thống sẽ tự động quét và hiển thị ngay:  
-  `Tổng nguồn: 15.2 GB (1,420 files)`  
-  giúp bạn nắm bắt chính xác khối lượng dữ liệu ngay lập tức.
+### Bước 2: Nguồn dữ liệu & Hỗ trợ ổ đĩa gốc (Source Folders & Root Drives)
+- **Hỗ trợ chọn toàn bộ phân vùng ổ đĩa (Root Drive)**:
+  - Nhấn nút **Chọn thư mục...** để chọn thư mục con hoặc **toàn bộ ổ đĩa gốc** (như `C:\`, `D:\`, `E:\`).
+  - Hệ thống tự động phân tích và loại trừ các thư mục nhạy cảm của hệ điều hành (`System Volume Information`, `$RECYCLE.BIN`, `pagefile.sys`, `hiberfil.sys`, `swapfile.sys`).
+- **Bộ lọc loại trừ dữ liệu (Exclusion Filters)**: Nhập các mẫu tệp hoặc thư mục không cần sao lưu, phân cách bằng dấu phẩy (ví dụ: `*.tmp, ~$*, *.log, node_modules, bin, obj`).
+- **Dung lượng nguồn trực quan (Live Source Size Calculation)**: Hệ thống tự động quét và hiển thị ngay tổng dung lượng và số lượng tệp nguồn giúp người quản trị nắm bắt tức thì.
 
-### Tab 3: Đích đến sao lưu (Destination)
-FTPSys-Pro hỗ trợ 3 nhóm đích đến:
+### Bước 3: Kho lưu trữ đích (Backup Repository)
+FTPSys-Pro hỗ trợ 3 nhóm kho lưu trữ đích chuẩn công nghiệp:
 
-#### A. Thư mục cục bộ / Ổ đĩa / Mạng UNC:
-- Chọn đường dẫn thư mục cục bộ (ví dụ: `E:\Backups`) hoặc ổ cứng di động cắm ngoài.
-- Nếu là thư mục chia sẻ mạng UNC (ví dụ: `\\192.168.1.100\SharedBackups`), bạn có thể điền thông tin tài khoản đăng nhập (`Domain\Username` và Mật khẩu). Hệ thống sử dụng Windows API `WNetAddConnection2` để xác thực phiên làm việc an toàn.
+#### A. Thư mục cục bộ / Ổ đĩa ngoài / Thư mục mạng UNC:
+- Lưu trữ trên ổ cứng nội bộ hoặc ổ cứng di động (ví dụ: `E:\BackupRepository`).
+- Nếu sử dụng thư mục chia sẻ mạng UNC (ví dụ: `\\192.168.1.100\BackupShare`), nhập tài khoản `Domain\Username` và Mật khẩu. Dịch vụ Windows Service sử dụng Win32 API `WNetAddConnection2` để xác thực phiên kết nối bảo mật trước khi truyền dữ liệu.
 
 #### B. Máy chủ FTP / FTPS:
 - **Host**: Tên miền hoặc IP máy chủ FTP (ví dụ: `ftp.company.com`).
-- **Port**: Cổng kết nối (mặc định: `21` cho FTP thường/Explicit TLS, `990` cho Implicit TLS).
+- **Port**: Cổng kết nối (`21` cho FTP thường/Explicit TLS, `990` cho Implicit TLS).
 - **User / Password**: Thông tin đăng nhập.
-- **Thư mục từ xa (Remote path)**: Thư mục lưu trữ trên server (ví dụ: `/backups/sql/`).
-- **Mã hoá (Encryption)**: Chọn `None` (FTP thường), `Explicit (FTPS TLS)` (Khuyến nghị) hoặc `Implicit`.
-- **Passive Mode**: Bật tính năng Passive mode (khuyến nghị khi máy chủ chạy sau Firewall/NAT).
+- **Thư mục từ xa (Remote path)**: Đường dẫn thư mục lưu trữ trên server (ví dụ: `/backups/sql/`).
+- **Mã hoá (Encryption)**: `Explicit (FTPS TLS)` (Khuyến nghị), `Implicit` hoặc `None`.
+- **Passive Mode**: Chế độ truyền thụ động (khuyến nghị khi chạy qua tường lửa/NAT).
 
 #### C. Máy chủ SFTP (SSH File Transfer):
 - **Host / Port**: IP/domain và cổng SSH (mặc định: `22`).
-- **User / Password**: Đăng nhập bằng mật khẩu SSH.
-- **Private Key**: Tuỳ chọn chọn tệp Private Key (`.pem`, `.ppk`, `id_rsa`) và nhập passphrase nếu key được bảo vệ.
-- **Thư mục từ xa (Remote path)**: Đường dẫn đích trên máy chủ Linux/Unix.
+- **User / Password**: Đăng nhập bằng tài khoản và mật khẩu SSH.
+- **Private Key**: Tuỳ chọn xác thực bằng khóa bí mật OpenSSH/PuTTY (`.pem`, `.ppk`, `id_rsa`) kèm passphrase.
+- **Thư mục từ xa (Remote path)**: Đường dẫn lưu trữ trên máy chủ Linux/Unix.
 
-### Tab 4: Tuỳ chọn nén & Độ tin cậy (Options & Integrity)
-- **Chế độ nén ZIP (Tùy chọn)**:
-  - Nếu **KHÔNG tích chọn** (Mặc định): Hệ thống sẽ **đẩy thẳng toàn bộ cấu trúc cây thư mục** sang đích mà không nén. File giữ nguyên cấu trúc cha/con, tiện cho việc truy cập trực tiếp tại đích.
-  - Nếu **TÍCH CHỌN**: Hệ thống sẽ đóng gói thành file `.zip`. Bạn có thể chọn mức độ nén (`Fastest`, `Normal`, `Maximum`) và tích chọn **Mã hoá mật khẩu AES-256** để bảo vệ dữ liệu tối mật.
-- **Độ tin cậy & Đảm bảo an toàn dữ liệu**:
-  - `Volume Shadow Copy (VSS)`: Tự động chụp snapshot sao lưu file đang bị khóa bởi SQL Server, Outlook, máy ảo Hyper-V...
-  - `Kiểm tra dung lượng trống trước khi chạy`: Tự động kiểm tra ổ đĩa Temp và ổ đĩa đích, ngăn ngừa lỗi tràn đĩa giữa chừng.
-  - `Xác minh mã băm SHA-256`: Kiểm tra tính toàn vẹn 100% bit-for-bit của từng file sau khi truyền.
-  - `Số lần tự động thử lại`: Số lần retry khi gặp sự cố chập chờn đường truyền mạng (mặc định 3 lần).
+*Lưu ý: Luôn nhấn nút **Kiểm tra kết nối** để đảm bảo thông tin đăng nhập và đường truyền mạng hoàn toàn thông suốt trước khi tiếp tục.*
 
-### Tab 5: Lập lịch tự động (Schedule)
-Có thể thêm nhiều lịch trình độc lập cho cùng 1 Job:
-- **Kiểu sao lưu**: Chọn `Full` (Sao lưu toàn bộ) hoặc `Incremental` (Sao lưu thay đổi).
-- **Chu kỳ chạy**:
-  - *Một lần*: Vào ngày giờ cụ thể.
-  - *Hằng ngày*: Vào giờ cố định (ví dụ: 23:00 mỗi tối).
-  - *Hằng tuần*: Vào các ngày thứ Hai, thứ Tư, thứ Sáu lúc 18:00.
-  - *Hằng tháng*: Vào ngày mùng 1 hàng tháng.
-  - *Lặp lại*: Mỗi 30 phút một lần từ 08:00 đến 17:00.
-- **Chạy bù nếu bị lỡ**: Nếu máy chủ tắt lúc tới lịch, khi máy bật lại hệ thống sẽ tự động chạy bù ngay.
+### Bước 4: Cơ chế đóng gói & Bảo vệ dữ liệu (Options & Integrity)
+- **Đóng gói nén thành tệp lưu trữ .ZIP (Tùy chọn)**:
+  - Nếu **KHÔNG chọn** (Mặc định): Hệ thống thực hiện đồng bộ trực tiếp cấu trúc thư mục sang đích (Uncompressed Folder Mirroring).
+  - Nếu **CHỌN**: Đóng gói thành tệp `.zip` với các mức nén `Fastest`, `Normal`, `Maximum` và tích chọn **Mã hóa dữ liệu AES-256** bảo mật tối đa.
+- **Cơ chế an toàn & Toàn vẹn dữ liệu vận hành (Enterprise Data Protection)**:
+  - `Volume Shadow Copy Service (VSS)`: Tự động chụp snapshot sao lưu tệp đang mở / đang khóa.
+  - `Kiểm tra dung lượng khả dụng trước khi thực thi`: Pre-flight disk space check chống tràn đĩa.
+  - `Xác thực tính toàn vẹn SHA-256 sau khi truyền dữ liệu`: So sánh checksum bit-for-bit.
+  - `Số lần tự động thử lại khi mất kết nối`: Khắc phục lỗi mạng chập chờn (mặc định 3 lần).
 
-### Tab 6: Chính sách lưu giữ bản sao lưu (Retention)
-Để tránh đầy ổ đĩa tại nơi lưu trữ, hệ thống cung cấp các chính sách tự dọn dẹp:
-- **Chỉ giữ lại N bộ Full gần nhất**: Hệ thống sẽ giữ đúng N bản Full mới nhất và toàn bộ các bản Incremental liên quan của chúng. Các bộ cũ hơn sẽ được tự động xóa an toàn.
-- **Chỉ giữ trong vòng N ngày gần nhất**: Tự động dọn dẹp các bộ backup có tuổi thọ vượt quá số ngày quy định.
-- **Giữ tất cả**: Không tự động xoá bản nào.
+### Bước 5: Lập lịch thực thi tự động (Schedule & 12h/24h Format)
+- Hỗ trợ thêm nhiều mốc lịch trình độc lập cho cùng một Job.
+- **Chuyển đổi định dạng giờ linh hoạt**: Tùy chọn xem và nhập giờ theo chuẩn **24 giờ** hoặc **12 giờ (AM/PM)**.
+- **Tần suất thực thi**:
+  - *Một lần (Once)*: Thực thi tại một thời điểm xác định.
+  - *Hằng ngày (Daily)*: Thực thi đều đặn vào giờ chỉ định (ví dụ: `23:00`).
+  - *Hằng tuần (Weekly)*: Thực thi vào các thứ được chọn trong tuần (ví dụ: Thứ Hai, Thứ Tư, Thứ Sáu lúc `19:30`).
+  - *Hằng tháng (Monthly)*: Thực thi vào ngày cố định trong tháng.
+  - *Lặp lại theo chu kỳ*: Thực thi mỗi $N$ phút hoặc $N$ giờ trong khung giờ làm việc.
+- **Chạy bù khi máy khởi động lại (Catch-up missed runs)**: Tự động kích hoạt chạy bù nếu máy chủ bị tắt vào thời điểm lịch đến hạn.
 
-### Tab 7: Cấu hình thông báo Email (Notification)
-- Tích chọn **Gửi thông báo email sau khi tác vụ hoàn thành**.
-- **Điều kiện gửi**: `Luôn luôn gửi`, `Chỉ khi thất bại`, hoặc `Chỉ khi thành công`.
-- **Email người nhận**: Nhập các địa chỉ email nhận báo cáo, cách nhau bởi dấu phẩy (ví dụ: `admin@company.com, it-support@company.com`).
-- **Tiền tố tiêu đề**: Tiền tố hiển thị trong Subject email (mặc định: `[FtpSysPro]`).
+### Bước 6: Chính sách lưu giữ điểm phục hồi (Retention Policy)
+Giao diện tự động tối ưu hóa hiển thị dựa trên chế độ Job đã chọn:
+- **Khi Job ở chế độ Sao lưu toàn phần (Full Backup)**:
+  - Duy trì $N$ điểm phục hồi Full gần nhất.
+  - Hệ thống tự động dọn dẹp các điểm Full cũ hơn khi vượt quá hạn mức để bảo vệ dung lượng lưu trữ.
+- **Khi Job ở chế độ Sao lưu gia tăng (Incremental Backup)**:
+  - Duy trì $N$ chuỗi sao lưu (Full + Incremental) gần nhất.
+  - **Quy tắc bất biến**: Hệ thống tuyệt đối bảo toàn điểm Full cơ sở khi các điểm Incremental liên quan vẫn còn hiệu lực lưu trữ.
+- Tùy chọn duy trì điểm phục hồi theo thời gian ($N$ ngày) hoặc lưu giữ vĩnh viễn.
+
+### Bước 7: Thông báo & Cảnh báo vận hành qua Email (Alerts & Reports)
+- Tích chọn **Kích hoạt gửi báo cáo vận hành qua Email sau khi Job thực thi**.
+- **Điều kiện gửi**: `Luôn luôn gửi báo cáo`, `Chỉ gửi khi có cảnh báo hoặc lỗi`, hoặc `Chỉ gửi khi thực thi thành công`.
+- **Danh sách địa chỉ email nhận báo cáo**: Phân tách bằng dấu phẩy (ví dụ: `admin@company.com, it-ops@company.com`).
+- **Tiền tố tiêu đề**: Định danh hệ thống trong Subject email (mặc định: `[FtpSysPro]`).
+
+Nhấn nút **Hoàn tất (Finish)** để lưu Job và đồng bộ tức thì xuống Windows Service.
 
 ---
 
-## 5. Các tính năng bảo vệ độ tin cậy nâng cao
+## 5. Cơ chế bảo vệ dữ liệu vận hành chuẩn Enterprise
 
-### Volume Shadow Copy (VSS) cho file bị khóa
-- Khi các phần mềm như **Microsoft SQL Server**, **Hyper-V**, **VirtualBox**, hay **Microsoft Outlook** đang hoạt động, các file `.mdf`, `.ldf`, `.vhdx`, `.pst` bị hệ điều hành khóa độc quyền (Exclusive Lock).
-- Nếu không có VSS, việc đọc các file này sẽ sinh lỗi `The process cannot access the file because it is being used by another process`.
-- **FTPSys-Pro** tự động kích hoạt tiến trình tạo bản chụp VSS (`vssadmin create shadow`), ánh xạ liên kết tượng trưng (Symbolic Link) vào snapshot, sao lưu dữ liệu nguyên vẹn tại thời điểm snapshot rồi tự động giải phóng tài nguyên. Dịch vụ cơ sở dữ liệu của bạn hoạt động liên tục 100% không cần ngừng trệ!
+### Volume Shadow Copy Service (VSS) cho tệp đang mở
+- Khi **Microsoft SQL Server**, **Hyper-V**, **VirtualBox**, hay **Microsoft Outlook** đang hoạt động, các tệp cơ sở dữ liệu (`.mdf`, `.ldf`, `.vhdx`, `.pst`) bị khóa độc quyền bởi hệ điều hành (Exclusive File Lock).
+- Nếu không có cơ chế snapshot, tiến trình sao lưu sẽ lập tức thất bại với lỗi truy cập `Sharing Violation / Access Denied`.
+- **FTPSys-Pro** tự động tương tác với Windows VSS để tạo Volume Shadow Copy tại thời điểm thực thi, ánh xạ Symbolic Link để đọc dữ liệu nhất quán tại mốc snapshot mà không làm gián đoạn bất kỳ hoạt động nào của phần mềm máy chủ.
 
-### Kiểm tra dung lượng đĩa trước khi chạy (Pre-flight Disk Check)
-- Trước khi thực hiện sao lưu, hệ thống tính toán chính xác tổng dung lượng các tệp cần truyền.
-- Tiến hành kiểm tra dung lượng còn trống (`AvailableFreeSpace`) của:
-  1. Ổ đĩa chứa thư mục tạm (Temp drive).
-  2. Ổ đĩa đích (nếu lưu tại Local hoặc UNC Network Share).
-- Nếu dung lượng trống không đủ, tác vụ sẽ dừng ngay từ đầu và ghi nhận cảnh báo rõ ràng, tránh tình trạng sao lưu dở dang dẫn đến tràn ổ cứng làm sập hệ điều hành.
+### Kiểm tra dung lượng khả dụng trước khi thực thi (Pre-flight Disk Check)
+- Trước khi bắt đầu truyền dữ liệu, hệ thống tự động tính toán tổng dung lượng cần truyền và kiểm tra dung lượng còn trống (`AvailableFreeSpace`) của:
+  1. Ổ đĩa chứa thư mục tạm (Temp Directory).
+  2. Kho lưu trữ đích (Local Drive hoặc UNC Network Share).
+- Nếu dung lượng trống không đảm bảo an toàn, Job sẽ dừng ngay lập tức và ghi log cảnh báo rõ ràng, tránh hoàn toàn nguy cơ sao lưu dở dang làm tràn ổ đĩa gây tê liệt hệ thống.
 
-### Xác minh mã băm SHA-256 đầu cuối
-- Dữ liệu truyền qua mạng Internet hay mạng LAN đều có nguy cơ bị suy hao bit (bit rot / packet corruption).
-- FTPSys-Pro tính toán mã băm mật mã học **SHA-256** của từng file nguồn.
-- Sau khi file được tải lên đích, hệ thống mở stream từ xa để kiểm tra đối chiếu mã băm. Chỉ khi hai giá trị SHA-256 trùng khớp hoàn hảo, file mới được ghi nhận là thành công.
+### Xác minh tính toàn vẹn SHA-256 đầu cuối
+- Dữ liệu truyền qua mạng Internet hay mạng LAN đều có nguy cơ phát sinh lỗi suy hao bit (bit rot / corruption).
+- FTPSys-Pro tự động tính toán mã băm mật mã học **SHA-256** của từng tệp nguồn.
+- Sau khi tệp đã được đưa lên kho lưu trữ đích, hệ thống mở stream kiểm tra ngược đối soát checksum. Chỉ khi hai mã băm trùng khớp tuyệt đối, điểm phục hồi mới được ghi nhận là hợp lệ.
 
-### Tự động thử lại khi rớt mạng (Exponential Backoff)
-- Khi gặp lỗi mất kết nối mạng tạm thời (Socket Timeout, Network Drop, Reset Connection), hệ thống không dừng công việc ngay mà kích hoạt cơ chế thử lại lũy tiến:
+### Tự động thử lại luỹ tiến khi mất kết nối mạng
+- Khi xảy ra sự cố gián đoạn đường truyền tạm thời (Socket Timeout, Network Drop), hệ thống tự động kích hoạt cơ chế thử lại lũy tiến (Exponential Backoff):
   - Lần 1: Nghỉ 2 giây rồi thử lại.
   - Lần 2: Nghỉ 4 giây rồi thử lại.
   - Lần 3: Nghỉ 8 giây rồi thử lại.
-- Giúp các tác vụ truyền file dung lượng lớn qua FTP/SFTP/UNC diễn ra ổn định qua đêm mà không bị gián đoạn do sự cố mạng thoáng qua.
+- Đảm bảo các Job sao lưu dung lượng lớn qua FTP/SFTP/UNC diễn ra ổn định xuyên suốt ban đêm mà không bị gián đoạn do sự cố mạng thoáng qua.
 
 ---
 
-## 6. Hướng dẫn Khôi phục dữ liệu (Restore Wizard)
+## 6. Quy trình Phục hồi dữ liệu (Data Restoration Wizard)
 
-Khi gặp sự cố mất dữ liệu, ransomware hoặc ổ cứng bị hỏng:
-1. Trên giao diện chính, chọn tác vụ cần khôi phục rồi nhấn nút **Khôi phục (Restore)** trên thanh công cụ.
-2. Cửa sổ **Restore Wizard** sẽ hiển thị:
-   - Hệ thống tự động kết nối đến đích và hiển thị danh sách tất cả các điểm sao lưu (Restore Points) theo thứ tự thời gian từ mới nhất đến cũ nhất.
-   - Nhận diện rõ bản sao lưu là `Full` hay `Incremental`, dạng nén hay không nén.
-3. Chọn điểm thời gian bạn muốn khôi phục về.
-4. Chọn **Thư mục đích để khôi phục**: Có thể khôi phục về thư mục gốc ban đầu hoặc một thư mục mới tùy chọn.
-5. Tuỳ chọn: Ghi đè file nếu đã tồn tại hay giữ nguyên.
-6. Nhấn nút **Bắt đầu khôi phục (Start Restore)**:
-   - Hệ thống tự động truy vết chuỗi backup từ bản Full gốc đến các bản Incremental liên tiếp.
-   - Tự động giải nén (nhập mật khẩu AES nếu có) hoặc tải các file uncompressed về, phục hồi cấu trúc thư mục nguyên vẹn 100% như tại thời điểm sao lưu.
+Khi xảy ra sự cố mất mát dữ liệu, lỗi phần cứng hoặc bị tấn công mã hóa:
 
----
-
-## 7. Cấu hình hệ thống (Settings)
-
-Nhấn nút **Cài đặt (Settings)** trên thanh công cụ để mở cấu hình chung:
-- **Cấu hình SMTP gửi Mail**:
-  - `SMTP Host`: Địa chỉ máy chủ (ví dụ: `smtp.gmail.com`, `smtp.office365.com`).
-  - `Port`: `587` (STARTTLS) hoặc `465` (SSL).
-  - `Tài khoản & Mật khẩu`: Thông tin xác thực (với Gmail, sử dụng Mật khẩu ứng dụng - App Password).
-  - `Nút Gửi email thử`: Nhấn để kiểm tra ngay kết nối SMTP có hoạt động hay không.
-- **Ngôn ngữ (Language)**: Chuyển đổi giữa **Tiếng Việt** và **English**.
-- **Số tác vụ chạy đồng thời (Concurrent Jobs)**: Mặc định là 2 (tối đa 5), tránh làm nghẽn I/O ổ đĩa khi có nhiều lịch trùng nhau.
-- **Thư mục tạm (Temp Directory)**: Tuỳ chọn đổi vị trí lưu file tạm sang ổ đĩa có dung lượng lớn.
-- **Số ngày giữ file Log**: Tự động dọn dẹp các tệp log cũ sau N ngày.
+1. Trên giao diện chính, chọn Job sao lưu tương ứng rồi nhấn nút **Phục hồi dữ liệu (Restore)**.
+2. Cửa sổ **Restore Wizard** xuất hiện:
+   - Hệ thống tự động truy vấn danh sách toàn bộ các điểm phục hồi (Restore Points) khả dụng trên kho lưu trữ đích.
+   - Bảng danh sách hiển thị rõ ràng: *Thời điểm tạo (UTC), Chế độ (Full/Incremental), Mã điểm phục hồi, Số tệp, Dung lượng, Định dạng (ZIP / Raw)*.
+3. Chọn điểm phục hồi bạn muốn khôi phục về.
+4. Chỉ định **Thư mục đích nhận dữ liệu phục hồi (Target Directory)**: Có thể khôi phục về thư mục ban đầu hoặc một thư mục độc lập mới.
+5. Tùy chọn: Tích chọn **Ghi đè tệp nếu đã tồn tại ở thư mục đích (Overwrite existing files)**.
+6. Nếu bản sao lưu có mã hóa AES-256, nhập mật khẩu giải mã.
+7. Nhấn nút **Phục hồi dữ liệu**:
+   - Hệ thống tự động truy vết chuỗi sao lưu từ điểm Full cơ sở xuyên suốt các điểm Incremental liên tiếp đến thời điểm chọn.
+   - Trích xuất và tái tạo nguyên vẹn 100% cấu trúc thư mục và dữ liệu như tại thời điểm sao lưu.
 
 ---
 
-## 8. Quản trị Windows Service và Khay hệ thống
+## 7. Tra cứu & Phân tích Nhật ký vận hành (Operation Logs Viewer)
 
-### Quản trị qua ứng dụng khay
-- Nhấp chuột phải vào biểu tượng **FTPSys-Pro** ở khay hệ thống:
-  - **Mở giao diện FTPSys-Pro**: Mở lại cửa sổ quản lý chính.
-  - **Chạy tác vụ...**: Chạy nhanh Full hoặc Incremental cho một job cụ thể mà không cần mở giao diện.
-  - **Thoát ứng dụng quản lý**: Đóng ứng dụng khay (Lưu ý: Windows Service vẫn tiếp tục chạy ngầm đảm bảo đúng lịch sao lưu).
+Nhấn nút **Nhật ký vận hành** trên thanh công cụ chính để mở trình duyệt log chuyên sâu:
 
-### Quản trị qua dòng lệnh (Command Line / PowerShell)
-Mở Command Prompt hoặc PowerShell bằng quyền Administrator:
+- **Phân loại mức độ rõ ràng**:
+  - `ERR (Lỗi vận hành)`: Các sự cố nghiêm trọng cần can thiệp xử lý ngay.
+  - `WRN (Cảnh báo)`: Các cảnh báo về dung lượng đĩa, tệp tin bị bỏ qua, hoặc retry mạng.
+  - `INF (Thông tin vận hành)`: Tiến trình khởi động, hoàn thành Job, số lượng tệp đã xử lý.
+- **Bộ lọc linh hoạt**: Lọc nhật ký theo từng Job sao lưu cụ thể hoặc xem toàn bộ hệ thống.
+- **Tìm kiếm thời gian thực**: Nhập từ khóa để lọc ngay các dòng log có liên quan.
+- **Nút Mở tệp log**: Mở trực tiếp tệp log thô trên đĩa để phục vụ việc trích xuất và gửi cho đội ngũ hỗ trợ kỹ thuật.
+
+---
+
+## 8. Cài đặt hệ thống (System Settings)
+
+Nhấn nút **Cài đặt (Settings)** trên thanh công cụ chính:
+
+- **Cấu hình chung (General)**:
+  - `Ngôn ngữ hiển thị`: Chuyển đổi linh hoạt giữa Tiếng Việt và English.
+  - `Giới hạn số Job chạy đồng thời`: Mặc định là 2 (tối đa 10) nhằm tối ưu tài nguyên CPU và I/O đĩa.
+  - `Thời hạn lưu trữ nhật ký vận hành`: Tự động dọn dẹp các tệp log cũ sau $N$ ngày.
+  - `Khởi động cùng Windows & Thu nhỏ xuống khay`: Duy trì giám sát nền liên tục.
+- **Cấu hình máy chủ Email (SMTP)**:
+  - Hỗ trợ đầy đủ `Host`, `Port`, `SSL trực tiếp (Port 465)` hoặc `STARTTLS (Port 587)`.
+  - Nhấn nút **Gửi email kiểm tra...** để kiểm tra ngay tính sẵn sàng của máy chủ SMTP trước khi đưa vào vận hành thực tế.
+
+---
+
+## 9. Quản trị dịch vụ Windows Service và Khay hệ thống
+
+### Quản trị qua ứng dụng khay (System Tray)
+- Nhấp chuột phải vào biểu tượng **FTPSys-Pro** ở góc dưới bên phải màn hình:
+  - **Mở giao diện quản lý**: Mở cửa sổ chính.
+  - **Thực thi nhanh Job sao lưu**: Chạy Full hoặc Incremental cho từng Job mà không cần mở giao diện.
+  - **Thoát ứng dụng quản lý**: Đóng giao diện người dùng. *Lưu ý: Dịch vụ Windows Service `FtpSysProService` vẫn tiếp tục chạy ngầm đảm bảo đúng lịch sao lưu đã định.*
+
+### Quản trị qua lệnh PowerShell / Command Prompt (Administrator)
 
 ```powershell
-# Xem trạng thái service
+# Kiểm tra trạng thái dịch vụ
 Get-Service FtpSysProService
 
-# Khởi động service
+# Khởi động dịch vụ
 Start-Service FtpSysProService
 
-# Dừng service
+# Dừng dịch vụ
 Stop-Service FtpSysProService
 
-# Chạy thử chế độ debug console
-cd "C:\Program Files\FtpSysPro"
+# Khởi động lại dịch vụ
+Restart-Service FtpSysProService
+
+# Chạy thử nghiệm dịch vụ ở chế độ Console trực tiếp để kiểm tra log
+cd "C:\Program Files\FTPSys Pro"
 .\FtpSysPro.Service.exe --console
 ```
 
 ---
 
-## 9. Xử lý sự cố thường gặp (Troubleshooting)
+## 10. Xử lý sự cố thường gặp (Troubleshooting)
 
-| Sự cố | Nguyên nhân khả dĩ | Hướng khắc phục |
+| Tình huống sự cố | Nguyên nhân khả dĩ | Giải pháp khắc phục chuẩn |
 | :--- | :--- | :--- |
-| **Báo lỗi "Service Disconnected" trên giao diện** | Windows Service chưa khởi động hoặc bị chặn | Nhấn vào chữ *"Bật Service"* trên thanh trạng thái hoặc mở `services.msc` kiểm tra dịch vụ `FtpSysProService`. |
-| **Không kết nối được thư mục chia sẻ mạng UNC** | Tài khoản máy tính không có quyền vào share | Điền đầy đủ `Domain\Username` và Mật khẩu mạng trong phần cấu hình đích UNC của Job. |
-| **Lỗi kết nối FTPS "Certificate validation failed"** | Chứng chỉ SSL tự ký của máy chủ FTP không được tin cậy | FTPSys-Pro tích hợp cơ chế tự động chấp nhận chứng chỉ hợp lệ từ server cấu hình; kiểm tra lại cấu hình cổng (Explicit: 21, Implicit: 990). |
-| **Không gửi được email qua Gmail** | Gmail chặn truy cập từ ứng dụng | Cần bật Xác thực 2 bước trên tài khoản Google và tạo **Mật khẩu ứng dụng (App Password)** 16 ký tự để điền vào phần mật khẩu SMTP. |
-| **Lỗi không đủ dung lượng đĩa** | Ổ đĩa đích hoặc ổ đĩa tạm (C:) bị đầy | Dọn dẹp ổ đĩa hoặc vào Cài đặt đổi thư mục Temp sang ổ đĩa khác có dung lượng trống lớn hơn. |
+| **Giao diện báo "Lỗi kết nối IPC đến FtpSysProService"** | Dịch vụ Windows Service đang bị dừng hoặc bị phần mềm diệt virus chặn Named Pipe | Mở `services.msc`, tìm dịch vụ `FtpSysProService` và nhấn **Start**, hoặc nhấn nút *Bật Service* trực tiếp trên thanh trạng thái của ứng dụng. |
+| **Không thể kết nối đến thư mục chia sẻ mạng UNC (`\\server\share`)** | Quyền tài khoản `LocalSystem` không có quyền truy cập mạng domain | Điền đầy đủ tài khoản `Domain\Username` và Mật khẩu trong phần cấu hình kho lưu trữ đích UNC của Job để kích hoạt xác thực mạng `WNetAddConnection2`. |
+| **Lỗi chứng chỉ FTPS "Certificate validation failed"** | Máy chủ FTP sử dụng chứng chỉ SSL tự ký (Self-signed) chưa được tin cậy | FTPSys-Pro đã tích hợp cơ chế tự động chấp nhận chứng chỉ của máy chủ đích đã cấu hình; kiểm tra lại cổng kết nối (Explicit: 21, Implicit: 990). |
+| **Không gửi được Email thông báo qua Gmail / Google Workspace** | Chính sách bảo mật của Google từ chối mật khẩu thông thường | Bật Xác thực 2 bước (2FA) trên tài khoản Google, tạo **Mật khẩu ứng dụng (App Password)** 16 ký tự và nhập vào ô Mật khẩu SMTP trong Cài đặt hệ thống. |
+| **Cảnh báo không đủ dung lượng đĩa (Disk Space Check Failed)** | Ổ đĩa đích hoặc ổ đĩa tạm (C:\) không đủ không gian trống | Dọn dẹp ổ đĩa hoặc vào Cài đặt hệ thống để chuyển thư mục tạm (Temp Directory) sang phân vùng ổ đĩa có dung lượng lớn hơn. |
