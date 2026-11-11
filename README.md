@@ -174,10 +174,10 @@ Script sẽ tự động:
 1. Restore toàn bộ gói NuGet phụ thuộc (`FluentFTP`, `SSH.NET`, `SharpZipLib`, `MailKit`, `Newtonsoft.Json`, `Serilog`).
 2. Biên dịch Solution ở cấu hình `Release AnyCPU`.
 3. Chạy toàn bộ bộ kiểm thử tự động xUnit (38+ tests).
-4. Tự động đóng gói bộ cài đặt `dist\FTPSys_Pro_Setup_v1.1.0.exe` bằng Inno Setup (nếu máy có Inno Setup 6).
+4. Tự động đóng gói bộ cài đặt `dist\FTPSys_Pro_Setup_v1.2.0.exe` bằng Inno Setup (nếu máy có Inno Setup 6).
 
 ### 3. Cài đặt bộ phần mềm hoàn chỉnh
-1. Chạy file cài đặt `FTPSys_Pro_Setup_v1.1.0.exe` bằng quyền Administrator.
+1. Chạy file cài đặt `FTPSys_Pro_Setup_v1.2.0.exe` bằng quyền Administrator.
 2. Trình cài đặt sẽ:
    - Cài đặt các file nhị phân vào thư mục `C:\Program Files\FTPSys Pro\`.
    - Tự động đăng ký và khởi chạy **Windows Service: `FtpSysProService`** (tự động bật cùng Windows).

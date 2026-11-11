@@ -68,7 +68,7 @@ namespace FtpSysPro.Manager.UI
 
         private void InitializeComponents()
         {
-            Text = Strings.AppName;
+            Text = $"{Strings.AppName} v{Strings.AppVersion}";
             Size = new Size(1150, 650);
             MinimumSize = new Size(950, 520);
             StartPosition = FormStartPosition.CenterScreen;
@@ -339,7 +339,7 @@ namespace FtpSysPro.Manager.UI
 
             trayIcon = new NotifyIcon
             {
-                Text = Strings.AppName,
+                Text = $"FTPSys Pro v{Strings.AppVersion}",
                 Icon = SystemIcons.Shield,
                 ContextMenuStrip = trayMenu,
                 Visible = true

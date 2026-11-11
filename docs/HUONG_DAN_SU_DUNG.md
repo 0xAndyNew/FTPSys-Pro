@@ -48,7 +48,7 @@ Hai thành phần giao tiếp an toàn qua giao thức **Named Pipe IPC (`\\.\pi
 ## 2. Cài đặt và Khởi động hệ thống
 
 ### Cài đặt qua bộ cài đặt Setup (.exe)
-1. Tải bộ cài đặt mới nhất `FTPSys_Pro_Setup_v1.1.0.exe` từ trang [Releases của GitHub](https://github.com/0xAndyNew/FTPSys-Pro/releases).
+1. Tải bộ cài đặt mới nhất `FTPSys_Pro_Setup_v1.2.0.exe` từ trang [Releases của GitHub](https://github.com/0xAndyNew/FTPSys-Pro/releases).
 2. Nhấp chuột phải vào file cài đặt và chọn **Run as administrator**.
 3. Thực hiện theo hướng dẫn trên màn hình. Trình cài đặt sẽ tự động:
    - Cài đặt các tệp thực thi vào thư mục hệ thống `C:\Program Files\FTPSys Pro\`.
