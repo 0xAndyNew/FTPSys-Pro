@@ -909,7 +909,7 @@ namespace FtpSysPro.Manager.UI
                 Checked = false
             };
 
-            grpZip = new GroupBox { Text = "Tuỳ chọn nén ZIP", Location = new Point(15, 55), Size = new Size(550, 170) };
+            grpZip = new GroupBox { Text = "Tuỳ chọn nén ZIP", Location = new Point(15, 55), Size = new Size(685, 170) };
 
             var lblLevel = new Label { Text = "Mức độ nén:", Location = new Point(15, 30), AutoSize = true };
             cboCompressionLevel = new ComboBox { Location = new Point(130, 27), Width = 180, DropDownStyle = ComboBoxStyle.DropDownList };
@@ -926,7 +926,7 @@ namespace FtpSysPro.Manager.UI
 
             grpZip.Controls.AddRange(new Control[] { lblLevel, cboCompressionLevel, chkEncryptZip, lblZipPass, txtZipPassword });
 
-            var grpIntegrity = new GroupBox { Text = "Độ tin cậy & Đảm bảo an toàn dữ liệu (Khuyên dùng)", Location = new Point(15, 235), Size = new Size(550, 160) };
+            var grpIntegrity = new GroupBox { Text = "Độ tin cậy & Đảm bảo an toàn dữ liệu (Khuyên dùng)", Location = new Point(15, 235), Size = new Size(685, 160) };
 
             chkEnableVss = new CheckBox
             {
@@ -974,19 +974,19 @@ namespace FtpSysPro.Manager.UI
             lvSchedules = new ListView
             {
                 Location = new Point(15, 40),
-                Size = new Size(500, 230),
+                Size = new Size(505, 230),
                 View = View.Details,
                 FullRowSelect = true,
                 MultiSelect = false
             };
-            lvSchedules.Columns.Add("Tên lịch / Name", 140);
-            lvSchedules.Columns.Add("Kiểu lặp / Interval", 115);
-            lvSchedules.Columns.Add("Thời gian / Time", 125);
-            lvSchedules.Columns.Add("Chi tiết / Detail", 175);
+            lvSchedules.Columns.Add("Lịch chạy / Schedule", 145);
+            lvSchedules.Columns.Add("Thời gian / Time", 130);
+            lvSchedules.Columns.Add("Chi tiết / Detail", 160);
+            lvSchedules.Columns.Add("Trạng thái", 70);
 
-            var btnAdd = new Button { Text = Strings.Add + "...", Location = new Point(525, 40), Size = new Size(110, 30) };
-            var btnEdit = new Button { Text = Strings.Edit + "...", Location = new Point(525, 75), Size = new Size(110, 30) };
-            var btnDelete = new Button { Text = Strings.Delete, Location = new Point(525, 110), Size = new Size(110, 30) };
+            var btnAdd = new Button { Text = "➕ " + Strings.Add + "...", Location = new Point(530, 40), Size = new Size(105, 32) };
+            var btnEdit = new Button { Text = "✏ " + Strings.Edit + "...", Location = new Point(530, 78), Size = new Size(105, 32) };
+            var btnDelete = new Button { Text = "🗑 " + Strings.Delete, Location = new Point(530, 116), Size = new Size(105, 32) };
 
             btnAdd.Click += (s, e) =>
             {
@@ -1038,15 +1038,15 @@ namespace FtpSysPro.Manager.UI
             lvSchedules.Items.Clear();
             foreach (var s in _job.Schedules)
             {
-                var item = new ListViewItem(string.IsNullOrEmpty(s.Name) ? FormatIntervalType(s.IntervalType) : s.Name);
-                item.SubItems.Add(FormatIntervalType(s.IntervalType));
+                var item = new ListViewItem(FormatIntervalType(s.IntervalType));
                 item.SubItems.Add(FormatScheduleTimeDisplay(s));
                 item.SubItems.Add(FormatScheduleDetail(s));
+                item.SubItems.Add(s.Enabled ? "🟢 Bật" : "⚪ Tắt");
                 lvSchedules.Items.Add(item);
             }
         }
 
-        private static string FormatIntervalType(ScheduleIntervalType type)
+        public static string FormatIntervalType(ScheduleIntervalType type)
         {
             switch (type)
             {
@@ -1103,7 +1103,7 @@ namespace FtpSysPro.Manager.UI
             pnlRetentionModeBanner = new Panel
             {
                 Location = new Point(15, 12),
-                Size = new Size(580, 56),
+                Size = new Size(685, 56),
                 BackColor = Color.FromArgb(238, 245, 255),
                 Padding = new Padding(10, 8, 10, 8)
             };
@@ -1126,7 +1126,7 @@ namespace FtpSysPro.Manager.UI
             };
             lblRetentionModeDesc = new Label
             {
-                Text = "Mỗi lần sao lưu tạo ra một bản sao lưu hoàn chỉnh, độc lập ở đích.",
+                Text = "Mỗi lần chạy tạo một bản sao lưu độc lập, chứa toàn bộ dữ liệu nguồn.",
                 Location = new Point(10, 29),
                 AutoSize = true,
                 Font = new Font("Segoe UI", 8.25F, FontStyle.Italic),
@@ -1136,47 +1136,50 @@ namespace FtpSysPro.Manager.UI
 
             grpRetention = new GroupBox
             {
-                Text = "Chính sách dọn dẹp các bản backup cũ ở đích",
+                Text = "Chính sách lưu trữ bản sao lưu trên nơi lưu trữ đích",
                 Location = new Point(15, 78),
-                Size = new Size(580, 240),
+                Size = new Size(685, 275),
                 Font = new Font("Segoe UI", 9F)
             };
 
             // Option 1: Keep Count
-            rbKeepFullCount = new RadioButton { Text = "Chỉ giữ lại", Location = new Point(20, 26), AutoSize = true, Checked = true };
-            numKeepFullCount = new NumericUpDown { Location = new Point(110, 24), Width = 65, Minimum = 1, Maximum = 100, Value = 5 };
-            lblKeepFullCountSuffix = new Label { Text = "bản sao lưu Full gần nhất", Location = new Point(182, 26), AutoSize = true };
+            rbKeepFullCount = new RadioButton { Text = "Chỉ giữ lại", Location = new Point(20, 28), AutoSize = true, Checked = true };
+            numKeepFullCount = new NumericUpDown { Location = new Point(115, 26), Width = 65, Minimum = 1, Maximum = 100, Value = 5 };
+            lblKeepFullCountSuffix = new Label { Text = "bản sao lưu gần nhất", Location = new Point(188, 28), AutoSize = true };
             lblKeepFullCountDetail = new Label
             {
-                Text = "Hệ thống sẽ giữ N bản Full mới nhất và tự động xoá các bản Full cũ hơn.",
-                Location = new Point(42, 48),
+                Text = "Hệ thống sẽ giữ lại N bản sao lưu Full mới nhất và tự động xoá các bản Full cũ hơn.",
+                Location = new Point(42, 54),
                 AutoSize = true,
-                ForeColor = Color.DimGray,
-                Font = new Font("Segoe UI", 8.25F, FontStyle.Italic)
+                MaximumSize = new Size(620, 0),
+                ForeColor = Color.FromArgb(90, 100, 110),
+                Font = new Font("Segoe UI", 8.5F, FontStyle.Italic)
             };
 
             // Option 2: Keep Days
-            rbKeepDays = new RadioButton { Text = "Chỉ giữ trong", Location = new Point(20, 78), AutoSize = true };
-            numKeepDays = new NumericUpDown { Location = new Point(125, 76), Width = 65, Minimum = 1, Maximum = 3650, Value = 30, Enabled = false };
-            lblKeepDaysSuffix = new Label { Text = "ngày gần nhất", Location = new Point(197, 78), AutoSize = true };
+            rbKeepDays = new RadioButton { Text = "Chỉ giữ trong", Location = new Point(20, 100), AutoSize = true };
+            numKeepDays = new NumericUpDown { Location = new Point(115, 98), Width = 65, Minimum = 1, Maximum = 3650, Value = 30, Enabled = false };
+            lblKeepDaysSuffix = new Label { Text = "ngày gần nhất", Location = new Point(188, 100), AutoSize = true };
             lblKeepDaysDetail = new Label
             {
-                Text = "Các bản có thời gian tạo cũ hơn số ngày này sẽ được tự động xoá.",
-                Location = new Point(42, 100),
+                Text = "Tự động dọn dẹp các bản sao lưu có thời gian tạo cũ hơn số ngày quy định.",
+                Location = new Point(42, 126),
                 AutoSize = true,
-                ForeColor = Color.DimGray,
-                Font = new Font("Segoe UI", 8.25F, FontStyle.Italic)
+                MaximumSize = new Size(620, 0),
+                ForeColor = Color.FromArgb(90, 100, 110),
+                Font = new Font("Segoe UI", 8.5F, FontStyle.Italic)
             };
 
             // Option 3: Keep All
-            rbKeepAll = new RadioButton { Text = "Giữ tất cả (không tự động xoá bản nào)", Location = new Point(20, 130), AutoSize = true };
+            rbKeepAll = new RadioButton { Text = "Giữ tất cả bản sao lưu (Không bao giờ tự động xoá)", Location = new Point(20, 172), AutoSize = true };
             lblKeepAllDetail = new Label
             {
-                Text = "Lưu ý: Dữ liệu sao lưu sẽ tích luỹ liên tục trên nơi lưu trữ đích.",
-                Location = new Point(42, 152),
+                Text = "Dữ liệu sao lưu sẽ tích luỹ liên tục trên nơi lưu trữ đích.",
+                Location = new Point(42, 198),
                 AutoSize = true,
-                ForeColor = Color.DimGray,
-                Font = new Font("Segoe UI", 8.25F, FontStyle.Italic)
+                MaximumSize = new Size(620, 0),
+                ForeColor = Color.FromArgb(90, 100, 110),
+                Font = new Font("Segoe UI", 8.5F, FontStyle.Italic)
             };
 
             rbKeepFullCount.CheckedChanged += (s, e) => numKeepFullCount.Enabled = rbKeepFullCount.Checked;
@@ -1198,46 +1201,51 @@ namespace FtpSysPro.Manager.UI
 
             bool isFull = rbModeFull != null && rbModeFull.Checked;
 
+            grpRetention.Text = "Chính sách lưu trữ bản sao lưu trên nơi lưu trữ đích";
+
             if (isFull)
             {
                 pnlRetentionModeBanner.BackColor = Color.FromArgb(238, 245, 255);
                 lblRetentionModeTitle.Text = "🔵 Tác vụ đang ở chế độ: Sao lưu toàn bộ (Full Backup)";
                 lblRetentionModeTitle.ForeColor = Color.FromArgb(0, 76, 153);
-                lblRetentionModeDesc.Text = "Mỗi lần sao lưu tạo ra một bản sao lưu hoàn chỉnh, độc lập ở đích.";
-
-                grpRetention.Text = "Chính sách dọn dẹp các bản Full cũ trên nơi lưu trữ";
+                lblRetentionModeDesc.Text = "Mỗi lần chạy tạo ra một bản sao lưu hoàn chỉnh, độc lập ở đích.";
 
                 rbKeepFullCount.Text = "Chỉ giữ lại";
                 lblKeepFullCountSuffix.Text = "bản sao lưu Full gần nhất";
-                lblKeepFullCountDetail.Text = "Hệ thống sẽ giữ N bản Full mới nhất và tự động dọn dẹp các bản Full cũ hơn để giải phóng dung lượng đích.";
+                lblKeepFullCountDetail.Text = "Hệ thống sẽ giữ lại N bản sao lưu Full mới nhất và tự động xoá các bản Full cũ hơn để giải phóng dung lượng.";
 
-                rbKeepDays.Text = "Chỉ giữ các bản Full trong";
+                rbKeepDays.Text = "Chỉ giữ trong";
                 lblKeepDaysSuffix.Text = "ngày gần nhất";
-                lblKeepDaysDetail.Text = "Các bản Full có thời gian tạo cũ hơn số ngày này sẽ được tự động dọn dẹp.";
+                lblKeepDaysDetail.Text = "Tự động dọn dẹp các bản sao lưu Full có thời gian tạo cũ hơn số ngày quy định.";
 
-                rbKeepAll.Text = "Giữ tất cả các bản Full (Không bao giờ tự động xoá)";
-                lblKeepAllDetail.Text = "Lưu ý: Dữ liệu sao lưu sẽ tích luỹ liên tục trên nơi lưu trữ đích. Cần theo dõi dung lượng ổ cứng.";
+                rbKeepAll.Text = "Giữ tất cả bản sao lưu (Không bao giờ tự động xoá)";
+                lblKeepAllDetail.Text = "Dữ liệu sao lưu sẽ tích luỹ liên tục trên nơi lưu trữ đích. Cần theo dõi dung lượng ổ cứng.";
             }
             else
             {
                 pnlRetentionModeBanner.BackColor = Color.FromArgb(236, 253, 245);
                 lblRetentionModeTitle.Text = "🟢 Tác vụ đang ở chế độ: Sao lưu tăng dần (Incremental Backup)";
                 lblRetentionModeTitle.ForeColor = Color.FromArgb(6, 95, 70);
-                lblRetentionModeDesc.Text = "Dữ liệu gồm 1 bản Full gốc làm mốc và chuỗi các bản Incremental ghi nhận file mới/sửa đổi.";
-
-                grpRetention.Text = "Chính sách dọn dẹp chuỗi sao lưu Full + Incremental trên nơi lưu trữ";
+                lblRetentionModeDesc.Text = "Gồm 1 bản Full mốc ban đầu và chuỗi các bản Incremental chỉ lưu file mới hoặc thay đổi.";
 
                 rbKeepFullCount.Text = "Chỉ giữ lại";
-                lblKeepFullCountSuffix.Text = "chuỗi sao lưu (Full + Incremental) gần nhất";
-                lblKeepFullCountDetail.Text = "Mỗi chuỗi gồm 1 bản Full gốc và tất cả các bản Incremental phụ thuộc. Bản Full luôn được bảo toàn cho đến khi toàn bộ chuỗi được dọn dẹp.";
+                lblKeepFullCountSuffix.Text = "chu kỳ sao lưu (Full + Incremental) gần nhất";
+                lblKeepFullCountDetail.Text = "Mỗi chu kỳ gồm 1 bản Full mốc và các bản Incremental. Hệ thống luôn bảo toàn bản Full gốc chừng nào các bản Incremental phụ thuộc vẫn còn được lưu.";
 
-                rbKeepDays.Text = "Chỉ giữ các chuỗi sao lưu trong";
+                rbKeepDays.Text = "Chỉ giữ trong";
                 lblKeepDaysSuffix.Text = "ngày gần nhất";
-                lblKeepDaysDetail.Text = "Hệ thống chỉ dọn dẹp chuỗi sao lưu khi toàn bộ bản Full và tất cả các bản Incremental trong chuỗi đều đã quá số ngày này (bảo toàn 100% khả năng restore).";
+                lblKeepDaysDetail.Text = "Tự động dọn dẹp các bản sao lưu quá hạn ngày, đảm bảo không xoá bản Full mốc khi các bản Incremental phụ thuộc vẫn còn trong thời hạn lưu trữ.";
 
-                rbKeepAll.Text = "Giữ tất cả các chuỗi sao lưu (Không bao giờ tự động xoá)";
-                lblKeepAllDetail.Text = "Bảo toàn toàn bộ lịch sử sao lưu tăng dần từ trước đến nay.";
+                rbKeepAll.Text = "Giữ tất cả bản sao lưu (Không bao giờ tự động xoá)";
+                lblKeepAllDetail.Text = "Lưu trữ toàn bộ bản Full và tất cả các bản Incremental từ trước đến nay để bảo toàn lịch sử sao lưu.";
             }
+
+            // Always dynamically position numeric inputs and suffix labels based on actual radio button width to prevent any clipping/overlap
+            numKeepFullCount.Location = new Point(Math.Max(115, rbKeepFullCount.Right + 8), 26);
+            lblKeepFullCountSuffix.Location = new Point(numKeepFullCount.Right + 8, 28);
+
+            numKeepDays.Location = new Point(Math.Max(115, rbKeepDays.Right + 8), 98);
+            lblKeepDaysSuffix.Location = new Point(numKeepDays.Right + 8, 100);
 
             pnlRetentionModeBanner.Invalidate();
         }
@@ -1253,7 +1261,7 @@ namespace FtpSysPro.Manager.UI
                 AutoSize = true
             };
 
-            var grp = new GroupBox { Text = "Chi tiết thông báo", Location = new Point(15, 55), Size = new Size(550, 220) };
+            var grp = new GroupBox { Text = "Chi tiết thông báo", Location = new Point(15, 55), Size = new Size(685, 220) };
 
             var lblCond = new Label { Text = "Điều kiện gửi:", Location = new Point(15, 30), AutoSize = true };
             cboNotificationCondition = new ComboBox { Location = new Point(150, 27), Width = 250, DropDownStyle = ComboBoxStyle.DropDownList };
@@ -1261,7 +1269,7 @@ namespace FtpSysPro.Manager.UI
             cboNotificationCondition.SelectedIndex = 0;
 
             var lblRecipients = new Label { Text = "Email người nhận (phân cách bằng dấu phẩy):", Location = new Point(15, 75), AutoSize = true };
-            txtNotificationRecipients = new TextBox { Location = new Point(15, 98), Width = 500 };
+            txtNotificationRecipients = new TextBox { Location = new Point(15, 98), Width = 645 };
 
             var lblSubject = new Label { Text = "Tiền tố tiêu đề email:", Location = new Point(15, 140), AutoSize = true };
             txtNotificationSubject = new TextBox { Location = new Point(15, 163), Width = 250, Text = "[FtpSysPro]" };
@@ -1274,7 +1282,7 @@ namespace FtpSysPro.Manager.UI
             var pnlFinishBanner = new Panel
             {
                 Location = new Point(15, 290),
-                Size = new Size(550, 75),
+                Size = new Size(685, 75),
                 BackColor = Color.FromArgb(235, 248, 238),
                 Padding = new Padding(12)
             };
@@ -1299,7 +1307,7 @@ namespace FtpSysPro.Manager.UI
             {
                 Text = "Nhấn nút '✔ Hoàn tất' ở góc dưới bên phải để lưu tác vụ sao lưu này vào hệ thống và kích hoạt lịch chạy tự động.",
                 Location = new Point(12, 36),
-                Size = new Size(520, 32),
+                Size = new Size(655, 32),
                 ForeColor = Color.FromArgb(21, 87, 36),
                 Font = new Font("Segoe UI", 9F)
             };
@@ -1524,11 +1532,12 @@ namespace FtpSysPro.Manager.UI
         private readonly BackupType _jobBackupType;
         private readonly bool _isNew;
 
-        private TextBox txtName;
         private CheckBox chkEnabled;
+        private ComboBox cboIntervalType;
+
+        private FlowLayoutPanel pnlTimeFormat;
         private RadioButton rbTime24h;
         private RadioButton rbTime12h;
-        private ComboBox cboIntervalType;
 
         private Panel pnlDaily;
         private Panel pnlWeekly;
@@ -1546,6 +1555,8 @@ namespace FtpSysPro.Manager.UI
         private DateTimePicker dtpRepeatEnd;
         private DateTimePicker dtpOnce;
 
+        private bool _isSyncingTime;
+
         public ScheduleDefinition ResultSchedule => _schedule;
 
         public ScheduleEditDialog(ScheduleDefinition schedule, BackupType jobBackupType, bool isNew = false)
@@ -1561,62 +1572,118 @@ namespace FtpSysPro.Manager.UI
         private void InitializeComponents()
         {
             Text = _isNew ? "Thêm lịch chạy / Add Schedule" : "Sửa lịch chạy / Edit Schedule";
-            Size = new Size(520, 440);
+            Size = new Size(530, 440);
             StartPosition = FormStartPosition.CenterParent;
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
             MinimizeBox = false;
             Font = new Font("Segoe UI", 9F);
+            BackColor = Color.White;
 
-            var lblName = new Label { Text = "Tên lịch:", Location = new Point(20, 20), AutoSize = true };
-            txtName = new TextBox { Location = new Point(140, 18), Width = 330 };
-
-            chkEnabled = new CheckBox { Text = "Kích hoạt lịch này (Enabled)", Location = new Point(140, 48), AutoSize = true, Checked = true };
-
-            // Backup mode inherited from Job
-            string modeName = _jobBackupType == BackupType.Full ? "Sao lưu toàn bộ (Full)" : "Sao lưu tăng dần (Incremental)";
-            var lblModeInfo = new Label
+            // 1. Top Mode Banner (informative, non-intrusive)
+            bool isFull = _jobBackupType == BackupType.Full;
+            var pnlModeBanner = new Panel
             {
-                Text = $"ℹ Chế độ sao lưu: {modeName} (tự động theo cấu hình tại Bước 1)",
-                Location = new Point(140, 74),
+                Location = new Point(20, 14),
+                Size = new Size(475, 46),
+                BackColor = isFull ? Color.FromArgb(238, 245, 255) : Color.FromArgb(236, 253, 245)
+            };
+            pnlModeBanner.Paint += (s, e) =>
+            {
+                Color border = isFull ? Color.FromArgb(180, 210, 245) : Color.FromArgb(167, 243, 208);
+                using (var pen = new Pen(border, 1))
+                {
+                    e.Graphics.DrawRectangle(pen, 0, 0, pnlModeBanner.Width - 1, pnlModeBanner.Height - 1);
+                }
+            };
+
+            var lblModeTitle = new Label
+            {
+                Text = isFull ? "🔵 Chế độ sao lưu: Sao lưu toàn bộ (Full Backup)" : "🟢 Chế độ sao lưu: Sao lưu tăng dần (Incremental Backup)",
+                Location = new Point(12, 6),
                 AutoSize = true,
-                ForeColor = Color.FromArgb(0, 102, 180),
-                Font = new Font("Segoe UI", 8.5F, FontStyle.Italic)
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                ForeColor = isFull ? Color.FromArgb(0, 76, 153) : Color.FromArgb(6, 95, 70)
+            };
+            var lblModeSub = new Label
+            {
+                Text = "Tự động kế thừa theo cấu hình tại Bước 1 (không cần chọn lại ở đây)",
+                Location = new Point(12, 25),
+                AutoSize = true,
+                Font = new Font("Segoe UI", 8.25F, FontStyle.Regular),
+                ForeColor = Color.FromArgb(100, 100, 100)
+            };
+            pnlModeBanner.Controls.AddRange(new Control[] { lblModeTitle, lblModeSub });
+
+            // 2. Schedule Interval Selection Row
+            var lblInterval = new Label
+            {
+                Text = "Tần suất lặp:",
+                Location = new Point(20, 72),
+                AutoSize = true,
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold)
+            };
+            cboIntervalType = new ComboBox
+            {
+                Location = new Point(115, 68),
+                Width = 230,
+                DropDownStyle = ComboBoxStyle.DropDownList
+            };
+            cboIntervalType.Items.AddRange(new object[] {
+                "Một lần (Once)",
+                "Hằng ngày (Daily)",
+                "Hằng tuần (Weekly)",
+                "Hằng tháng (Monthly)",
+                "Lặp định kỳ (Repeat Every)"
+            });
+            cboIntervalType.SelectedIndex = 1;
+
+            chkEnabled = new CheckBox
+            {
+                Text = "Kích hoạt lịch này",
+                Location = new Point(365, 70),
+                AutoSize = true,
+                Checked = true
             };
 
-            // Time format options: 24h vs 12h
-            var lblTimeFormat = new Label { Text = "Định dạng giờ:", Location = new Point(20, 104), AutoSize = true };
-            var pnlTimeFormat = new FlowLayoutPanel
+            // 3. Compact 12h / 24h format selector (dynamically positioned next to the active time picker!)
+            pnlTimeFormat = new FlowLayoutPanel
             {
-                Location = new Point(140, 100),
-                Size = new Size(330, 28),
+                Size = new Size(165, 26),
                 FlowDirection = FlowDirection.LeftToRight,
-                WrapContents = false
+                WrapContents = false,
+                Margin = new Padding(0)
             };
-            rbTime24h = new RadioButton { Text = "24 giờ (14:30)", AutoSize = true, Checked = true, Margin = new Padding(0, 0, 15, 0) };
-            rbTime12h = new RadioButton { Text = "12 giờ AM/PM (02:30 PM)", AutoSize = true, Margin = new Padding(0) };
+            rbTime24h = new RadioButton { Text = "24 giờ", AutoSize = true, Checked = true, Margin = new Padding(0, 3, 10, 0) };
+            rbTime12h = new RadioButton { Text = "12 giờ AM/PM", AutoSize = true, Margin = new Padding(0, 3, 0, 0) };
             pnlTimeFormat.Controls.AddRange(new Control[] { rbTime24h, rbTime12h });
 
             rbTime24h.CheckedChanged += (s, e) => { if (rbTime24h.Checked) UpdateTimePickerFormats(); };
             rbTime12h.CheckedChanged += (s, e) => { if (rbTime12h.Checked) UpdateTimePickerFormats(); };
 
-            var lblInterval = new Label { Text = "Tần suất lặp:", Location = new Point(20, 138), AutoSize = true };
-            cboIntervalType = new ComboBox { Location = new Point(140, 135), Width = 260, DropDownStyle = ComboBoxStyle.DropDownList };
-            cboIntervalType.Items.AddRange(new object[] { "Một lần (Once)", "Hằng ngày (Daily)", "Hằng tuần (Weekly)", "Hằng tháng (Monthly)", "Lặp mỗi N phút (Repeat Every)" });
-            cboIntervalType.SelectedIndex = 1;
+            // 4. Main Settings GroupBox
+            var grpSettings = new GroupBox
+            {
+                Text = "Thiết lập thời gian & chu kỳ chạy",
+                Location = new Point(20, 105),
+                Size = new Size(475, 230),
+                Font = new Font("Segoe UI", 9F)
+            };
 
-            // Panels
+            // Sub-panels
             pnlDaily = CreateDailyPanel();
             pnlWeekly = CreateWeeklyPanel();
             pnlMonthly = CreateMonthlyPanel();
             pnlRepeat = CreateRepeatPanel();
             pnlOnce = CreateOncePanel();
 
-            pnlDaily.Location = new Point(20, 172);
-            pnlWeekly.Location = new Point(20, 172);
-            pnlMonthly.Location = new Point(20, 172);
-            pnlRepeat.Location = new Point(20, 172);
-            pnlOnce.Location = new Point(20, 172);
+            pnlDaily.Location = new Point(15, 24);
+            pnlWeekly.Location = new Point(15, 24);
+            pnlMonthly.Location = new Point(15, 24);
+            pnlRepeat.Location = new Point(15, 24);
+            pnlOnce.Location = new Point(15, 24);
+
+            grpSettings.Controls.AddRange(new Control[] { pnlDaily, pnlWeekly, pnlMonthly, pnlRepeat, pnlOnce });
 
             cboIntervalType.SelectedIndexChanged += (s, e) =>
             {
@@ -1625,10 +1692,30 @@ namespace FtpSysPro.Manager.UI
                 pnlWeekly.Visible = cboIntervalType.SelectedIndex == 2;
                 pnlMonthly.Visible = cboIntervalType.SelectedIndex == 3;
                 pnlRepeat.Visible = cboIntervalType.SelectedIndex == 4;
+                PositionTimeFormatPanel();
             };
 
-            var btnOk = new Button { Text = Strings.Save, DialogResult = DialogResult.OK, Location = new Point(285, 345), Size = new Size(95, 32) };
-            var btnCancel = new Button { Text = Strings.Cancel, DialogResult = DialogResult.Cancel, Location = new Point(390, 345), Size = new Size(85, 32) };
+            // 5. Bottom Action Buttons
+            var btnOk = new Button
+            {
+                Text = "💾 Lưu lịch",
+                Location = new Point(285, 350),
+                Size = new Size(105, 32),
+                BackColor = Color.FromArgb(0, 120, 215),
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold)
+            };
+            btnOk.FlatAppearance.BorderSize = 0;
+
+            var btnCancel = new Button
+            {
+                Text = Strings.Cancel,
+                DialogResult = DialogResult.Cancel,
+                Location = new Point(400, 350),
+                Size = new Size(95, 32),
+                FlatStyle = FlatStyle.Flat
+            };
 
             btnOk.Click += (s, e) =>
             {
@@ -1638,16 +1725,64 @@ namespace FtpSysPro.Manager.UI
             };
 
             Controls.AddRange(new Control[] {
-                lblName, txtName, chkEnabled,
-                lblModeInfo,
-                lblTimeFormat, pnlTimeFormat,
-                lblInterval, cboIntervalType,
-                pnlDaily, pnlWeekly, pnlMonthly, pnlRepeat, pnlOnce,
+                pnlModeBanner,
+                lblInterval, cboIntervalType, chkEnabled,
+                grpSettings,
                 btnOk, btnCancel
             });
 
             AcceptButton = btnOk;
             CancelButton = btnCancel;
+
+            PositionTimeFormatPanel();
+        }
+
+        private void PositionTimeFormatPanel()
+        {
+            if (pnlTimeFormat == null) return;
+            switch (cboIntervalType.SelectedIndex)
+            {
+                case 0: // Once
+                    if (pnlOnce != null)
+                    {
+                        pnlOnce.Controls.Add(pnlTimeFormat);
+                        pnlTimeFormat.Location = new Point(275, 12);
+                        pnlTimeFormat.BringToFront();
+                    }
+                    break;
+                case 1: // Daily
+                    if (pnlDaily != null)
+                    {
+                        pnlDaily.Controls.Add(pnlTimeFormat);
+                        pnlTimeFormat.Location = new Point(215, 12);
+                        pnlTimeFormat.BringToFront();
+                    }
+                    break;
+                case 2: // Weekly
+                    if (pnlWeekly != null)
+                    {
+                        pnlWeekly.Controls.Add(pnlTimeFormat);
+                        pnlTimeFormat.Location = new Point(215, 10);
+                        pnlTimeFormat.BringToFront();
+                    }
+                    break;
+                case 3: // Monthly
+                    if (pnlMonthly != null)
+                    {
+                        pnlMonthly.Controls.Add(pnlTimeFormat);
+                        pnlTimeFormat.Location = new Point(275, 48);
+                        pnlTimeFormat.BringToFront();
+                    }
+                    break;
+                case 4: // Repeat
+                    if (pnlRepeat != null)
+                    {
+                        pnlRepeat.Controls.Add(pnlTimeFormat);
+                        pnlTimeFormat.Location = new Point(325, 48);
+                        pnlTimeFormat.BringToFront();
+                    }
+                    break;
+            }
         }
 
         private void UpdateTimePickerFormats()
@@ -1655,7 +1790,7 @@ namespace FtpSysPro.Manager.UI
             bool is12h = rbTime12h != null && rbTime12h.Checked;
             string timeFormat = is12h ? "hh:mm tt" : "HH:mm";
             string dateTimeFormat = is12h ? "yyyy-MM-dd hh:mm tt" : "yyyy-MM-dd HH:mm";
-            int timeWidth = is12h ? 120 : 95;
+            int timeWidth = is12h ? 105 : 90;
 
             if (dtpTimeOfDay != null)
             {
@@ -1696,11 +1831,11 @@ namespace FtpSysPro.Manager.UI
             {
                 dtpOnce.Format = DateTimePickerFormat.Custom;
                 dtpOnce.CustomFormat = dateTimeFormat;
-                dtpOnce.Width = is12h ? 200 : 175;
+                dtpOnce.Width = is12h ? 190 : 155;
             }
-        }
 
-        private bool _isSyncingTime;
+            PositionTimeFormatPanel();
+        }
 
         private void SyncTimePickers(DateTimePicker source)
         {
@@ -1721,70 +1856,138 @@ namespace FtpSysPro.Manager.UI
 
         private Panel CreateDailyPanel()
         {
-            var pnl = new Panel { Size = new Size(460, 150), Visible = true };
-            var lblTime = new Label { Text = "Thời gian chạy trong ngày:", Location = new Point(0, 15), AutoSize = true };
-            dtpTimeOfDay = new DateTimePicker { Location = new Point(180, 12), Format = DateTimePickerFormat.Custom, CustomFormat = "HH:mm", ShowUpDown = true, Width = 95 };
+            var pnl = new Panel { Size = new Size(445, 190), Visible = true };
+            var lblTime = new Label { Text = "Thời gian chạy:", Location = new Point(0, 15), AutoSize = true, Font = new Font("Segoe UI", 9F, FontStyle.Bold) };
+            dtpTimeOfDay = new DateTimePicker { Location = new Point(115, 12), Format = DateTimePickerFormat.Custom, CustomFormat = "HH:mm", ShowUpDown = true, Width = 90 };
             dtpTimeOfDay.ValueChanged += (s, e) => SyncTimePickers(dtpTimeOfDay);
-            pnl.Controls.AddRange(new Control[] { lblTime, dtpTimeOfDay });
+
+            var lblDesc = new Label
+            {
+                Text = "ℹ Tác vụ sao lưu sẽ được hệ thống tự động kích hoạt hằng ngày vào thời điểm này.",
+                Location = new Point(0, 60),
+                AutoSize = true,
+                ForeColor = Color.FromArgb(100, 100, 100),
+                Font = new Font("Segoe UI", 8.5F, FontStyle.Italic)
+            };
+
+            pnl.Controls.AddRange(new Control[] { lblTime, dtpTimeOfDay, lblDesc });
             return pnl;
         }
 
         private Panel CreateWeeklyPanel()
         {
-            var pnl = new Panel { Size = new Size(460, 150), Visible = false };
-            var lblDays = new Label { Text = "Các ngày trong tuần:", Location = new Point(0, 10), AutoSize = true };
-            clbDaysOfWeek = new CheckedListBox { Location = new Point(0, 32), Size = new Size(180, 105) };
-            clbDaysOfWeek.Items.AddRange(new object[] { "Chủ nhật", "Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy" });
-
-            var lblTime = new Label { Text = "Thời gian chạy:", Location = new Point(200, 32), AutoSize = true };
-            dtpTimeOfDayWeekly = new DateTimePicker { Location = new Point(200, 56), Format = DateTimePickerFormat.Custom, CustomFormat = "HH:mm", ShowUpDown = true, Width = 95 };
+            var pnl = new Panel { Size = new Size(445, 190), Visible = false };
+            var lblTime = new Label { Text = "Thời gian chạy:", Location = new Point(0, 12), AutoSize = true, Font = new Font("Segoe UI", 9F, FontStyle.Bold) };
+            dtpTimeOfDayWeekly = new DateTimePicker { Location = new Point(115, 10), Format = DateTimePickerFormat.Custom, CustomFormat = "HH:mm", ShowUpDown = true, Width = 90 };
             dtpTimeOfDayWeekly.ValueChanged += (s, e) => SyncTimePickers(dtpTimeOfDayWeekly);
 
-            pnl.Controls.AddRange(new Control[] { lblDays, clbDaysOfWeek, lblTime, dtpTimeOfDayWeekly });
+            var lblDays = new Label { Text = "Chọn các ngày chạy trong tuần:", Location = new Point(0, 45), AutoSize = true, Font = new Font("Segoe UI", 9F, FontStyle.Bold) };
+            clbDaysOfWeek = new CheckedListBox
+            {
+                Location = new Point(0, 68),
+                Size = new Size(440, 75),
+                MultiColumn = true,
+                ColumnWidth = 105,
+                CheckOnClick = true
+            };
+            clbDaysOfWeek.Items.AddRange(new object[] { "Chủ nhật", "Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy" });
+
+            var btnWeekdays = new LinkLabel { Text = "Chọn T2 - T6", Location = new Point(220, 46), AutoSize = true };
+            btnWeekdays.LinkClicked += (s, e) =>
+            {
+                for (int i = 0; i < 7; i++)
+                    clbDaysOfWeek.SetItemChecked(i, i >= 1 && i <= 5);
+            };
+
+            var btnAllWeek = new LinkLabel { Text = "Chọn cả tuần", Location = new Point(310, 46), AutoSize = true };
+            btnAllWeek.LinkClicked += (s, e) =>
+            {
+                for (int i = 0; i < 7; i++)
+                    clbDaysOfWeek.SetItemChecked(i, true);
+            };
+
+            var lblDesc = new Label
+            {
+                Text = "ℹ Tác vụ sẽ chạy vào giờ đã chọn của các ngày được đánh dấu.",
+                Location = new Point(0, 150),
+                AutoSize = true,
+                ForeColor = Color.FromArgb(100, 100, 100),
+                Font = new Font("Segoe UI", 8.5F, FontStyle.Italic)
+            };
+
+            pnl.Controls.AddRange(new Control[] { lblTime, dtpTimeOfDayWeekly, lblDays, btnWeekdays, btnAllWeek, clbDaysOfWeek, lblDesc });
             return pnl;
         }
 
         private Panel CreateMonthlyPanel()
         {
-            var pnl = new Panel { Size = new Size(460, 150), Visible = false };
-            var lblDay = new Label { Text = "Ngày trong tháng (1-31):", Location = new Point(0, 15), AutoSize = true };
-            numDayOfMonth = new NumericUpDown { Location = new Point(180, 12), Width = 65, Minimum = 1, Maximum = 31, Value = 1 };
+            var pnl = new Panel { Size = new Size(445, 190), Visible = false };
+            var lblDay = new Label { Text = "Ngày trong tháng (1-31):", Location = new Point(0, 15), AutoSize = true, Font = new Font("Segoe UI", 9F, FontStyle.Bold) };
+            numDayOfMonth = new NumericUpDown { Location = new Point(175, 12), Width = 65, Minimum = 1, Maximum = 31, Value = 1 };
 
-            var lblTime = new Label { Text = "Thời gian chạy trong ngày:", Location = new Point(0, 52), AutoSize = true };
-            dtpTimeOfDayMonthly = new DateTimePicker { Location = new Point(180, 49), Format = DateTimePickerFormat.Custom, CustomFormat = "HH:mm", ShowUpDown = true, Width = 95 };
+            var lblTime = new Label { Text = "Thời gian chạy trong ngày:", Location = new Point(0, 52), AutoSize = true, Font = new Font("Segoe UI", 9F, FontStyle.Bold) };
+            dtpTimeOfDayMonthly = new DateTimePicker { Location = new Point(175, 48), Format = DateTimePickerFormat.Custom, CustomFormat = "HH:mm", ShowUpDown = true, Width = 90 };
             dtpTimeOfDayMonthly.ValueChanged += (s, e) => SyncTimePickers(dtpTimeOfDayMonthly);
 
-            pnl.Controls.AddRange(new Control[] { lblDay, numDayOfMonth, lblTime, dtpTimeOfDayMonthly });
+            var lblDesc = new Label
+            {
+                Text = "ℹ Nếu tháng có ít hơn ngày đã chọn (ví dụ ngày 31 trong tháng 30 ngày), tác vụ sẽ tự động chạy vào ngày cuối cùng của tháng đó.",
+                Location = new Point(0, 95),
+                Size = new Size(440, 36),
+                ForeColor = Color.FromArgb(100, 100, 100),
+                Font = new Font("Segoe UI", 8.5F, FontStyle.Italic)
+            };
+
+            pnl.Controls.AddRange(new Control[] { lblDay, numDayOfMonth, lblTime, dtpTimeOfDayMonthly, lblDesc });
             return pnl;
         }
 
         private Panel CreateRepeatPanel()
         {
-            var pnl = new Panel { Size = new Size(460, 150), Visible = false };
-            var lblEvery = new Label { Text = "Lặp mỗi (phút):", Location = new Point(0, 15), AutoSize = true };
-            numRepeatInterval = new NumericUpDown { Location = new Point(120, 12), Width = 80, Minimum = 1, Maximum = 1440, Value = 60 };
+            var pnl = new Panel { Size = new Size(445, 190), Visible = false };
+            var lblEvery = new Label { Text = "Lặp lại sau mỗi:", Location = new Point(0, 15), AutoSize = true, Font = new Font("Segoe UI", 9F, FontStyle.Bold) };
+            numRepeatInterval = new NumericUpDown { Location = new Point(115, 12), Width = 70, Minimum = 1, Maximum = 1440, Value = 60 };
+            var lblUnit = new Label { Text = "phút (1 - 1440)", Location = new Point(190, 15), AutoSize = true };
 
-            var lblRange = new Label { Text = "Trong khung giờ:", Location = new Point(0, 55), AutoSize = true };
-            dtpRepeatStart = new DateTimePicker { Location = new Point(120, 52), Format = DateTimePickerFormat.Custom, CustomFormat = "HH:mm", ShowUpDown = true, Width = 90 };
-            var lblTo = new Label { Text = "đến", Location = new Point(225, 55), AutoSize = true };
-            dtpRepeatEnd = new DateTimePicker { Location = new Point(260, 52), Format = DateTimePickerFormat.Custom, CustomFormat = "HH:mm", ShowUpDown = true, Width = 90 };
+            var lblRange = new Label { Text = "Trong khung giờ:", Location = new Point(0, 52), AutoSize = true, Font = new Font("Segoe UI", 9F, FontStyle.Bold) };
+            dtpRepeatStart = new DateTimePicker { Location = new Point(115, 48), Format = DateTimePickerFormat.Custom, CustomFormat = "HH:mm", ShowUpDown = true, Width = 85 };
+            var lblTo = new Label { Text = "đến", Location = new Point(205, 52), AutoSize = true };
+            dtpRepeatEnd = new DateTimePicker { Location = new Point(230, 48), Format = DateTimePickerFormat.Custom, CustomFormat = "HH:mm", ShowUpDown = true, Width = 85 };
 
-            pnl.Controls.AddRange(new Control[] { lblEvery, numRepeatInterval, lblRange, dtpRepeatStart, lblTo, dtpRepeatEnd });
+            var lblDesc = new Label
+            {
+                Text = "ℹ Tác vụ sẽ tự động lặp lại sau mỗi khoảng phút đã chỉ định trong khung giờ quy định.",
+                Location = new Point(0, 95),
+                AutoSize = true,
+                ForeColor = Color.FromArgb(100, 100, 100),
+                Font = new Font("Segoe UI", 8.5F, FontStyle.Italic)
+            };
+
+            pnl.Controls.AddRange(new Control[] { lblEvery, numRepeatInterval, lblUnit, lblRange, dtpRepeatStart, lblTo, dtpRepeatEnd, lblDesc });
             return pnl;
         }
 
         private Panel CreateOncePanel()
         {
-            var pnl = new Panel { Size = new Size(460, 150), Visible = false };
-            var lblOnce = new Label { Text = "Thời điểm chạy:", Location = new Point(0, 15), AutoSize = true };
-            dtpOnce = new DateTimePicker { Location = new Point(120, 12), CustomFormat = "yyyy-MM-dd HH:mm", Format = DateTimePickerFormat.Custom, Width = 175 };
-            pnl.Controls.AddRange(new Control[] { lblOnce, dtpOnce });
+            var pnl = new Panel { Size = new Size(445, 190), Visible = false };
+            var lblOnce = new Label { Text = "Thời điểm chạy:", Location = new Point(0, 15), AutoSize = true, Font = new Font("Segoe UI", 9F, FontStyle.Bold) };
+            dtpOnce = new DateTimePicker { Location = new Point(115, 12), CustomFormat = "yyyy-MM-dd HH:mm", Format = DateTimePickerFormat.Custom, Width = 155 };
+
+            var lblDesc = new Label
+            {
+                Text = "ℹ Tác vụ sẽ chỉ chạy duy nhất 1 lần vào thời điểm đã đặt, sau đó tự động chuyển sang trạng thái tắt.",
+                Location = new Point(0, 60),
+                AutoSize = true,
+                ForeColor = Color.FromArgb(100, 100, 100),
+                Font = new Font("Segoe UI", 8.5F, FontStyle.Italic)
+            };
+
+            pnl.Controls.AddRange(new Control[] { lblOnce, dtpOnce, lblDesc });
             return pnl;
         }
 
         private void LoadData()
         {
-            txtName.Text = _schedule.Name;
             chkEnabled.Checked = _schedule.Enabled;
             cboIntervalType.SelectedIndex = (int)_schedule.IntervalType;
 
@@ -1817,7 +2020,7 @@ namespace FtpSysPro.Manager.UI
 
         private void SaveData()
         {
-            _schedule.Name = txtName.Text.Trim();
+            _schedule.Name = JobEditDialog.FormatIntervalType((ScheduleIntervalType)cboIntervalType.SelectedIndex);
             _schedule.Enabled = chkEnabled.Checked;
             _schedule.BackupType = _jobBackupType;
             _schedule.IntervalType = (ScheduleIntervalType)cboIntervalType.SelectedIndex;
