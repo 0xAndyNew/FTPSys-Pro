@@ -34,7 +34,6 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
-Name: "autostart"; Description: "Khởi động ứng dụng FtpSysPro Manager cùng Windows (trong khay hệ thống) / Start Manager with Windows"; GroupDescription: "Tự động khởi động / Startup"
 
 [Dirs]
 Name: "{commonappdata}\FtpSysPro"; Permissions: users-modify
@@ -55,13 +54,11 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; WorkingDi
 Filename: "{app}\{#MyServiceExeName}"; Parameters: "--install"; Flags: runhidden; StatusMsg: "Đang cài đặt Windows Service..."
 ; Start Windows Service
 Filename: "sc.exe"; Parameters: "start FtpSysProService"; Flags: runhidden; StatusMsg: "Đang khởi động Windows Service..."
-; Register Scheduled Task to auto-start Manager with highest privileges upon user logon
-Filename: "schtasks.exe"; Parameters: "/Create /TN ""FTPSys Pro Manager Startup"" /TR ""\""{app}\{#MyAppExeName}\"" --minimized"" /SC ONLOGON /RL HIGHEST /F"; Tasks: autostart; Flags: runhidden
 ; Run Manager at end of setup with elevated admin privileges using ShellExecuteEx (shellexec prevents code 740 elevation error)
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Parameters: "{code:GetLaunchParameters}"; WorkingDir: "{app}"; Flags: nowait postinstall skipifsilent shellexec
 
 [UninstallRun]
-; Stop and uninstall Manager auto-start task
+; Stop and uninstall Manager auto-start task if present
 Filename: "schtasks.exe"; Parameters: "/Delete /TN ""FTPSys Pro Manager Startup"" /F"; Flags: runhidden; RunOnceId: "DelStartupTask"
 Filename: "schtasks.exe"; Parameters: "/Delete /TN ""FtpSysPro Manager Startup"" /F"; Flags: runhidden; RunOnceId: "DelStartupTaskOld"
 ; Terminate running Manager
@@ -72,32 +69,50 @@ Filename: "sc.exe"; Parameters: "stop FtpSysProService"; Flags: runhidden; RunOn
 Filename: "{app}\{#MyServiceExeName}"; Parameters: "--uninstall"; Flags: runhidden; RunOnceId: "UninstallService"
 
 [Code]
+var
+  RunAsAdminCheckbox: TNewCheckBox;
+
 procedure RunListClick(Sender: TObject);
 begin
-  if (WizardForm.RunList <> nil) and (WizardForm.RunList.Items.Count > 1) then
+  if (WizardForm.RunList <> nil) and (WizardForm.RunList.Items.Count > 0) and (RunAsAdminCheckbox <> nil) then
   begin
-    WizardForm.RunList.ItemEnabled[1] := WizardForm.RunList.Checked[0];
+    RunAsAdminCheckbox.Enabled := WizardForm.RunList.Checked[0];
   end;
 end;
 
 procedure InitializeWizard();
 begin
-  WizardForm.RunList.AddCheckBox('Chạy với quyền Quản trị viên (Run as administrator)', '', 0, False, True, False, True, nil);
-  WizardForm.RunList.OnClickCheck := @RunListClick;
+  RunAsAdminCheckbox := TNewCheckBox.Create(WizardForm);
+  RunAsAdminCheckbox.Parent := WizardForm.FinishedPage;
+  RunAsAdminCheckbox.Caption := 'Chạy với quyền Quản trị viên (Run as administrator)';
+  RunAsAdminCheckbox.Checked := False;
 end;
 
 procedure CurPageChanged(CurPageID: Integer);
 begin
   if CurPageID = wpFinished then
   begin
-    if (WizardForm.RunList <> nil) and (WizardForm.RunList.Items.Count > 1) then
-      WizardForm.RunList.ItemEnabled[1] := WizardForm.RunList.Checked[0];
+    if WizardForm.RunList <> nil then
+    begin
+      RunAsAdminCheckbox.Left := WizardForm.RunList.Left;
+      RunAsAdminCheckbox.Top := WizardForm.RunList.Top + WizardForm.RunList.Height + ScaleY(8);
+      RunAsAdminCheckbox.Width := WizardForm.RunList.Width;
+      RunAsAdminCheckbox.Height := ScaleY(24);
+      RunAsAdminCheckbox.Font := WizardForm.FinishedLabel.Font;
+      RunAsAdminCheckbox.BringToFront;
+
+      WizardForm.RunList.OnClickCheck := @RunListClick;
+      WizardForm.RunList.OnClick := @RunListClick;
+      if WizardForm.RunList.Items.Count > 0 then
+        RunAsAdminCheckbox.Enabled := WizardForm.RunList.Checked[0];
+    end;
   end;
 end;
 
 function GetLaunchParameters(Param: String): String;
 begin
-  if (WizardForm.RunList <> nil) and (WizardForm.RunList.Items.Count > 1) and (WizardForm.RunList.Checked[0]) and (WizardForm.RunList.Checked[1]) then
+  if (WizardForm.RunList <> nil) and (WizardForm.RunList.Items.Count > 0) and
+     (WizardForm.RunList.Checked[0]) and (RunAsAdminCheckbox <> nil) and (RunAsAdminCheckbox.Checked) then
     Result := '--admin'
   else
     Result := '';

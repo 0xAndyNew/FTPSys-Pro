@@ -11,6 +11,7 @@ namespace FtpSysPro.Core.Models
         public int KeepLogsDays { get; set; } = 30;
         public int KeepHistoryRecords { get; set; } = 500;
         public SmtpSettings Smtp { get; set; } = new SmtpSettings();
+        public bool StartWithWindows { get; set; } = true;
         public bool StartMinimizedToTray { get; set; } = true;
         public bool MinimizeToTrayOnClose { get; set; } = true;
         public bool ShowNotificationsOnSuccess { get; set; } = true;

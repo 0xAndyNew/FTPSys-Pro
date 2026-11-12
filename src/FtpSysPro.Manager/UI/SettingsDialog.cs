@@ -16,6 +16,7 @@ namespace FtpSysPro.Manager.UI
         private ComboBox cboLanguage;
         private NumericUpDown numMaxConcurrent;
         private NumericUpDown numKeepLogsDays;
+        private CheckBox chkStartWithWindows;
         private CheckBox chkStartMinimized;
         private CheckBox chkMinimizeOnClose;
 
@@ -102,27 +103,40 @@ namespace FtpSysPro.Manager.UI
                 Value = 30
             };
 
+            chkStartWithWindows = new CheckBox
+            {
+                Text = Strings.SettingStartWithWindows,
+                Location = new Point(15, 140),
+                AutoSize = true,
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold)
+            };
+
             chkStartMinimized = new CheckBox
             {
-                Text = Strings.IsVi ? "Tự động khởi động cùng Windows và thu nhỏ xuống khay" : "Start minimized to system tray with Windows",
-                Location = new Point(15, 145),
+                Text = Strings.SettingStartMinimized,
+                Location = new Point(36, 168),
                 AutoSize = true,
                 Checked = true
             };
 
             chkMinimizeOnClose = new CheckBox
             {
-                Text = Strings.IsVi ? "Duy trì chạy ngầm trong khay hệ thống khi đóng cửa sổ" : "Minimize to system tray on close",
-                Location = new Point(15, 175),
+                Text = Strings.SettingMinimizeOnClose,
+                Location = new Point(15, 202),
                 AutoSize = true,
                 Checked = true
+            };
+
+            chkStartWithWindows.CheckedChanged += (s, e) =>
+            {
+                chkStartMinimized.Enabled = chkStartWithWindows.Checked;
             };
 
             pageGeneral.Controls.AddRange(new Control[] {
                 lblLang, cboLanguage,
                 lblConcurrent, numMaxConcurrent,
                 lblKeepLogs, numKeepLogsDays,
-                chkStartMinimized, chkMinimizeOnClose
+                chkStartWithWindows, chkStartMinimized, chkMinimizeOnClose
             });
 
             // SMTP Tab
@@ -264,7 +278,9 @@ namespace FtpSysPro.Manager.UI
             cboLanguage.SelectedIndex = string.Equals(_settings.Language, "vi", StringComparison.OrdinalIgnoreCase) ? 1 : 0;
             numMaxConcurrent.Value = Math.Max(1, _settings.MaxConcurrentJobs);
             numKeepLogsDays.Value = Math.Max(1, _settings.KeepLogsDays);
+            chkStartWithWindows.Checked = _settings.StartWithWindows;
             chkStartMinimized.Checked = _settings.StartMinimizedToTray;
+            chkStartMinimized.Enabled = chkStartWithWindows.Checked;
             chkMinimizeOnClose.Checked = _settings.MinimizeToTrayOnClose;
 
             var smtp = _settings.Smtp ?? new SmtpSettings();
@@ -300,9 +316,13 @@ namespace FtpSysPro.Manager.UI
             _settings.Language = cboLanguage.SelectedIndex == 1 ? "vi" : "en";
             _settings.MaxConcurrentJobs = (int)numMaxConcurrent.Value;
             _settings.KeepLogsDays = (int)numKeepLogsDays.Value;
+            _settings.StartWithWindows = chkStartWithWindows.Checked;
             _settings.StartMinimizedToTray = chkStartMinimized.Checked;
             _settings.MinimizeToTrayOnClose = chkMinimizeOnClose.Checked;
             _settings.Smtp = GetSmtpSettingsFromUi();
+
+            // Apply Windows startup setting via Registry
+            Utils.StartupHelper.SetRunAtStartup(_settings.StartWithWindows, _settings.StartMinimizedToTray);
 
             Strings.SetLanguage(_settings.Language);
         }

@@ -280,6 +280,9 @@ namespace FtpSysPro.Core.Resources
         public static string TrayBalloonSuccess => IsVi ? "Sao lưu hoàn tất thành công" : "Backup Succeeded";
         public static string TrayBalloonFailed => IsVi ? "Sao lưu phát sinh lỗi" : "Backup Failed";
         public static string TrayRunningBackground => IsVi ? "Ứng dụng đang chạy nền trong khay hệ thống." : "Application is running in the background tray.";
+        public static string SettingStartWithWindows => IsVi ? "Khởi động ứng dụng cùng Windows" : "Start application automatically with Windows";
+        public static string SettingStartMinimized => IsVi ? "Khởi động thu nhỏ xuống khay hệ thống" : "Start minimized to system tray";
+        public static string SettingMinimizeOnClose => IsVi ? "Duy trì chạy ngầm trong khay hệ thống khi đóng cửa sổ" : "Minimize to system tray on close";
         public static string ConfirmDeleteTitle => IsVi ? "Xác nhận xóa Job" : "Confirm Delete";
         public static string StopJobTitle => IsVi ? "Dừng Job sao lưu" : "Stop Backup Job";
         public static string ExecutionErrorTitle => IsVi ? "Lỗi thực thi" : "Execution Error";

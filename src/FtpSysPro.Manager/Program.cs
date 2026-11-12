@@ -53,11 +53,15 @@ namespace FtpSysPro.Manager
             Application.SetCompatibleTextRenderingDefault(false);
             Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
 
-            // Initialize application localization before opening UI forms
+            // Initialize application localization and startup configuration before opening UI forms
             try
             {
                 var cfg = new FtpSysPro.Core.Config.ConfigStore().LoadConfig();
                 FtpSysPro.Core.Resources.Strings.SetLanguage(cfg?.Settings?.Language ?? "en");
+                if (cfg?.Settings != null)
+                {
+                    Utils.StartupHelper.SetRunAtStartup(cfg.Settings.StartWithWindows, cfg.Settings.StartMinimizedToTray);
+                }
             }
             catch
             {
