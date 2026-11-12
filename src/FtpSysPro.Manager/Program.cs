@@ -77,14 +77,24 @@ namespace FtpSysPro.Manager
                 }
             }
 
-            var mainForm = new MainForm();
-            if (startMinimized)
+            try
             {
-                mainForm.WindowState = FormWindowState.Minimized;
-                mainForm.ShowInTaskbar = false;
-            }
+                var mainForm = new MainForm();
+                if (startMinimized)
+                {
+                    mainForm.WindowState = FormWindowState.Minimized;
+                    mainForm.ShowInTaskbar = false;
+                }
 
-            Application.Run(mainForm);
+                Application.Run(mainForm);
+            }
+            catch (Exception ex)
+            {
+                string msg = FtpSysPro.Core.Resources.Strings.IsVi
+                    ? "Đã xảy ra lỗi khởi động FtpSysPro Manager:\n\n" + ex.Message
+                    : "An error occurred starting FtpSysPro Manager:\n\n" + ex.Message;
+                MessageBox.Show(msg, FtpSysPro.Core.Resources.Strings.AppName, MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
 
             GC.KeepAlive(_singleInstanceMutex);
         }

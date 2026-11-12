@@ -398,8 +398,13 @@ namespace FtpSysPro.Manager.UI
 
         private void ApplyLanguage()
         {
-            var cfg = _configStore.LoadConfig();
-            Strings.SetLanguage(cfg?.Settings?.Language ?? "en");
+            _currentConfig = _configStore.LoadConfig() ?? new AppConfig();
+            if (_currentConfig.Jobs == null)
+                _currentConfig.Jobs = new List<BackupJob>();
+            if (_currentConfig.Settings == null)
+                _currentConfig.Settings = new AppSettings();
+
+            Strings.SetLanguage(_currentConfig.Settings.Language ?? "en");
         }
 
         public void UpdateUiLanguage()
@@ -482,6 +487,13 @@ namespace FtpSysPro.Manager.UI
             RefreshJobGrid();
         }
 
+        private void EnsureConfig()
+        {
+            if (_currentConfig == null) _currentConfig = new AppConfig();
+            if (_currentConfig.Jobs == null) _currentConfig.Jobs = new List<BackupJob>();
+            if (_currentConfig.Settings == null) _currentConfig.Settings = new AppSettings();
+        }
+
         private BackupJob GetSelectedJob()
         {
             if (gridJobs.SelectedRows.Count == 0) return null;
@@ -491,6 +503,7 @@ namespace FtpSysPro.Manager.UI
 
         private void AddNewJob()
         {
+            EnsureConfig();
             var newJob = new BackupJob { Name = Strings.DefaultNewJobName(_currentConfig.Jobs.Count + 1) };
             using (var dlg = new JobEditDialog(newJob, true))
             {
@@ -505,6 +518,7 @@ namespace FtpSysPro.Manager.UI
 
         private void EditSelectedJob()
         {
+            EnsureConfig();
             var job = GetSelectedJob();
             if (job == null) return;
 
@@ -525,6 +539,7 @@ namespace FtpSysPro.Manager.UI
 
         private void CloneSelectedJob()
         {
+            EnsureConfig();
             var job = GetSelectedJob();
             if (job == null) return;
 
@@ -536,6 +551,7 @@ namespace FtpSysPro.Manager.UI
 
         private void DeleteSelectedJob()
         {
+            EnsureConfig();
             var job = GetSelectedJob();
             if (job == null) return;
 
@@ -787,6 +803,13 @@ namespace FtpSysPro.Manager.UI
 
         private void RefreshJobGrid()
         {
+            if (_currentConfig?.Jobs == null)
+            {
+                gridJobs.DataSource = new List<JobViewModel>();
+                UpdateSelectedJobDetail();
+                return;
+            }
+
             var list = _currentConfig.Jobs.Select(j => new JobViewModel(j)).ToList();
             gridJobs.DataSource = list;
             UpdateSelectedJobDetail();
@@ -797,11 +820,17 @@ namespace FtpSysPro.Manager.UI
             if (gridJobs.SelectedRows.Count > 0 && gridJobs.SelectedRows[0].DataBoundItem is JobViewModel vm)
             {
                 var job = vm.Job;
+                if (job == null)
+                {
+                    ResetJobDetail();
+                    return;
+                }
+
                 lblDetailName.Text = $"{job.Name} ({vm.BackupTypeDisplay})";
                 lblDetailSourceSize.Text = job.SourceSizeBytes > 0
                     ? $"{JobViewModel.FormatBytes(job.SourceSizeBytes)} ({job.SourceFileCount:N0} {Strings.FilesUnit})"
                     : (job.SourceDirectories != null && job.SourceDirectories.Count > 0 ? Strings.DetailNotScannedOrZero : "-");
-                lblDetailTransfer.Text = job.Compression.Enabled
+                lblDetailTransfer.Text = job.Compression != null && job.Compression.Enabled
                     ? Strings.DetailZipLevel(job.Compression.Level) + (job.Compression.EncryptWithPassword ? " [AES-256]" : "")
                     : Strings.DetailDirectCopy;
                 lblDetailDest.Text = vm.DestinationDisplay;
@@ -813,14 +842,19 @@ namespace FtpSysPro.Manager.UI
             }
             else
             {
-                lblDetailName.Text = Strings.NoJobSelected;
-                lblDetailSourceSize.Text = "-";
-                lblDetailTransfer.Text = "-";
-                lblDetailDest.Text = "-";
-                txtDetailSources.Text = "";
-                lblDetailLast.Text = "-";
-                lblDetailNext.Text = "-";
+                ResetJobDetail();
             }
+        }
+
+        private void ResetJobDetail()
+        {
+            lblDetailName.Text = Strings.NoJobSelected;
+            lblDetailSourceSize.Text = "-";
+            lblDetailTransfer.Text = "-";
+            lblDetailDest.Text = "-";
+            txtDetailSources.Text = "";
+            lblDetailLast.Text = "-";
+            lblDetailNext.Text = "-";
         }
 
         private void AdjustSplitterDistance()
@@ -906,10 +940,10 @@ namespace FtpSysPro.Manager.UI
 
         public JobViewModel(BackupJob job)
         {
-            Job = job;
+            Job = job ?? new BackupJob();
         }
 
-        public string Name => Job.Name;
+        public string Name => Job.Name ?? string.Empty;
         public bool Enabled => Job.Enabled;
         public string BackupTypeDisplay => Job.BackupType == BackupType.Full
             ? Strings.ModeFullShort
@@ -923,7 +957,7 @@ namespace FtpSysPro.Manager.UI
             ? $"{FormatBytes(Job.SourceSizeBytes)} ({Job.SourceFileCount:N0} {Strings.FilesUnit})"
             : (Job.SourceDirectories != null && Job.SourceDirectories.Count > 0 ? Strings.NotScanned : "-");
 
-        public string CompressionDisplay => Job.Compression.Enabled
+        public string CompressionDisplay => Job.Compression != null && Job.Compression.Enabled
             ? Strings.ZipCompression + (Job.Compression.EncryptWithPassword ? " [AES-256]" : "")
             : Strings.DirectCopy;
 
@@ -931,6 +965,7 @@ namespace FtpSysPro.Manager.UI
         {
             get
             {
+                if (Job.Destination == null) return "-";
                 switch (Job.Destination.Type)
                 {
                     case DestinationType.Ftp: return $"FTP: {Job.Destination.FtpHost}:{Job.Destination.FtpPort}{Job.Destination.FtpRemotePath}";
