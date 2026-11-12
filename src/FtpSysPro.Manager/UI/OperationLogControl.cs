@@ -17,12 +17,10 @@ namespace FtpSysPro.Manager.UI
     {
         private readonly ConfigStore _configStore;
         private AppConfig _config;
+        private BackupJob _currentJob;
 
         private Panel pnlTop;
-        private Label lblFile;
-        private ComboBox cboLogFiles;
-        private Label lblJob;
-        private ComboBox cboJobFilter;
+        private Label lblJobTitle;
         private Label lblLvl;
         private ComboBox cboLevel;
         private TextBox txtSearch;
@@ -49,38 +47,12 @@ namespace FtpSysPro.Manager.UI
         private DateTime _lastLoadedTime;
         private bool _isLoading;
 
-        private class LogFileItem
-        {
-            public string FullPath { get; set; }
-            public string FileName { get; set; }
-            public long Length { get; set; }
-            public DateTime LastWriteTime { get; set; }
-
-            public override string ToString()
-            {
-                return $"{FileName} ({FormatBytes(Length)} - {LastWriteTime:dd/MM/yyyy HH:mm:ss})";
-            }
-        }
-
-        private class JobFilterItem
-        {
-            public string JobId { get; set; }
-            public string JobName { get; set; }
-
-            public override string ToString()
-            {
-                return string.IsNullOrEmpty(JobId) ? Strings.AllJobs : JobName;
-            }
-        }
-
         public OperationLogControl(ConfigStore configStore = null, AppConfig config = null)
         {
             _configStore = configStore ?? new ConfigStore();
             _config = config ?? _configStore.LoadConfig();
 
             InitializeComponents();
-            LoadJobFilterItems();
-            PopulateLogFileList();
         }
 
         private void InitializeComponents()
@@ -98,53 +70,21 @@ namespace FtpSysPro.Manager.UI
                 Padding = new Padding(10, 8, 10, 6)
             };
 
-            // Row 1: Log file dropdown + Job filter + Level filter + Search box
-            lblFile = new Label
+            // Row 1: Active Job Badge + Level filter + Search box
+            lblJobTitle = new Label
             {
-                Text = Strings.SelectLogFile,
-                Location = new Point(8, 11),
-                AutoSize = true,
-                Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
-                ForeColor = Color.FromArgb(50, 60, 80)
-            };
-
-            cboLogFiles = new ComboBox
-            {
-                Location = new Point(76, 8),
-                Width = 180,
-                DropDownStyle = ComboBoxStyle.DropDownList
-            };
-            cboLogFiles.SelectedIndexChanged += (s, e) =>
-            {
-                _lastLoadedLength = 0;
-                LoadCurrentLog(appendOnly: false);
-            };
-
-            lblJob = new Label
-            {
-                Text = Strings.FilterJob,
-                Location = new Point(264, 11),
-                AutoSize = true,
-                Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
-                ForeColor = Color.FromArgb(50, 60, 80)
-            };
-
-            cboJobFilter = new ComboBox
-            {
-                Location = new Point(340, 8),
-                Width = 140,
-                DropDownStyle = ComboBoxStyle.DropDownList
-            };
-            cboJobFilter.SelectedIndexChanged += (s, e) =>
-            {
-                _lastLoadedLength = 0;
-                LoadCurrentLog(appendOnly: false);
+                Text = Strings.IsVi ? "📌 Nhật ký Job: (Chưa chọn Job)" : "📌 Job Log: (No job selected)",
+                Location = new Point(8, 9),
+                Size = new Size(300, 24),
+                Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(12, 35, 75),
+                AutoEllipsis = true
             };
 
             lblLvl = new Label
             {
                 Text = Strings.FilterLevel,
-                Location = new Point(488, 11),
+                Location = new Point(315, 11),
                 AutoSize = true,
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
                 ForeColor = Color.FromArgb(50, 60, 80)
@@ -152,8 +92,8 @@ namespace FtpSysPro.Manager.UI
 
             cboLevel = new ComboBox
             {
-                Location = new Point(532, 8),
-                Width = 98,
+                Location = new Point(362, 8),
+                Width = 110,
                 DropDownStyle = ComboBoxStyle.DropDownList
             };
             cboLevel.Items.AddRange(new object[] {
@@ -162,7 +102,7 @@ namespace FtpSysPro.Manager.UI
                 "WRN (" + Strings.StatusWarning + ")",
                 "INF (" + Strings.StatusIdle + ")"
             });
-            cboLevel.SelectedIndex = 0;
+            cboLevel.SelectedIndex = 0; // Default to All Levels so no lines are hidden
             cboLevel.SelectedIndexChanged += (s, e) =>
             {
                 _lastLoadedLength = 0;
@@ -171,8 +111,8 @@ namespace FtpSysPro.Manager.UI
 
             txtSearch = new TextBox
             {
-                Location = new Point(638, 8),
-                Width = 150,
+                Location = new Point(480, 8),
+                Width = 260,
                 Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
                 ForeColor = Color.DarkGray,
                 Text = Strings.SearchKeywords
@@ -213,7 +153,10 @@ namespace FtpSysPro.Manager.UI
             };
             btnRefresh.Click += (s, e) =>
             {
-                PopulateLogFileList();
+                if (_currentJob != null)
+                {
+                    _configStore.EnsureJobLogPopulated(_currentJob);
+                }
                 _lastLoadedLength = 0;
                 LoadCurrentLog(appendOnly: false);
             };
@@ -276,8 +219,7 @@ namespace FtpSysPro.Manager.UI
             };
 
             pnlTop.Controls.AddRange(new Control[] {
-                lblFile, cboLogFiles,
-                lblJob, cboJobFilter,
+                lblJobTitle,
                 lblLvl, cboLevel,
                 txtSearch,
                 btnRefresh, btnOpenInNotepad, btnOpenFolder, btnClear,
@@ -299,7 +241,7 @@ namespace FtpSysPro.Manager.UI
 
             // Bottom Status Strip
             statusStrip = new StatusStrip();
-            lblStatusFile = new ToolStripStatusLabel { Text = Strings.IsVi ? "Tệp nhật ký: (Chưa chọn)" : "Log file: (None selected)", Width = 340, TextAlign = ContentAlignment.MiddleLeft };
+            lblStatusFile = new ToolStripStatusLabel { Text = Strings.IsVi ? "Tệp nhật ký: (Chưa chọn Job)" : "Log file: (No job selected)", Width = 340, TextAlign = ContentAlignment.MiddleLeft };
             lblStatusLines = new ToolStripStatusLabel { Text = Strings.IsVi ? "Hiển thị: 0 dòng" : "Lines: 0", Width = 140 };
             lblStatusSize = new ToolStripStatusLabel { Text = Strings.IsVi ? "Dung lượng: 0 B" : "Size: 0 B", Width = 140 };
             lblStatusUpdated = new ToolStripStatusLabel { Text = Strings.IsVi ? "Cập nhật: -" : "Updated: -", Spring = true, TextAlign = ContentAlignment.MiddleRight };
@@ -325,169 +267,135 @@ namespace FtpSysPro.Manager.UI
             timerAutoRefresh = new Timer { Interval = 3000 };
             timerAutoRefresh.Tick += (s, e) =>
             {
-                if (chkAutoRefresh.Checked && !string.IsNullOrEmpty(_activeFilePath))
+                if (chkAutoRefresh.Checked && !string.IsNullOrEmpty(_activeFilePath) && File.Exists(_activeFilePath))
                 {
-                    if (cboLogFiles.SelectedIndex == 0)
-                    {
-                        LoadCurrentLog(appendOnly: true);
-                    }
+                    LoadCurrentLog(appendOnly: true);
                 }
             };
             timerAutoRefresh.Start();
+        }
+
+        public void SetCurrentJob(BackupJob job)
+        {
+            _currentJob = job;
+            UpdateJobHeader();
+
+            if (_currentJob != null)
+            {
+                _configStore.EnsureJobLogPopulated(_currentJob);
+                _activeFilePath = _configStore.GetJobLogFilePath(_currentJob.Id);
+            }
+            else
+            {
+                _activeFilePath = null;
+            }
+
+            _lastLoadedLength = 0;
+            LoadCurrentLog(appendOnly: false);
+        }
+
+        private void UpdateJobHeader()
+        {
+            if (_currentJob != null)
+            {
+                lblJobTitle.Text = $"📌 Job: {_currentJob.Name}";
+                lblJobTitle.ForeColor = Color.FromArgb(12, 35, 75);
+            }
+            else
+            {
+                lblJobTitle.Text = Strings.IsVi ? "📌 Nhật ký Job: (Chưa chọn Job)" : "📌 Job Log: (No job selected)";
+                lblJobTitle.ForeColor = Color.FromArgb(100, 110, 130);
+            }
         }
 
         public void LoadJobFilterItems(AppConfig config = null)
         {
             if (config != null)
                 _config = config;
-
-            var currentJobId = (cboJobFilter.SelectedItem as JobFilterItem)?.JobId;
-
-            cboJobFilter.Items.Clear();
-            cboJobFilter.Items.Add(new JobFilterItem { JobId = null, JobName = Strings.AllJobs });
-
-            int selectIndex = 0;
-            if (_config?.Jobs != null)
-            {
-                for (int i = 0; i < _config.Jobs.Count; i++)
-                {
-                    var job = _config.Jobs[i];
-                    var item = new JobFilterItem { JobId = job.Id, JobName = job.Name };
-                    cboJobFilter.Items.Add(item);
-
-                    if (!string.IsNullOrEmpty(currentJobId) &&
-                        string.Equals(job.Id, currentJobId, StringComparison.OrdinalIgnoreCase))
-                    {
-                        selectIndex = i + 1;
-                    }
-                }
-            }
-
-            // Default to All Jobs so logs are immediately visible
-            if (cboJobFilter.Items.Count > 0)
-                cboJobFilter.SelectedIndex = 0;
         }
 
         public void SelectJob(string jobId)
         {
-            if (cboJobFilter == null || cboJobFilter.Items.Count == 0) return;
-
-            if (string.IsNullOrEmpty(jobId))
-            {
-                cboJobFilter.SelectedIndex = 0;
-                return;
-            }
-
-            for (int i = 0; i < cboJobFilter.Items.Count; i++)
-            {
-                if (cboJobFilter.Items[i] is JobFilterItem item &&
-                    string.Equals(item.JobId, jobId, StringComparison.OrdinalIgnoreCase))
-                {
-                    cboJobFilter.SelectedIndex = i;
-                    return;
-                }
-            }
+            var job = _config?.Jobs?.FirstOrDefault(j => string.Equals(j.Id, jobId, StringComparison.OrdinalIgnoreCase));
+            SetCurrentJob(job);
         }
 
         public void NavigateToDateAndJob(DateTime date, string jobId)
         {
-            string targetFileName = $"service-{date:yyyyMMdd}.log";
-            for (int i = 0; i < cboLogFiles.Items.Count; i++)
-            {
-                if (cboLogFiles.Items[i] is LogFileItem item &&
-                    string.Equals(item.FileName, targetFileName, StringComparison.OrdinalIgnoreCase))
-                {
-                    cboLogFiles.SelectedIndex = i;
-                    break;
-                }
-            }
-
-            if (!string.IsNullOrEmpty(jobId))
-            {
-                SelectJob(jobId);
-            }
+            SelectJob(jobId);
         }
 
         public void PopulateLogFileList()
         {
-            try
+            if (_currentJob != null)
             {
-                var logsDir = _configStore.LogsDirectory;
-                if (!Directory.Exists(logsDir))
-                {
-                    _configStore.EnsureDirectories();
-                }
-
-                if (!Directory.Exists(logsDir))
-                {
-                    cboLogFiles.Items.Clear();
-                    lblStatusFile.Text = Strings.NoLogsFound;
-                    return;
-                }
-
-                var dir = new DirectoryInfo(logsDir);
-                var files = dir.GetFiles("service-*.log")
-                               .OrderByDescending(f => f.LastWriteTimeUtc)
-                               .ToList();
-
-                var currentSelection = (cboLogFiles.SelectedItem as LogFileItem)?.FullPath;
-
-                cboLogFiles.Items.Clear();
-                if (files.Count == 0)
-                {
-                    lblStatusFile.Text = Strings.NoLogsFound;
-                    txtLog.Clear();
-                    AppendColorText(Strings.NoLogsFound + Environment.NewLine, Color.DarkGray);
-                    return;
-                }
-
-                int selectIdx = 0;
-                for (int i = 0; i < files.Count; i++)
-                {
-                    var f = files[i];
-                    var item = new LogFileItem
-                    {
-                        FullPath = f.FullName,
-                        FileName = f.Name,
-                        Length = f.Length,
-                        LastWriteTime = f.LastWriteTime
-                    };
-                    cboLogFiles.Items.Add(item);
-
-                    if (currentSelection != null && string.Equals(f.FullName, currentSelection, StringComparison.OrdinalIgnoreCase))
-                    {
-                        selectIdx = i;
-                    }
-                }
-
-                cboLogFiles.SelectedIndex = selectIdx;
+                _configStore.EnsureJobLogPopulated(_currentJob);
             }
-            catch (Exception ex)
-            {
-                Debug.WriteLine("[OperationLogControl] Error populating log files: " + ex.Message);
-            }
+            _lastLoadedLength = 0;
+            LoadCurrentLog(appendOnly: false);
         }
 
         private void LoadCurrentLog(bool appendOnly)
         {
             if (_isLoading) return;
-            var item = cboLogFiles.SelectedItem as LogFileItem;
-            if (item == null || string.IsNullOrEmpty(item.FullPath) || !File.Exists(item.FullPath))
+
+            if (_currentJob == null)
             {
                 if (!appendOnly)
                 {
                     txtLog.Clear();
-                    lblStatusFile.Text = Strings.NoLogsFound;
+                    AppendColorText("--------------------------------------------------------------------------------" + Environment.NewLine, Color.FromArgb(100, 115, 135));
+                    AppendColorText("  NOTEPAD++ JOB LOG VIEWER - FTPSYS PRO" + Environment.NewLine, Color.FromArgb(88, 166, 255));
+                    AppendColorText("--------------------------------------------------------------------------------" + Environment.NewLine, Color.FromArgb(100, 115, 135));
+                    AppendColorText(Strings.IsVi
+                        ? "  [INFO] Vui lòng chọn một Job ở danh sách bên trái để xem nhật ký thực thi của Job đó." + Environment.NewLine
+                        : "  [INFO] Please select a Job from the list on the left to view its execution logs." + Environment.NewLine,
+                        Color.FromArgb(160, 170, 185));
+                    AppendColorText("--------------------------------------------------------------------------------" + Environment.NewLine, Color.FromArgb(100, 115, 135));
+
+                    lblStatusFile.Text = Strings.IsVi ? "Tệp: (Chưa chọn Job)" : "File: (No job selected)";
+                    lblStatusLines.Text = Strings.IsVi ? "Hiển thị: 0 dòng" : "Lines: 0";
+                    lblStatusSize.Text = Strings.IsVi ? "Dung lượng: 0 B" : "Size: 0 B";
+                    lblStatusUpdated.Text = Strings.IsVi ? "Cập nhật: -" : "Updated: -";
+                    lblMatchCount.Text = Strings.IsVi ? "0 dòng nhật ký" : "0 log entries";
+                }
+                return;
+            }
+
+            string logFilePath = _activeFilePath;
+            if (string.IsNullOrEmpty(logFilePath) || !File.Exists(logFilePath))
+            {
+                if (!appendOnly)
+                {
+                    txtLog.Clear();
+                    AppendColorText("--------------------------------------------------------------------------------" + Environment.NewLine, Color.FromArgb(100, 115, 135));
+                    AppendColorText($"  NOTEPAD++ JOB LOG VIEWER - FTPSYS PRO" + Environment.NewLine, Color.FromArgb(88, 166, 255));
+                    AppendColorText($"  Job: {_currentJob.Name} ({_currentJob.Id})" + Environment.NewLine, Color.FromArgb(135, 145, 160));
+                    AppendColorText("--------------------------------------------------------------------------------" + Environment.NewLine, Color.FromArgb(100, 115, 135));
+                    AppendColorText(Strings.IsVi
+                        ? $"  [INFO] Job '{_currentJob.Name}' chưa có dữ liệu nhật ký nào." + Environment.NewLine
+                        : $"  [INFO] Job '{_currentJob.Name}' has no log entries yet." + Environment.NewLine,
+                        Color.FromArgb(255, 195, 85));
+                    AppendColorText(Strings.IsVi
+                        ? "  💡 Gợi ý: Bấm nút '▶ Chạy ngay' trên thanh công cụ để thực thi sao lưu lần đầu." + Environment.NewLine
+                        : "  💡 Tip: Click '▶ Run' on the toolbar to execute the first backup." + Environment.NewLine,
+                        Color.FromArgb(126, 231, 135));
+                    AppendColorText("--------------------------------------------------------------------------------" + Environment.NewLine, Color.FromArgb(100, 115, 135));
+
+                    lblStatusFile.Text = $"Job: {_currentJob.Name}";
+                    lblStatusLines.Text = Strings.IsVi ? "Hiển thị: 0 dòng" : "Lines: 0";
+                    lblStatusSize.Text = Strings.IsVi ? "Dung lượng: 0 B" : "Size: 0 B";
+                    lblStatusUpdated.Text = Strings.IsVi ? $"Cập nhật: {DateTime.Now:HH:mm:ss}" : $"Updated: {DateTime.Now:HH:mm:ss}";
+                    lblMatchCount.Text = Strings.IsVi ? "0 dòng nhật ký" : "0 log entries";
                 }
                 return;
             }
 
             _isLoading = true;
-            _activeFilePath = item.FullPath;
 
             try
             {
-                var fileInfo = new FileInfo(_activeFilePath);
+                var fileInfo = new FileInfo(logFilePath);
                 long currentLength = fileInfo.Length;
 
                 if (appendOnly && currentLength <= _lastLoadedLength)
@@ -496,13 +404,10 @@ namespace FtpSysPro.Manager.UI
                     return;
                 }
 
-                var selectedJob = cboJobFilter.SelectedItem as JobFilterItem;
-                string filterJobId = selectedJob?.JobId;
-                string filterJobName = selectedJob?.JobName;
                 int filterLevelIndex = cboLevel.SelectedIndex;
                 string keyword = (txtSearch.Text != Strings.SearchKeywords) ? txtSearch.Text.Trim() : null;
 
-                using (var fs = new FileStream(_activeFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                using (var fs = new FileStream(logFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                 {
                     if (appendOnly && _lastLoadedLength > 0 && _lastLoadedLength < currentLength)
                     {
@@ -525,12 +430,6 @@ namespace FtpSysPro.Manager.UI
                         {
                             rawLineNumber++;
 
-                            if (!string.IsNullOrEmpty(filterJobId) || !string.IsNullOrEmpty(filterJobName))
-                            {
-                                if (!LogFilterHelper.LineMatchesJob(line, filterJobName, filterJobId))
-                                    continue;
-                            }
-
                             if (filterLevelIndex > 0)
                             {
                                 if (!LogFilterHelper.LineMatchesLevel(line, filterLevelIndex))
@@ -551,13 +450,19 @@ namespace FtpSysPro.Manager.UI
                         {
                             txtLog.Clear();
                             AppendColorText("--------------------------------------------------------------------------------" + Environment.NewLine, Color.FromArgb(100, 115, 135));
-                            AppendColorText($"  NOTEPAD++ LOG VIEWER - FTPSYS PRO" + Environment.NewLine, Color.FromArgb(88, 166, 255));
-                            AppendColorText($"  File: {item.FileName}  |  Job Filter: {filterJobName ?? Strings.AllJobs}" + Environment.NewLine, Color.FromArgb(135, 145, 160));
+                            AppendColorText($"  NOTEPAD++ JOB LOG VIEWER - FTPSYS PRO" + Environment.NewLine, Color.FromArgb(88, 166, 255));
+                            AppendColorText($"  Job: {_currentJob.Name}  |  File: {Path.GetFileName(logFilePath)}" + Environment.NewLine, Color.FromArgb(135, 145, 160));
                             AppendColorText("--------------------------------------------------------------------------------" + Environment.NewLine, Color.FromArgb(100, 115, 135));
                             if (rawLineNumber > 0)
                             {
-                                AppendColorText($"  [INFO] Tệp có {rawLineNumber} dòng nhật ký, nhưng không có dòng nào khớp với bộ lọc Job '{(filterJobName ?? filterJobId)}'." + Environment.NewLine, Color.FromArgb(255, 195, 85));
-                                AppendColorText($"  💡 Gợi ý: Chuyển 'Lọc theo Job' về '-- Tất cả Job --' để xem toàn bộ nội dung nhật ký hệ thống." + Environment.NewLine, Color.FromArgb(126, 231, 135));
+                                AppendColorText(Strings.IsVi
+                                    ? $"  [INFO] Tệp có {rawLineNumber} dòng nhật ký, nhưng không có dòng nào khớp với mức độ hoặc từ khóa tìm kiếm." + Environment.NewLine
+                                    : $"  [INFO] File has {rawLineNumber} lines, but none matched the level filter or search keyword." + Environment.NewLine,
+                                    Color.FromArgb(255, 195, 85));
+                                AppendColorText(Strings.IsVi
+                                    ? "  💡 Gợi ý: Đặt 'Mức độ' về '-- Tất cả --' và xóa ô tìm kiếm để xem đầy đủ nội dung." + Environment.NewLine
+                                    : "  💡 Tip: Set 'Level' to '-- All --' and clear search to view full logs." + Environment.NewLine,
+                                    Color.FromArgb(126, 231, 135));
                             }
                             else
                             {
@@ -578,7 +483,7 @@ namespace FtpSysPro.Manager.UI
                         txtLog.ResumeLayout();
 
                         int totalDisplayedLines = matchedLinesCount;
-                        lblStatusFile.Text = $"{Strings.SelectLogFile} {item.FileName}";
+                        lblStatusFile.Text = $"Job: {_currentJob.Name} | {Path.GetFileName(logFilePath)}";
                         lblStatusLines.Text = Strings.IsVi ? $"Hiển thị: {totalDisplayedLines:N0} dòng" : $"Lines: {totalDisplayedLines:N0}";
                         lblStatusSize.Text = Strings.IsVi ? $"Dung lượng: {FormatBytes(currentLength)}" : $"Size: {FormatBytes(currentLength)}";
                         lblStatusUpdated.Text = Strings.IsVi ? $"Cập nhật: {_lastLoadedTime:HH:mm:ss}" : $"Updated: {_lastLoadedTime:HH:mm:ss}";
@@ -594,15 +499,6 @@ namespace FtpSysPro.Manager.UI
             {
                 _isLoading = false;
             }
-        }
-
-        private string GetSelectedLogLevel()
-        {
-            if (cboLevel.SelectedIndex <= 0) return null;
-            if (cboLevel.SelectedIndex == 1) return "ERR";
-            if (cboLevel.SelectedIndex == 2) return "WRN";
-            if (cboLevel.SelectedIndex == 3) return "INF";
-            return null;
         }
 
         private void AppendNotepadPlusPlusLine(int lineNumber, string line)
@@ -693,17 +589,21 @@ namespace FtpSysPro.Manager.UI
 
         private void OpenActiveLogInNotepad()
         {
-            var item = cboLogFiles.SelectedItem as LogFileItem;
-            if (item != null && File.Exists(item.FullPath))
+            string path = _activeFilePath;
+            if (!string.IsNullOrEmpty(path) && File.Exists(path))
             {
                 try
                 {
-                    Process.Start("notepad.exe", $"\"{item.FullPath}\"");
+                    Process.Start("notepad.exe", $"\"{path}\"");
                 }
                 catch (Exception ex)
                 {
                     MessageBox.Show(this, "Không thể mở Notepad: " + ex.Message, Strings.AppName, MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 }
+            }
+            else
+            {
+                MessageBox.Show(this, Strings.IsVi ? "Chưa có tệp nhật ký cho Job này." : "No log file found for this Job.", Strings.AppName, MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         }
 
@@ -711,11 +611,18 @@ namespace FtpSysPro.Manager.UI
         {
             try
             {
-                var logsDir = _configStore.LogsDirectory;
-                if (!Directory.Exists(logsDir))
+                var jobsLogDir = _configStore.JobLogsDirectory;
+                if (!Directory.Exists(jobsLogDir))
                     _configStore.EnsureDirectories();
 
-                Process.Start("explorer.exe", $"\"{logsDir}\"");
+                if (!string.IsNullOrEmpty(_activeFilePath) && File.Exists(_activeFilePath))
+                {
+                    Process.Start("explorer.exe", $"/select,\"{_activeFilePath}\"");
+                }
+                else
+                {
+                    Process.Start("explorer.exe", $"\"{jobsLogDir}\"");
+                }
             }
             catch (Exception ex)
             {
@@ -725,8 +632,7 @@ namespace FtpSysPro.Manager.UI
 
         public void UpdateUiLanguage()
         {
-            lblFile.Text = Strings.SelectLogFile;
-            lblJob.Text = Strings.FilterJob;
+            UpdateJobHeader();
             lblLvl.Text = Strings.FilterLevel;
 
             int lvlIdx = cboLevel.SelectedIndex;
@@ -751,25 +657,40 @@ namespace FtpSysPro.Manager.UI
             chkAutoRefresh.Text = Strings.AutoRefresh;
             chkAutoScroll.Text = Strings.AutoScroll;
 
-            LoadJobFilterItems();
-            PopulateLogFileList();
+            if (_currentJob != null)
+            {
+                _configStore.EnsureJobLogPopulated(_currentJob);
+            }
+            _lastLoadedLength = 0;
+            LoadCurrentLog(appendOnly: false);
         }
 
         public void CleanUp()
         {
             try
             {
-                _searchTimer?.Stop();
-                _searchTimer?.Dispose();
                 timerAutoRefresh?.Stop();
                 timerAutoRefresh?.Dispose();
+                timerAutoRefresh = null;
+
+                _searchTimer?.Stop();
+                _searchTimer?.Dispose();
+                _searchTimer = null;
             }
             catch { }
         }
 
         private static string FormatBytes(long bytes)
         {
-            return JobViewModel.FormatBytes(bytes);
+            string[] sizes = { "B", "KB", "MB", "GB", "TB" };
+            double len = bytes;
+            int order = 0;
+            while (len >= 1024 && order < sizes.Length - 1)
+            {
+                order++;
+                len = len / 1024;
+            }
+            return $"{len:0.##} {sizes[order]}";
         }
     }
 }

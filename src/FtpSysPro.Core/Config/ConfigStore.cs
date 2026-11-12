@@ -45,6 +45,7 @@ namespace FtpSysPro.Core.Config
         public string HistoryDirectory => _historyDirectory;
         public string CatalogDirectory => _catalogDirectory;
         public string LogsDirectory => _logsDirectory;
+        public string JobLogsDirectory => Path.Combine(_logsDirectory, "jobs");
         public string TempDirectory => _tempDirectory;
 
         public void EnsureDirectories()
@@ -53,6 +54,7 @@ namespace FtpSysPro.Core.Config
             EnsureDirectoryWithAcl(_historyDirectory);
             EnsureDirectoryWithAcl(_catalogDirectory);
             EnsureDirectoryWithAcl(_logsDirectory);
+            EnsureDirectoryWithAcl(JobLogsDirectory);
             EnsureDirectoryWithAcl(_tempDirectory);
         }
 
@@ -249,6 +251,165 @@ namespace FtpSysPro.Core.Config
                     }
                     catch { }
                 }
+            }
+        }
+
+        public string GetJobLogFilePath(string jobId)
+        {
+            if (string.IsNullOrEmpty(jobId)) return null;
+            return Path.Combine(JobLogsDirectory, $"{Sanitize(jobId)}.log");
+        }
+
+        public void AppendJobLog(string jobId, string jobName, string level, string message, DateTime? timestampUtc = null)
+        {
+            if (string.IsNullOrEmpty(jobId)) return;
+            try
+            {
+                EnsureDirectories();
+                var filePath = GetJobLogFilePath(jobId);
+                var ts = (timestampUtc ?? DateTime.UtcNow).ToLocalTime();
+                string tag = string.IsNullOrEmpty(level) ? "INF" : level.Trim().ToUpperInvariant();
+                if (tag.Length > 3) tag = tag.Substring(0, 3);
+                string line = $"{ts:yyyy-MM-dd HH:mm:ss.fff zzz} [{tag}] [Job '{jobName ?? jobId}'] {message}";
+
+                lock (_syncLock)
+                {
+                    File.AppendAllText(filePath, line + Environment.NewLine, System.Text.Encoding.UTF8);
+                }
+            }
+            catch
+            {
+                // Silently ignore logging failures to not disrupt operations
+            }
+        }
+
+        public void ClearJobLog(string jobId)
+        {
+            if (string.IsNullOrEmpty(jobId)) return;
+            try
+            {
+                lock (_syncLock)
+                {
+                    var filePath = GetJobLogFilePath(jobId);
+                    if (File.Exists(filePath))
+                    {
+                        File.Delete(filePath);
+                    }
+                }
+            }
+            catch { }
+        }
+
+        public void EnsureJobLogPopulated(BackupJob job)
+        {
+            if (job == null || string.IsNullOrEmpty(job.Id)) return;
+            try
+            {
+                EnsureDirectories();
+                var filePath = GetJobLogFilePath(job.Id);
+
+                // If job log file already exists and has content, nothing to synthesize
+                if (File.Exists(filePath) && new FileInfo(filePath).Length > 0)
+                {
+                    return;
+                }
+
+                var lines = new List<string>();
+
+                // 1. Synthesize from existing history records
+                var historyRecords = LoadHistoryRecords(job.Id, 500);
+                if (historyRecords != null && historyRecords.Count > 0)
+                {
+                    // Reverse to chronological order (oldest to newest)
+                    var sortedRecords = new List<BackupRunResult>(historyRecords);
+                    sortedRecords.Reverse();
+
+                    foreach (var rec in sortedRecords)
+                    {
+                        var start = rec.StartTimeUtc.ToLocalTime();
+                        var end = rec.EndTimeUtc.ToLocalTime();
+                        string modeStr = rec.BackupType == BackupType.Full ? "Full" : "Incremental";
+
+                        lines.Add($"{start:yyyy-MM-dd HH:mm:ss.fff zzz} [INF] [Job '{job.Name}'] Bắt đầu sao lưu ({modeStr})...");
+                        if (!string.IsNullOrEmpty(rec.BackupSetName))
+                        {
+                            lines.Add($"{start:yyyy-MM-dd HH:mm:ss.fff zzz} [INF] [Job '{job.Name}'] Bộ sao lưu: {rec.BackupSetName}");
+                        }
+                        if (rec.Warnings != null)
+                        {
+                            foreach (var w in rec.Warnings)
+                            {
+                                string cleanW = w.Replace("\r\n", " ").Replace("\n", " ");
+                                lines.Add($"{start:yyyy-MM-dd HH:mm:ss.fff zzz} [WRN] [Job '{job.Name}'] Cảnh báo: {cleanW}");
+                            }
+                        }
+                        if (rec.Errors != null)
+                        {
+                            foreach (var err in rec.Errors)
+                            {
+                                string cleanErr = err.Replace("\r\n", " ").Replace("\n", " ");
+                                lines.Add($"{end:yyyy-MM-dd HH:mm:ss.fff zzz} [ERR] [Job '{job.Name}'] Lỗi: {cleanErr}");
+                            }
+                        }
+
+                        string statusTag = rec.Status == JobExecutionStatus.Failed ? "ERR"
+                            : rec.Status == JobExecutionStatus.Warning ? "WRN" : "INF";
+
+                        string durStr = rec.Duration.TotalSeconds >= 1
+                            ? $"{(int)rec.Duration.TotalMinutes}m {rec.Duration.Seconds}s"
+                            : $"{rec.Duration.TotalSeconds:F1}s";
+
+                        lines.Add($"{end:yyyy-MM-dd HH:mm:ss.fff zzz} [{statusTag}] [Job '{job.Name}'] Hoàn tất với trạng thái {rec.Status}: {rec.Message} (Thời lượng: {durStr}, Đã quét: {rec.ScannedFiles:N0} tệp, Sao lưu: {rec.BackedUpFiles:N0} tệp)");
+                    }
+                }
+
+                // 2. Also check if there are any service-*.log lines matching this job
+                try
+                {
+                    if (Directory.Exists(_logsDirectory))
+                    {
+                        var serviceLogs = Directory.GetFiles(_logsDirectory, "service-*.log");
+                        Array.Sort(serviceLogs);
+                        foreach (var slog in serviceLogs)
+                        {
+                            foreach (var sline in File.ReadAllLines(slog))
+                            {
+                                if ((sline.IndexOf($"[Job '{job.Name}']", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                     sline.IndexOf(job.Id, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                     sline.IndexOf($"job '{job.Name}'", StringComparison.OrdinalIgnoreCase) >= 0) &&
+                                    !lines.Contains(sline))
+                                {
+                                    lines.Add(sline);
+                                }
+                            }
+                        }
+                    }
+                }
+                catch { }
+
+                if (lines.Count > 0)
+                {
+                    // Sort lines chronologically by leading timestamp
+                    lines.Sort((a, b) =>
+                    {
+                        if (a.Length >= 19 && b.Length >= 19 &&
+                            DateTime.TryParse(a.Substring(0, 19), out var dtA) &&
+                            DateTime.TryParse(b.Substring(0, 19), out var dtB))
+                        {
+                            return dtA.CompareTo(dtB);
+                        }
+                        return 0;
+                    });
+
+                    lock (_syncLock)
+                    {
+                        File.WriteAllLines(filePath, lines, System.Text.Encoding.UTF8);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("[ConfigStore] Error ensuring job log: " + ex.Message);
             }
         }
 

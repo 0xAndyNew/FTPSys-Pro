@@ -116,6 +116,7 @@ namespace FtpSysPro.Core.Engine
 
                 job.SourceSizeBytes = scanResult.TotalSizeBytes;
                 job.SourceFileCount = scanResult.Files.Count;
+                _configStore.AppendJobLog(job.Id, job.Name, "INF", $"Quét nguồn hoàn tất: {scanResult.Files.Count:N0} tệp ({FormatBytes(scanResult.TotalSizeBytes)})");
 
                 // Remap file paths to VSS shadow copy if active
                 if (vssContext != null && vssContext.IsActive)
@@ -161,6 +162,7 @@ namespace FtpSysPro.Core.Engine
                 progressInfo.TotalFiles = filesToBackup.Count;
                 progressInfo.TotalBytes = changes.TotalBytesToBackup;
                 progress?.Report(progressInfo);
+                _configStore.AppendJobLog(job.Id, job.Name, "INF", $"Phát hiện thay đổi: {filesToBackup.Count:N0} tệp cần sao lưu ({FormatBytes(changes.TotalBytesToBackup)}), {changes.DeletedRelativePaths.Count} tệp đã xóa");
 
                 // Step 3.5: Pre-flight Disk Space Check (if enabled)
                 if (job.Integrity != null && job.Integrity.CheckFreeDiskSpace && filesToBackup.Count > 0)
@@ -191,6 +193,7 @@ namespace FtpSysPro.Core.Engine
                 var typeSuffix = effectiveType == BackupType.Full ? "FULL" : "INCR";
                 var backupSetName = $"{SanitizeName(job.Name)}_{timestamp}_{typeSuffix}";
                 result.BackupSetName = backupSetName;
+                _configStore.AppendJobLog(job.Id, job.Name, "INF", $"Bộ sao lưu: {backupSetName}");
 
                 var jobRemoteRoot = SanitizeName(job.Name);
                 var setRemoteDir = $"{jobRemoteRoot}/{backupSetName}";

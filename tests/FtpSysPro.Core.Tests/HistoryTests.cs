@@ -102,5 +102,63 @@ namespace FtpSysPro.Core.Tests
             _store.ClearHistory(null);
             Assert.Empty(_store.LoadHistoryRecords(null));
         }
+
+        [Fact]
+        public void JobLog_Appends_And_PopulatesFromHistorySuccessfully()
+        {
+            var job = new BackupJob
+            {
+                Id = "job-log-test",
+                Name = "DailyBackup"
+            };
+
+            // 1. Path check
+            var logPath = _store.GetJobLogFilePath(job.Id);
+            Assert.NotNull(logPath);
+            Assert.Contains("job-log-test.log", logPath);
+
+            // 2. Append job log directly
+            _store.AppendJobLog(job.Id, job.Name, "INF", "Starting manual backup...");
+            _store.AppendJobLog(job.Id, job.Name, "WRN", "VSS skipped, direct read");
+            _store.AppendJobLog(job.Id, job.Name, "INF", "Completed successfully");
+
+            Assert.True(File.Exists(logPath));
+            var lines = File.ReadAllLines(logPath);
+            Assert.Equal(3, lines.Length);
+            Assert.Contains("[INF] [Job 'DailyBackup'] Starting manual backup...", lines[0]);
+            Assert.Contains("[WRN] [Job 'DailyBackup'] VSS skipped, direct read", lines[1]);
+            Assert.Contains("[INF] [Job 'DailyBackup'] Completed successfully", lines[2]);
+
+            // 3. Clear job log
+            _store.ClearJobLog(job.Id);
+            Assert.False(File.Exists(logPath));
+
+            // 4. EnsureJobLogPopulated synthesizes from history
+            var runRec = new BackupRunResult
+            {
+                RunId = "run-synth-1",
+                JobId = job.Id,
+                JobName = job.Name,
+                BackupType = BackupType.Full,
+                StartTimeUtc = DateTime.UtcNow.AddMinutes(-10),
+                EndTimeUtc = DateTime.UtcNow.AddMinutes(-8),
+                Status = JobExecutionStatus.Success,
+                BackedUpFiles = 150,
+                BackedUpBytes = 1048576,
+                Message = "Backup done 150 files.",
+                BackupSetName = "DailyBackup_20261112_FULL",
+                Warnings = new System.Collections.Generic.List<string> { "Warning test sample" }
+            };
+            _store.SaveHistoryRecord(runRec);
+
+            // Now call EnsureJobLogPopulated
+            _store.EnsureJobLogPopulated(job);
+            Assert.True(File.Exists(logPath));
+            var synthLines = File.ReadAllLines(logPath);
+            Assert.True(synthLines.Length >= 3);
+            Assert.Contains("Bộ sao lưu: DailyBackup_20261112_FULL", string.Join(" ", synthLines));
+            Assert.Contains("Cảnh báo: Warning test sample", string.Join(" ", synthLines));
+            Assert.Contains("Hoàn tất với trạng thái Success", string.Join(" ", synthLines));
+        }
     }
 }

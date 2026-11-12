@@ -67,6 +67,7 @@ namespace FtpSysPro.Service
             try
             {
                 Log.Information("[Job '{JobName}'] Bắt đầu sao lưu ({Type})...", job.Name, backupType);
+                _configStore.AppendJobLog(job.Id, job.Name, "INF", $"Bắt đầu sao lưu ({backupType})...");
 
                 var progress = new Progress<JobProgressInfo>(p =>
                 {
@@ -96,6 +97,7 @@ namespace FtpSysPro.Service
                     foreach (var w in result.Warnings)
                     {
                         Log.Warning("[Job '{JobName}'] Cảnh báo: {Warning}", job.Name, w);
+                        _configStore.AppendJobLog(job.Id, job.Name, "WRN", $"Cảnh báo: {w}");
                     }
                 }
 
@@ -116,11 +118,15 @@ namespace FtpSysPro.Service
                 if (result.Status == JobExecutionStatus.Failed)
                 {
                     Log.Error("[Job '{JobName}'] Thất bại: {Message}", job.Name, result.Message);
+                    _configStore.AppendJobLog(job.Id, job.Name, "ERR", $"Thất bại: {result.Message}");
                 }
                 else
                 {
                     Log.Information("[Job '{JobName}'] Hoàn tất với trạng thái {Status}: {Message} (Sao lưu: {Files} tệp, {Size} bytes)",
                         job.Name, result.Status, result.Message, result.BackedUpFiles, result.BackedUpBytes);
+                    string statusTag = result.Status == JobExecutionStatus.Warning ? "WRN" : "INF";
+                    _configStore.AppendJobLog(job.Id, job.Name, statusTag,
+                        $"Hoàn tất với trạng thái {result.Status}: {result.Message} (Sao lưu: {result.BackedUpFiles} tệp, {result.BackedUpBytes:N0} bytes)");
                 }
                 return result;
             }

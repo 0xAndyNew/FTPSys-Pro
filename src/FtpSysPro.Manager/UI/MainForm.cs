@@ -181,7 +181,7 @@ namespace FtpSysPro.Manager.UI
             {
                 if (tabRight != null) tabRight.SelectedTab = tabLog;
                 var job = GetSelectedJob();
-                operationLogControl?.SelectJob(job?.Id);
+                operationLogControl?.SetCurrentJob(job);
             });
             jobMenu.Items.AddRange(new ToolStripItem[] {
                 itemRun, itemStop, new ToolStripSeparator(),
@@ -484,10 +484,7 @@ namespace FtpSysPro.Manager.UI
             btnRun.Click += async (s, e) => await RunSelectedJobAsync();
             btnStop.Click += async (s, e) => await StopSelectedJobAsync();
             btnRestore.Click += (s, e) => OpenRestoreWizard();
-            btnLogs.Click += (s, e) =>
-            {
-                if (tabRight != null) tabRight.SelectedTab = tabLog;
-            };
+            btnLogs.Click += (s, e) => OpenLogViewer();
             btnSettings.Click += (s, e) => OpenSettings();
             btnRefresh.Click += async (s, e) => await RefreshAllAsync();
 
@@ -951,6 +948,7 @@ namespace FtpSysPro.Manager.UI
 
             UpdateSelectedJobProperties(job, vm);
             UpdateSelectedJobHistory(job?.Id);
+            operationLogControl?.SetCurrentJob(job);
         }
 
         private void AddPropertyRow(string name, string value, bool boldValue = false, Color? valueColor = null)
@@ -1132,7 +1130,8 @@ namespace FtpSysPro.Manager.UI
                     {
                         tabRight.SelectedTab = tabLog;
                     }
-                    operationLogControl?.NavigateToDateAndJob(logTime, jobId);
+                    var job = _currentConfig?.Jobs?.FirstOrDefault(j => j.Id == jobId) ?? GetSelectedJob();
+                    operationLogControl?.SetCurrentJob(job);
                 };
                 dlg.ShowDialog(this);
             }
@@ -1147,7 +1146,9 @@ namespace FtpSysPro.Manager.UI
             if (MessageBox.Show(this, confirm, Strings.AppName, MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
             {
                 _configStore.ClearHistory(job.Id);
+                _configStore.ClearJobLog(job.Id);
                 UpdateSelectedJobHistory(job.Id);
+                operationLogControl?.SetCurrentJob(job);
             }
         }
 
