@@ -5,10 +5,12 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.ServiceProcess;
+using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using FtpSysPro.Core.Config;
 using FtpSysPro.Core.Ipc;
+using FtpSysPro.Core.Logging;
 using FtpSysPro.Core.Models;
 using FtpSysPro.Core.Resources;
 
@@ -40,27 +42,31 @@ namespace FtpSysPro.Manager.UI
         private ToolStripStatusLabel lblServiceAction;
         private ToolStripProgressBar progressBar;
 
-        // Side Detail Panel
+        // Right-side Cobian-style TabControl
         private SplitContainer splitContainer;
-        private Panel pnlDetailCard;
-        private Label lblCardTitle;
-        private TableLayoutPanel tblDetail;
-        private Label lblDetailName;
-        private Label lblDetailBadge;
-        private Label lblDetailDesc;
-        private Label lblHeaderSources;
-        private Label lblDetailSources;
-        private Label lblHeaderSourceSize;
-        private Label lblDetailSourceSize;
-        private Label lblHeaderDest;
-        private Label lblDetailDest;
-        private Label lblHeaderTransfer;
-        private Label lblDetailTransfer;
-        private Label lblHeaderLast;
-        private Label lblDetailLast;
-        private Label lblDetailLastResult;
-        private Label lblHeaderNext;
-        private Label lblDetailNext;
+        private TabControl tabRight;
+        private TabPage tabProperties;
+        private TabPage tabHistory;
+        private TabPage tabLog;
+
+        // Tab 1: Task Properties
+        private Panel pnlPropHeader;
+        private Label lblPropJobName;
+        private Label lblPropJobBadge;
+        private DataGridView gridProperties;
+        private DataGridViewTextBoxColumn colPropName;
+        private DataGridViewTextBoxColumn colPropValue;
+
+        // Tab 2: Execution History
+        private DataGridView gridHistory;
+        private Panel pnlHistTop;
+        private Button btnHistRefresh;
+        private Button btnHistClear;
+        private Button btnHistDetails;
+        private Label lblHistSummary;
+
+        // Tab 3: Embedded Log Viewer
+        private OperationLogControl operationLogControl;
 
         // Context menus
         private ToolStripMenuItem itemRun;
@@ -162,15 +168,20 @@ namespace FtpSysPro.Manager.UI
             itemEdit = new ToolStripMenuItem("✏ " + Strings.Edit, null, (s, e) => EditSelectedJob());
             itemClone = new ToolStripMenuItem("📋 " + Strings.Clone, null, (s, e) => CloneSelectedJob());
             itemDelete = new ToolStripMenuItem("🗑 " + Strings.Delete, null, (s, e) => DeleteSelectedJob());
-            itemLogs = new ToolStripMenuItem("📋 " + Strings.ViewJobLog, null, (s, e) =>
+            var itemHistory = new ToolStripMenuItem("⏰ " + Strings.TabHistory, null, (s, e) =>
             {
+                if (tabRight != null) tabRight.SelectedTab = tabHistory;
+            });
+            itemLogs = new ToolStripMenuItem("📝 " + Strings.ViewJobLog, null, (s, e) =>
+            {
+                if (tabRight != null) tabRight.SelectedTab = tabLog;
                 var job = GetSelectedJob();
-                OpenLogViewer(job?.Name);
+                operationLogControl?.SelectJob(job?.Id);
             });
             jobMenu.Items.AddRange(new ToolStripItem[] {
                 itemRun, itemStop, new ToolStripSeparator(),
                 itemEdit, itemClone, itemDelete, new ToolStripSeparator(),
-                itemLogs
+                itemHistory, itemLogs
             });
             gridJobs.ContextMenuStrip = jobMenu;
 
@@ -188,200 +199,227 @@ namespace FtpSysPro.Manager.UI
                 }
             };
 
-            // Right side Job Detail Card (modern borderless design)
-            pnlDetailCard = new Panel
+            // Right-side Cobian-style TabControl (Tabs aligned at bottom matching Cobian Backup 11 Gravity)
+            tabRight = new TabControl
             {
                 Dock = DockStyle.Fill,
-                BackColor = Color.FromArgb(250, 251, 253)
+                Alignment = TabAlignment.Bottom,
+                Font = new Font("Segoe UI", 9F)
             };
 
-            var pnlDetailHeader = new Panel
+            // -----------------------------------------------------------------
+            // Tab 1: Task properties (Thuộc tính Job)
+            // -----------------------------------------------------------------
+            tabProperties = new TabPage
+            {
+                Text = "📋 " + Strings.TabTaskProperties,
+                BackColor = Color.FromArgb(250, 251, 253),
+                Padding = new Padding(0)
+            };
+
+            pnlPropHeader = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 36,
+                Height = 44,
                 BackColor = Color.FromArgb(242, 246, 251),
-                Padding = new Padding(12, 0, 12, 0)
+                Padding = new Padding(12, 4, 12, 4)
             };
 
-            lblCardTitle = new Label
+            lblPropJobName = new Label
             {
-                Text = "📋 " + Strings.DetailCardTitle,
-                Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
-                ForeColor = Color.FromArgb(20, 45, 85),
-                Dock = DockStyle.Fill,
-                TextAlign = ContentAlignment.MiddleLeft
+                Text = Strings.NoJobSelected,
+                Font = new Font("Segoe UI", 11F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(12, 35, 75),
+                Dock = DockStyle.Top,
+                AutoSize = true
             };
-            pnlDetailHeader.Controls.Add(lblCardTitle);
 
-            var pnlHeaderDivider = new Panel
+            lblPropJobBadge = new Label
+            {
+                Text = "",
+                Font = new Font("Segoe UI", 8.5F),
+                ForeColor = Color.FromArgb(30, 120, 50),
+                Dock = DockStyle.Bottom,
+                AutoSize = true
+            };
+
+            pnlPropHeader.Controls.Add(lblPropJobBadge);
+            pnlPropHeader.Controls.Add(lblPropJobName);
+
+            var pnlPropDivider = new Panel
             {
                 Dock = DockStyle.Top,
                 Height = 1,
                 BackColor = Color.FromArgb(220, 228, 238)
             };
 
-            var pnlDetailScroll = new Panel
+            gridProperties = new DataGridView
             {
                 Dock = DockStyle.Fill,
-                AutoScroll = true,
-                Padding = new Padding(14, 10, 14, 20),
-                BackColor = Color.FromArgb(250, 251, 253)
+                ReadOnly = true,
+                AllowUserToAddRows = false,
+                AllowUserToDeleteRows = false,
+                AllowUserToResizeRows = false,
+                RowHeadersVisible = false,
+                BorderStyle = BorderStyle.None,
+                CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal,
+                GridColor = Color.FromArgb(235, 238, 245),
+                BackgroundColor = Color.White,
+                SelectionMode = DataGridViewSelectionMode.CellSelect,
+                MultiSelect = false,
+                AutoSizeRowsMode = DataGridViewAutoSizeRowsMode.AllCells
             };
+            gridProperties.DefaultCellStyle.SelectionBackColor = Color.FromArgb(220, 235, 252);
+            gridProperties.DefaultCellStyle.SelectionForeColor = Color.Black;
+            gridProperties.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            gridProperties.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(244, 246, 250);
+            gridProperties.ColumnHeadersHeight = 28;
+            gridProperties.EnableHeadersVisualStyles = false;
 
-            tblDetail = new TableLayoutPanel
+            colPropName = new DataGridViewTextBoxColumn
             {
-                Dock = DockStyle.Top,
-                AutoSize = true,
-                AutoSizeMode = AutoSizeMode.GrowAndShrink,
-                ColumnCount = 1,
+                Name = "colPropName",
+                HeaderText = Strings.ColProperty,
+                Width = 190,
+                ReadOnly = true
+            };
+            colPropName.DefaultCellStyle.Font = new Font("Segoe UI", 8.5F, FontStyle.Bold);
+            colPropName.DefaultCellStyle.ForeColor = Color.FromArgb(40, 50, 70);
+            colPropName.DefaultCellStyle.BackColor = Color.FromArgb(248, 250, 253);
+
+            colPropValue = new DataGridViewTextBoxColumn
+            {
+                Name = "colPropValue",
+                HeaderText = Strings.ColValue,
+                AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill,
+                ReadOnly = true
+            };
+            colPropValue.DefaultCellStyle.WrapMode = DataGridViewTriState.True;
+            colPropValue.DefaultCellStyle.Font = new Font("Segoe UI", 9F);
+            colPropValue.DefaultCellStyle.ForeColor = Color.FromArgb(20, 30, 45);
+
+            gridProperties.Columns.Add(colPropName);
+            gridProperties.Columns.Add(colPropValue);
+
+            tabProperties.Controls.Add(gridProperties);
+            tabProperties.Controls.Add(pnlPropDivider);
+            tabProperties.Controls.Add(pnlPropHeader);
+
+            // -----------------------------------------------------------------
+            // Tab 2: History (Lịch sử thực thi)
+            // -----------------------------------------------------------------
+            tabHistory = new TabPage
+            {
+                Text = "⏰ " + Strings.TabHistory,
+                BackColor = Color.FromArgb(250, 251, 253),
                 Padding = new Padding(0)
             };
-            tblDetail.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
 
-            // Controls initialization
-            lblDetailName = new Label
+            pnlHistTop = new Panel
             {
-                Text = Strings.NoJobSelected,
-                Font = new Font("Segoe UI", 11.5F, FontStyle.Bold),
-                ForeColor = Color.FromArgb(12, 35, 75)
+                Dock = DockStyle.Top,
+                Height = 38,
+                BackColor = Color.FromArgb(242, 246, 251),
+                Padding = new Padding(8, 4, 8, 4)
             };
 
-            lblDetailBadge = new Label
+            btnHistRefresh = new Button
             {
-                Text = "",
-                Font = new Font("Segoe UI", 8.5F),
-                ForeColor = Color.FromArgb(30, 120, 50)
+                Text = "↻ " + Strings.Refresh,
+                Location = new Point(8, 5),
+                Size = new Size(88, 28),
+                BackColor = Color.White,
+                FlatStyle = FlatStyle.System
+            };
+            btnHistRefresh.Click += (s, e) =>
+            {
+                var job = GetSelectedJob();
+                UpdateSelectedJobHistory(job?.Id);
             };
 
-            lblDetailDesc = new Label
+            btnHistClear = new Button
             {
-                Text = "",
+                Text = "🗑 " + Strings.ClearHistory,
+                Location = new Point(102, 5),
+                Size = new Size(110, 28),
+                BackColor = Color.White,
+                FlatStyle = FlatStyle.System
+            };
+            btnHistClear.Click += (s, e) => ClearSelectedJobHistory();
+
+            btnHistDetails = new Button
+            {
+                Text = "🔍 " + Strings.ViewHistoryDetails,
+                Location = new Point(218, 5),
+                Size = new Size(120, 28),
+                BackColor = Color.White,
+                FlatStyle = FlatStyle.System
+            };
+            btnHistDetails.Click += (s, e) => ShowSelectedHistoryDetail();
+
+            lblHistSummary = new Label
+            {
+                Text = Strings.HistNoRuns,
+                Location = new Point(345, 10),
+                AutoSize = true,
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Italic),
-                ForeColor = Color.FromArgb(100, 110, 125),
-                Visible = false
+                ForeColor = Color.FromArgb(80, 90, 110)
             };
 
-            lblHeaderSources = new Label
+            pnlHistTop.Controls.AddRange(new Control[] { btnHistRefresh, btnHistClear, btnHistDetails, lblHistSummary });
+
+            gridHistory = new DataGridView
             {
-                Text = Strings.HeaderSources,
-                Font = new Font("Segoe UI", 8F, FontStyle.Bold),
-                ForeColor = Color.FromArgb(100, 110, 130)
+                Dock = DockStyle.Fill,
+                ReadOnly = true,
+                AllowUserToAddRows = false,
+                AllowUserToDeleteRows = false,
+                AllowUserToResizeRows = false,
+                RowHeadersVisible = false,
+                BorderStyle = BorderStyle.None,
+                CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal,
+                GridColor = Color.FromArgb(235, 238, 245),
+                BackgroundColor = Color.White,
+                SelectionMode = DataGridViewSelectionMode.FullRowSelect,
+                MultiSelect = false
             };
+            gridHistory.DefaultCellStyle.SelectionBackColor = Color.FromArgb(220, 235, 252);
+            gridHistory.DefaultCellStyle.SelectionForeColor = Color.Black;
+            gridHistory.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI", 8.5F, FontStyle.Bold);
+            gridHistory.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(244, 246, 250);
+            gridHistory.ColumnHeadersHeight = 28;
+            gridHistory.EnableHeadersVisualStyles = false;
 
-            lblDetailSources = new Label
+            gridHistory.Columns.Add(new DataGridViewTextBoxColumn { Name = "colHistStart", HeaderText = Strings.ColHistStartTime, DataPropertyName = "StartTime", Width = 135 });
+            gridHistory.Columns.Add(new DataGridViewTextBoxColumn { Name = "colHistDuration", HeaderText = Strings.ColHistDuration, DataPropertyName = "Duration", Width = 80 });
+            gridHistory.Columns.Add(new DataGridViewTextBoxColumn { Name = "colHistType", HeaderText = Strings.ColHistBackupType, DataPropertyName = "BackupTypeDisplay", Width = 75 });
+            gridHistory.Columns.Add(new DataGridViewTextBoxColumn { Name = "colHistStatus", HeaderText = Strings.ColHistStatus, DataPropertyName = "StatusDisplay", Width = 90 });
+            gridHistory.Columns.Add(new DataGridViewTextBoxColumn { Name = "colHistSize", HeaderText = Strings.ColHistSize, DataPropertyName = "SizeDisplay", Width = 90 });
+            gridHistory.Columns.Add(new DataGridViewTextBoxColumn { Name = "colHistFiles", HeaderText = Strings.ColHistFiles, DataPropertyName = "FilesDisplay", Width = 70 });
+            gridHistory.Columns.Add(new DataGridViewTextBoxColumn { Name = "colHistErrors", HeaderText = Strings.ColHistErrors, DataPropertyName = "ErrorsDisplay", Width = 100 });
+            gridHistory.Columns.Add(new DataGridViewTextBoxColumn { Name = "colHistMessage", HeaderText = Strings.ColHistMessage, DataPropertyName = "MessageDisplay", AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill });
+
+            gridHistory.CellDoubleClick += (s, e) => ShowSelectedHistoryDetail();
+            gridHistory.CellFormatting += GridHistory_CellFormatting;
+
+            tabHistory.Controls.Add(gridHistory);
+            tabHistory.Controls.Add(pnlHistTop);
+
+            // -----------------------------------------------------------------
+            // Tab 3: Operation Log (Nhật ký vận hành)
+            // -----------------------------------------------------------------
+            tabLog = new TabPage
             {
-                Text = "-",
-                Font = new Font("Segoe UI", 9F),
-                ForeColor = Color.FromArgb(20, 30, 50)
+                Text = "📝 " + Strings.TabLog,
+                BackColor = Color.FromArgb(248, 250, 252),
+                Padding = new Padding(0)
             };
 
-            lblHeaderSourceSize = new Label
-            {
-                Text = Strings.HeaderSourceSize,
-                Font = new Font("Segoe UI", 8F, FontStyle.Bold),
-                ForeColor = Color.FromArgb(100, 110, 130)
-            };
+            operationLogControl = new OperationLogControl(_configStore, _currentConfig);
+            tabLog.Controls.Add(operationLogControl);
 
-            lblDetailSourceSize = new Label
-            {
-                Text = "-",
-                Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
-                ForeColor = Color.DarkBlue
-            };
-
-            lblHeaderDest = new Label
-            {
-                Text = Strings.HeaderDest,
-                Font = new Font("Segoe UI", 8F, FontStyle.Bold),
-                ForeColor = Color.FromArgb(100, 110, 130)
-            };
-
-            lblDetailDest = new Label
-            {
-                Text = "-",
-                Font = new Font("Segoe UI", 9F),
-                ForeColor = Color.FromArgb(20, 30, 50)
-            };
-
-            lblHeaderTransfer = new Label
-            {
-                Text = Strings.HeaderTransfer,
-                Font = new Font("Segoe UI", 8F, FontStyle.Bold),
-                ForeColor = Color.FromArgb(100, 110, 130)
-            };
-
-            lblDetailTransfer = new Label
-            {
-                Text = "-",
-                Font = new Font("Segoe UI", 9F),
-                ForeColor = Color.FromArgb(20, 30, 50)
-            };
-
-            lblHeaderLast = new Label
-            {
-                Text = Strings.HeaderLast,
-                Font = new Font("Segoe UI", 8F, FontStyle.Bold),
-                ForeColor = Color.FromArgb(100, 110, 130)
-            };
-
-            lblDetailLast = new Label
-            {
-                Text = "-",
-                Font = new Font("Segoe UI", 9F),
-                ForeColor = Color.FromArgb(20, 30, 50)
-            };
-
-            lblDetailLastResult = new Label
-            {
-                Text = "",
-                Font = new Font("Segoe UI", 8F),
-                ForeColor = Color.DimGray,
-                Visible = false
-            };
-
-            lblHeaderNext = new Label
-            {
-                Text = Strings.HeaderNext,
-                Font = new Font("Segoe UI", 8F, FontStyle.Bold),
-                ForeColor = Color.FromArgb(100, 110, 130)
-            };
-
-            lblDetailNext = new Label
-            {
-                Text = "-",
-                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
-                ForeColor = Color.FromArgb(0, 90, 180)
-            };
-
-            // Add rows to TableLayoutPanel (simple, clean, matching job grid)
-            AddDetailRow(lblDetailName, 2, 2);
-            AddDetailRow(lblDetailBadge, 0, 4);
-            AddDetailRow(lblDetailDesc, 0, 6);
-
-            AddDetailRow(lblHeaderSources, 8, 2);
-            AddDetailRow(lblDetailSources, 0, 6);
-
-            AddDetailRow(lblHeaderSourceSize, 6, 2);
-            AddDetailRow(lblDetailSourceSize, 0, 6);
-
-            AddDetailRow(lblHeaderDest, 6, 2);
-            AddDetailRow(lblDetailDest, 0, 6);
-
-            AddDetailRow(lblHeaderTransfer, 6, 2);
-            AddDetailRow(lblDetailTransfer, 0, 6);
-
-            AddDetailRow(lblHeaderLast, 6, 2);
-            AddDetailRow(lblDetailLast, 0, 2);
-            AddDetailRow(lblDetailLastResult, 0, 6);
-
-            AddDetailRow(lblHeaderNext, 6, 2);
-            AddDetailRow(lblDetailNext, 0, 8);
-
-            pnlDetailScroll.Controls.Add(tblDetail);
-
-            pnlDetailCard.Controls.Add(pnlDetailScroll);
-            pnlDetailCard.Controls.Add(pnlHeaderDivider);
-            pnlDetailCard.Controls.Add(pnlDetailHeader);
+            // Add all tabs to TabControl
+            tabRight.TabPages.AddRange(new TabPage[] { tabProperties, tabHistory, tabLog });
 
             // SplitContainer
             splitContainer = new SplitContainer
@@ -390,7 +428,7 @@ namespace FtpSysPro.Manager.UI
                 Orientation = Orientation.Vertical
             };
             splitContainer.Panel1.Controls.Add(gridJobs);
-            splitContainer.Panel2.Controls.Add(pnlDetailCard);
+            splitContainer.Panel2.Controls.Add(tabRight);
 
             // StatusStrip
             statusStrip = new StatusStrip();
@@ -431,7 +469,10 @@ namespace FtpSysPro.Manager.UI
             btnRun.Click += async (s, e) => await RunSelectedJobAsync();
             btnStop.Click += async (s, e) => await StopSelectedJobAsync();
             btnRestore.Click += (s, e) => OpenRestoreWizard();
-            btnLogs.Click += (s, e) => OpenLogViewer();
+            btnLogs.Click += (s, e) =>
+            {
+                if (tabRight != null) tabRight.SelectedTab = tabLog;
+            };
             btnSettings.Click += (s, e) => OpenSettings();
             btnRefresh.Click += async (s, e) => await RefreshAllAsync();
 
@@ -448,14 +489,6 @@ namespace FtpSysPro.Manager.UI
             };
             Shown += (s, e) => AdjustSplitterDistance();
             Resize += (s, e) => AdjustSplitterDistance();
-        }
-
-        private void AddDetailRow(Control ctrl, int topMargin = 0, int bottomMargin = 4)
-        {
-            ctrl.Dock = DockStyle.Top;
-            ctrl.AutoSize = true;
-            ctrl.Margin = new Padding(0, topMargin, 0, bottomMargin);
-            tblDetail.Controls.Add(ctrl);
         }
 
         private void ApplyLanguage()
@@ -514,16 +547,35 @@ namespace FtpSysPro.Manager.UI
             if (itemEdit != null) itemEdit.Text = "✏ " + Strings.Edit;
             if (itemClone != null) itemClone.Text = "📋 " + Strings.Clone;
             if (itemDelete != null) itemDelete.Text = "🗑 " + Strings.Delete;
-            if (itemLogs != null) itemLogs.Text = "📋 " + Strings.ViewJobLog;
+            if (itemLogs != null) itemLogs.Text = "📝 " + Strings.ViewJobLog;
 
-            // Detail Card
-            if (lblCardTitle != null) lblCardTitle.Text = "📋 " + Strings.DetailCardTitle;
-            if (lblHeaderSources != null) lblHeaderSources.Text = Strings.HeaderSources;
-            if (lblHeaderSourceSize != null) lblHeaderSourceSize.Text = Strings.HeaderSourceSize;
-            if (lblHeaderDest != null) lblHeaderDest.Text = Strings.HeaderDest;
-            if (lblHeaderTransfer != null) lblHeaderTransfer.Text = Strings.HeaderTransfer;
-            if (lblHeaderLast != null) lblHeaderLast.Text = Strings.HeaderLast;
-            if (lblHeaderNext != null) lblHeaderNext.Text = Strings.HeaderNext;
+            // Cobian-style Tabs
+            if (tabProperties != null) tabProperties.Text = "📋 " + Strings.TabTaskProperties;
+            if (tabHistory != null) tabHistory.Text = "⏰ " + Strings.TabHistory;
+            if (tabLog != null) tabLog.Text = "📝 " + Strings.TabLog;
+
+            // Property-Value column headers
+            if (colPropName != null) colPropName.HeaderText = Strings.ColProperty;
+            if (colPropValue != null) colPropValue.HeaderText = Strings.ColValue;
+
+            // History toolbar & headers
+            if (btnHistRefresh != null) btnHistRefresh.Text = "↻ " + Strings.Refresh;
+            if (btnHistClear != null) btnHistClear.Text = "🗑 " + Strings.ClearHistory;
+            if (btnHistDetails != null) btnHistDetails.Text = "🔍 " + Strings.ViewHistoryDetails;
+            if (gridHistory != null)
+            {
+                if (gridHistory.Columns["colHistStart"] != null) gridHistory.Columns["colHistStart"].HeaderText = Strings.ColHistStartTime;
+                if (gridHistory.Columns["colHistDuration"] != null) gridHistory.Columns["colHistDuration"].HeaderText = Strings.ColHistDuration;
+                if (gridHistory.Columns["colHistType"] != null) gridHistory.Columns["colHistType"].HeaderText = Strings.ColHistBackupType;
+                if (gridHistory.Columns["colHistStatus"] != null) gridHistory.Columns["colHistStatus"].HeaderText = Strings.ColHistStatus;
+                if (gridHistory.Columns["colHistSize"] != null) gridHistory.Columns["colHistSize"].HeaderText = Strings.ColHistSize;
+                if (gridHistory.Columns["colHistFiles"] != null) gridHistory.Columns["colHistFiles"].HeaderText = Strings.ColHistFiles;
+                if (gridHistory.Columns["colHistErrors"] != null) gridHistory.Columns["colHistErrors"].HeaderText = Strings.ColHistErrors;
+                if (gridHistory.Columns["colHistMessage"] != null) gridHistory.Columns["colHistMessage"].HeaderText = Strings.ColHistMessage;
+            }
+
+            // Embedded Operation Log
+            operationLogControl?.UpdateUiLanguage();
 
             // Tray
             if (itemTrayOpen != null) itemTrayOpen.Text = Strings.TrayOpen;
@@ -879,99 +931,171 @@ namespace FtpSysPro.Manager.UI
 
         private void UpdateSelectedJobDetail()
         {
-            if (gridJobs.SelectedRows.Count > 0 && gridJobs.SelectedRows[0].DataBoundItem is JobViewModel vm)
+            var job = GetSelectedJob();
+            var vm = (gridJobs.SelectedRows.Count > 0) ? gridJobs.SelectedRows[0].DataBoundItem as JobViewModel : null;
+
+            UpdateSelectedJobProperties(job, vm);
+            UpdateSelectedJobHistory(job?.Id);
+
+            if (job != null && operationLogControl != null)
             {
-                var job = vm.Job;
-                if (job == null)
-                {
-                    ResetJobDetail();
-                    return;
-                }
-
-                // 1. Job Name & Status Badge & Description
-                lblDetailName.Text = job.Name ?? string.Empty;
-                lblDetailBadge.Text = $"● {(job.Enabled ? Strings.BadgeEnabled : Strings.BadgeDisabled)}  •  {Strings.BackupMode}: {vm.BackupTypeDisplay}  •  {vm.StatusDisplay}";
-                lblDetailBadge.ForeColor = job.Enabled ? Color.FromArgb(30, 120, 50) : Color.Gray;
-
-                if (!string.IsNullOrWhiteSpace(job.Description))
-                {
-                    lblDetailDesc.Text = "❝ " + job.Description + " ❞";
-                    lblDetailDesc.Visible = true;
-                }
-                else
-                {
-                    lblDetailDesc.Visible = false;
-                }
-
-                // 2. Source Directories (borderless text, clean lines)
-                if (job.SourceDirectories != null && job.SourceDirectories.Count > 0)
-                {
-                    lblDetailSources.Text = string.Join(Environment.NewLine, job.SourceDirectories);
-                }
-                else
-                {
-                    lblDetailSources.Text = Strings.NoneOrEmpty;
-                }
-
-                // 3. Source Size
-                lblDetailSourceSize.Text = job.SourceSizeBytes > 0
-                    ? $"{JobViewModel.FormatBytes(job.SourceSizeBytes)} ({job.SourceFileCount:N0} {Strings.FilesUnit})"
-                    : (job.SourceDirectories != null && job.SourceDirectories.Count > 0 ? Strings.DetailNotScannedOrZero : "-");
-
-                // 4. Destination Repository
-                lblDetailDest.Text = vm.DestinationDisplay;
-
-                // 5. Transfer / Packaging Mode
-                lblDetailTransfer.Text = job.Compression != null && job.Compression.Enabled
-                    ? Strings.DetailZipLevel(job.Compression.Level) + (job.Compression.EncryptWithPassword ? " [AES-256]" : "")
-                    : Strings.DetailDirectCopy;
-
-                // 6. Last Run & Backup Size
-                lblDetailLast.Text = job.LastRunUtc.HasValue
-                    ? $"{job.LastRunUtc.Value.ToLocalTime():yyyy-MM-dd HH:mm}  ({vm.StatusDisplay})  •  {(vm.SizeDisplay != "-" ? vm.SizeDisplay : Strings.NotScanned)}"
-                    : Strings.NeverExecuted;
-
-                if (!string.IsNullOrWhiteSpace(job.LastMessage))
-                {
-                    lblDetailLastResult.Text = job.LastMessage;
-                    lblDetailLastResult.Visible = true;
-                }
-                else
-                {
-                    lblDetailLastResult.Text = "";
-                    lblDetailLastResult.Visible = false;
-                }
-
-                // 7. Next Run & Schedule summary
-                if (job.Schedules != null && job.Schedules.Count > 0)
-                {
-                    var schedSummary = string.Join("; ", job.Schedules.Select(s => JobEditDialog.FormatScheduleDetail(s)));
-                    lblDetailNext.Text = $"{vm.NextRunDisplay} ({schedSummary})";
-                }
-                else
-                {
-                    lblDetailNext.Text = $"{vm.NextRunDisplay} ({Strings.ScheduleManualOnly})";
-                }
-            }
-            else
-            {
-                ResetJobDetail();
+                operationLogControl.SelectJob(job.Id);
             }
         }
 
-        private void ResetJobDetail()
+        private void UpdateSelectedJobProperties(BackupJob job, JobViewModel vm)
         {
-            lblDetailName.Text = Strings.NoJobSelected;
-            lblDetailBadge.Text = "";
-            lblDetailDesc.Visible = false;
-            lblDetailSources.Text = "-";
-            lblDetailSourceSize.Text = "-";
-            lblDetailDest.Text = "-";
-            lblDetailTransfer.Text = "-";
-            lblDetailLast.Text = "-";
-            lblDetailLastResult.Text = "";
-            lblDetailLastResult.Visible = false;
-            lblDetailNext.Text = "-";
+            gridProperties.SuspendLayout();
+            gridProperties.Rows.Clear();
+
+            if (job == null)
+            {
+                lblPropJobName.Text = Strings.NoJobSelected;
+                lblPropJobBadge.Text = "";
+                gridProperties.Rows.Add(Strings.PropTaskName, "-");
+                gridProperties.ResumeLayout();
+                return;
+            }
+
+            // 1. Header
+            lblPropJobName.Text = job.Name ?? string.Empty;
+            string statusStr = vm != null ? vm.StatusDisplay : Strings.StatusIdle;
+            lblPropJobBadge.Text = $"● {(job.Enabled ? Strings.BadgeEnabled : Strings.BadgeDisabled)}  •  {Strings.BackupMode}: {(job.BackupType == BackupType.Full ? Strings.ModeFull : Strings.ModeIncremental)}  •  {statusStr}";
+            lblPropJobBadge.ForeColor = job.Enabled ? Color.FromArgb(30, 120, 50) : Color.Gray;
+
+            // 2. Cobian Property | Value rows
+            gridProperties.Rows.Add(Strings.PropTaskName, job.Name ?? Strings.NoneOrEmpty);
+            gridProperties.Rows.Add(Strings.PropTaskId, job.Id ?? "-");
+            gridProperties.Rows.Add(Strings.PropEnabled, job.Enabled ? Strings.Yes : Strings.No);
+            gridProperties.Rows.Add(Strings.PropBackupType, job.BackupType == BackupType.Full ? Strings.ModeFull : Strings.ModeIncremental);
+
+            string sourcesText = (job.SourceDirectories != null && job.SourceDirectories.Count > 0)
+                ? string.Join(Environment.NewLine, job.SourceDirectories)
+                : Strings.NoneOrEmpty;
+            gridProperties.Rows.Add(Strings.PropSource, sourcesText);
+
+            string sourceSizeText = job.SourceSizeBytes > 0
+                ? $"{JobViewModel.FormatBytes(job.SourceSizeBytes)} ({job.SourceFileCount:N0} {Strings.FilesUnit})"
+                : (job.SourceDirectories != null && job.SourceDirectories.Count > 0 ? Strings.DetailNotScannedOrZero : "-");
+            gridProperties.Rows.Add(Strings.PropSourceSize, sourceSizeText);
+
+            gridProperties.Rows.Add(Strings.PropDestination, vm != null ? vm.DestinationDisplay : "-");
+            gridProperties.Rows.Add(Strings.PropVss, (job.Integrity?.EnableVss == true) ? Strings.Yes : Strings.No);
+
+            string compText = (job.Compression != null && job.Compression.Enabled)
+                ? Strings.DetailZipLevel(job.Compression.Level)
+                : Strings.DirectCopyUncompressed;
+            gridProperties.Rows.Add(Strings.PropCompression, compText);
+
+            string encText = (job.Compression != null && job.Compression.EncryptWithPassword)
+                ? Strings.EncryptedAes256
+                : Strings.NotEncrypted;
+            gridProperties.Rows.Add(Strings.PropEncryption, encText);
+
+            string schedText = (job.Schedules != null && job.Schedules.Count > 0)
+                ? string.Join(Environment.NewLine, job.Schedules.Select(s => JobEditDialog.FormatScheduleDetail(s)))
+                : Strings.ScheduleManualOnly;
+            gridProperties.Rows.Add(Strings.PropSchedule, schedText);
+
+            string retText = Strings.RetentionKeepAllText;
+            if (job.Retention != null)
+            {
+                if (job.Retention.Type == RetentionType.KeepDays)
+                    retText = Strings.RetentionDaysText(job.Retention.KeepDays);
+                else if (job.Retention.Type == RetentionType.KeepFullCount)
+                    retText = Strings.RetentionCountText(job.Retention.KeepFullCount);
+            }
+            gridProperties.Rows.Add(Strings.PropRetention, retText);
+
+            string alertText = (job.Notification != null && job.Notification.Enabled && job.Notification.Recipients != null && job.Notification.Recipients.Count > 0)
+                ? $"{Strings.Yes} ({string.Join(", ", job.Notification.Recipients)})"
+                : Strings.AlertDisabled;
+            gridProperties.Rows.Add(Strings.PropAlert, alertText);
+
+            string retryText = (job.Integrity != null) ? Strings.RetryCountText(job.Integrity.NetworkRetryCount) : "-";
+            gridProperties.Rows.Add(Strings.PropNetworkRetry, retryText);
+
+            string lastRunText = job.LastRunUtc.HasValue
+                ? $"{job.LastRunUtc.Value.ToLocalTime():yyyy-MM-dd HH:mm:ss}"
+                : Strings.NeverExecuted;
+            gridProperties.Rows.Add(Strings.PropLastRun, lastRunText);
+
+            string lastResultText = !string.IsNullOrWhiteSpace(job.LastMessage)
+                ? job.LastMessage
+                : (job.LastRunUtc.HasValue ? statusStr : "-");
+            gridProperties.Rows.Add(Strings.PropLastResult, lastResultText);
+
+            string nextRunText = job.NextRunUtc.HasValue
+                ? job.NextRunUtc.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")
+                : Strings.ScheduleManualOnly;
+            gridProperties.Rows.Add(Strings.PropNextRun, nextRunText);
+
+            gridProperties.ResumeLayout();
+        }
+
+        private void UpdateSelectedJobHistory(string jobId)
+        {
+            try
+            {
+                var records = _configStore.LoadHistoryRecords(jobId, 200);
+                var viewModels = records.Select(r => new HistoryViewModel(r)).ToList();
+                gridHistory.DataSource = viewModels;
+                lblHistSummary.Text = viewModels.Count > 0 ? Strings.HistTotalRuns(viewModels.Count) : Strings.HistNoRuns;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("[MainForm] Error loading history: " + ex.Message);
+            }
+        }
+
+        private void GridHistory_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
+        {
+            if (e.RowIndex < 0 || e.RowIndex >= gridHistory.Rows.Count) return;
+            var col = gridHistory.Columns[e.ColumnIndex];
+            if (col.Name == "colHistStatus" && e.Value != null)
+            {
+                string val = e.Value.ToString();
+                if (val == Strings.StatusSuccess)
+                {
+                    e.CellStyle.ForeColor = Color.FromArgb(20, 140, 40);
+                    e.CellStyle.Font = new Font(gridHistory.Font, FontStyle.Bold);
+                }
+                else if (val == Strings.StatusWarning)
+                {
+                    e.CellStyle.ForeColor = Color.FromArgb(200, 130, 0);
+                    e.CellStyle.Font = new Font(gridHistory.Font, FontStyle.Bold);
+                }
+                else if (val == Strings.StatusFailed)
+                {
+                    e.CellStyle.ForeColor = Color.FromArgb(220, 30, 30);
+                    e.CellStyle.Font = new Font(gridHistory.Font, FontStyle.Bold);
+                }
+            }
+        }
+
+        private void ShowSelectedHistoryDetail()
+        {
+            if (gridHistory.SelectedRows.Count == 0) return;
+            var vm = gridHistory.SelectedRows[0].DataBoundItem as HistoryViewModel;
+            if (vm?.Record == null) return;
+
+            using (var dlg = new HistoryDetailDialog(vm.Record))
+            {
+                dlg.ShowDialog(this);
+            }
+        }
+
+        private void ClearSelectedJobHistory()
+        {
+            var job = GetSelectedJob();
+            if (job == null) return;
+
+            string confirm = Strings.ConfirmClearHistory + "\n\nJob: " + (job.Name ?? job.Id);
+            if (MessageBox.Show(this, confirm, Strings.AppName, MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+            {
+                _configStore.ClearHistory(job.Id);
+                UpdateSelectedJobHistory(job.Id);
+            }
         }
 
         private void AdjustSplitterDistance()
@@ -981,20 +1105,17 @@ namespace FtpSysPro.Manager.UI
                 if (splitContainer == null) return;
 
                 int width = splitContainer.Width;
-                int minPanel1 = 350;
-                int minPanel2 = 300;
+                int minPanel1 = 340;
+                int minPanel2 = 460;
 
                 if (width > (minPanel1 + minPanel2))
                 {
                     splitContainer.Panel1MinSize = minPanel1;
                     splitContainer.Panel2MinSize = minPanel2;
-                    splitContainer.FixedPanel = FixedPanel.Panel2;
 
-                    int desiredDetailWidth = 350;
-                    int maxDistance = width - splitContainer.Panel2MinSize;
-                    int minDistance = splitContainer.Panel1MinSize;
-                    int calculated = width - desiredDetailWidth;
-                    splitContainer.SplitterDistance = Math.Max(minDistance, Math.Min(calculated, maxDistance));
+                    int calculated = (int)(width * 0.40);
+                    int maxDistance = width - minPanel2;
+                    splitContainer.SplitterDistance = Math.Max(minPanel1, Math.Min(calculated, maxDistance));
                 }
             }
             catch { }
@@ -1032,6 +1153,7 @@ namespace FtpSysPro.Manager.UI
         {
             _isClosingForReal = true;
             trayIcon.Visible = false;
+            operationLogControl?.CleanUp();
             Close();
             Application.Exit();
         }
@@ -1047,7 +1169,10 @@ namespace FtpSysPro.Manager.UI
                     trayIcon.ShowBalloonTip(2000, Strings.AppName, Strings.TrayRunningBackground, ToolTipIcon.Info);
                 }
                 catch { }
+                return;
             }
+
+            operationLogControl?.CleanUp();
         }
     }
 
@@ -1126,5 +1251,55 @@ namespace FtpSysPro.Manager.UI
             }
             return $"{dbl:0.##} {suffixes[i]}";
         }
+    }
+
+    public class HistoryViewModel
+    {
+        public BackupRunResult Record { get; }
+
+        public HistoryViewModel(BackupRunResult record)
+        {
+            Record = record ?? new BackupRunResult();
+        }
+
+        public string StartTime => Record.StartTimeUtc.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss");
+
+        public string Duration
+        {
+            get
+            {
+                var d = Record.Duration;
+                if (d <= TimeSpan.Zero) return "-";
+                if (d.TotalHours >= 1) return $"{(int)d.TotalHours}h {d.Minutes}m {d.Seconds}s";
+                if (d.TotalMinutes >= 1) return $"{d.Minutes}m {d.Seconds}s";
+                return $"{d.Seconds}s";
+            }
+        }
+
+        public string BackupTypeDisplay => Record.BackupType == BackupType.Full ? Strings.ModeFullShort : Strings.ModeIncrementalShort;
+
+        public string StatusDisplay
+        {
+            get
+            {
+                switch (Record.Status)
+                {
+                    case JobExecutionStatus.Success: return Strings.StatusSuccess;
+                    case JobExecutionStatus.Warning: return Strings.StatusWarning;
+                    case JobExecutionStatus.Failed: return Strings.StatusFailed;
+                    case JobExecutionStatus.Running: return Strings.StatusRunning;
+                    case JobExecutionStatus.Cancelled: return Strings.StatusCancelled;
+                    default: return Strings.StatusIdle;
+                }
+            }
+        }
+
+        public string SizeDisplay => Record.BackedUpBytes > 0 ? JobViewModel.FormatBytes(Record.BackedUpBytes) : "0 B";
+
+        public string FilesDisplay => $"{Record.BackedUpFiles:N0}";
+
+        public string ErrorsDisplay => $"{Record.ErrorCount} / {Record.WarningCount}";
+
+        public string MessageDisplay => !string.IsNullOrEmpty(Record.Message) ? Record.Message : "-";
     }
 }

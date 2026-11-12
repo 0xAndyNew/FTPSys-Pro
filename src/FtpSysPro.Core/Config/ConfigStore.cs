@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Security.AccessControl;
 using System.Security.Principal;
@@ -173,6 +174,81 @@ namespace FtpSysPro.Core.Config
                 var file = Path.Combine(jobHistDir, $"{result.StartTimeUtc:yyyyMMdd_HHmmss}_{result.RunId}.json");
                 var json = JsonConvert.SerializeObject(result, Formatting.Indented);
                 File.WriteAllText(file, json);
+            }
+        }
+
+        public List<BackupRunResult> LoadHistoryRecords(string jobId = null, int maxCount = 200)
+        {
+            var results = new List<BackupRunResult>();
+            lock (_syncLock)
+            {
+                if (!Directory.Exists(_historyDirectory))
+                    return results;
+
+                string[] files;
+                if (!string.IsNullOrEmpty(jobId))
+                {
+                    var jobHistDir = Path.Combine(_historyDirectory, Sanitize(jobId));
+                    if (!Directory.Exists(jobHistDir))
+                        return results;
+                    files = Directory.GetFiles(jobHistDir, "*.json");
+                }
+                else
+                {
+                    files = Directory.GetFiles(_historyDirectory, "*.json", SearchOption.AllDirectories);
+                }
+
+                Array.Sort(files);
+                Array.Reverse(files); // Newest files first
+
+                foreach (var f in files)
+                {
+                    try
+                    {
+                        var json = File.ReadAllText(f);
+                        var r = JsonConvert.DeserializeObject<BackupRunResult>(json);
+                        if (r != null)
+                        {
+                            results.Add(r);
+                            if (results.Count >= maxCount)
+                                break;
+                        }
+                    }
+                    catch
+                    {
+                        // Ignore corrupt history files
+                    }
+                }
+            }
+
+            return results;
+        }
+
+        public void ClearHistory(string jobId = null)
+        {
+            lock (_syncLock)
+            {
+                if (!Directory.Exists(_historyDirectory))
+                    return;
+
+                if (!string.IsNullOrEmpty(jobId))
+                {
+                    var jobHistDir = Path.Combine(_historyDirectory, Sanitize(jobId));
+                    if (Directory.Exists(jobHistDir))
+                    {
+                        try { Directory.Delete(jobHistDir, true); } catch { }
+                    }
+                }
+                else
+                {
+                    try
+                    {
+                        var di = new DirectoryInfo(_historyDirectory);
+                        foreach (var file in di.GetFiles()) { try { file.Delete(); } catch { } }
+                        foreach (var dir in di.GetDirectories()) { try { dir.Delete(true); } catch { } }
+                    }
+                    catch { }
+                }
             }
         }
 

@@ -175,6 +175,61 @@ namespace FtpSysPro.Core.Resources
         public static string RetentionDaysText(int days) => IsVi ? $"Lưu điểm phục hồi trong {days} ngày" : $"Keep restore points within {days} days";
         public static string RetentionCountText(int count) => IsVi ? $"Duy trì {count} điểm phục hồi gần nhất" : $"Keep {count} latest restore points";
 
+        // Cobian-style Tabs in MainForm
+        public static string TabTaskProperties => IsVi ? "Thuộc tính Job" : "Task properties";
+        public static string TabHistory => IsVi ? "Lịch sử thực thi" : "History";
+        public static string TabLog => IsVi ? "Nhật ký vận hành" : "Log";
+
+        // Task Properties table
+        public static string ColProperty => IsVi ? "Thuộc tính" : "Property";
+        public static string ColValue => IsVi ? "Giá trị cấu hình" : "Value";
+        public static string PropTaskName => IsVi ? "Tên Job sao lưu" : "Task name";
+        public static string PropTaskId => IsVi ? "Mã định danh (ID)" : "Task ID";
+        public static string PropBackupType => IsVi ? "Chế độ sao lưu" : "Backup type";
+        public static string PropSource => IsVi ? "Thư mục nguồn" : "Source";
+        public static string PropDestination => IsVi ? "Kho lưu trữ đích" : "Destination";
+        public static string PropSourceSize => IsVi ? "Dung lượng nguồn" : "Source size";
+        public static string PropEnabled => IsVi ? "Kích hoạt" : "Enabled";
+        public static string PropVss => IsVi ? "Volume Shadow Copy (VSS)" : "Use VSS";
+        public static string PropCompression => IsVi ? "Đóng gói & Nén" : "Compression";
+        public static string PropEncryption => IsVi ? "Mã hóa tệp nén" : "Encryption";
+        public static string PropSchedule => IsVi ? "Lịch thực thi" : "Schedule";
+        public static string PropRetention => IsVi ? "Chính sách lưu giữ" : "Retention policy";
+        public static string PropAlert => IsVi ? "Cảnh báo Email" : "Email alerts";
+        public static string PropNetworkRetry => IsVi ? "Thử lại mạng" : "Network retry";
+        public static string PropLastRun => IsVi ? "Lần thực thi cuối" : "Last run";
+        public static string PropDuration => IsVi ? "Thời lượng" : "Duration";
+        public static string PropLastResult => IsVi ? "Kết quả lần cuối" : "Last result";
+        public static string PropNextRun => IsVi ? "Lịch chạy kế tiếp" : "Next run";
+        public static string Yes => IsVi ? "Có" : "Yes";
+        public static string No => IsVi ? "Không" : "No";
+        public static string DirectCopyUncompressed => IsVi ? "Sao chép trực tiếp (Không nén)" : "Direct copy (Uncompressed)";
+        public static string EncryptedAes256 => IsVi ? "Mã hóa AES-256" : "AES-256 encrypted";
+        public static string NotEncrypted => IsVi ? "Không mã hóa" : "None";
+        public static string ViewHistoryDetails => IsVi ? "Xem chi tiết..." : "View Details...";
+        public static string HistoryDetailTitle => IsVi ? "Chi tiết lần thực thi sao lưu" : "Backup Execution Details";
+        public static string CopyToClipboard => IsVi ? "Sao chép vào Clipboard" : "Copy to Clipboard";
+        public static string CopiedToClipboard => IsVi ? "Đã sao chép!" : "Copied!";
+
+        // History Grid & Toolbar
+        public static string ColHistStartTime => IsVi ? "Thời gian bắt đầu" : "Start Time";
+        public static string ColHistDuration => IsVi ? "Thời lượng" : "Duration";
+        public static string ColHistBackupType => IsVi ? "Chế độ" : "Mode";
+        public static string ColHistStatus => IsVi ? "Trạng thái" : "Status";
+        public static string ColHistSize => IsVi ? "Dung lượng" : "Backup Size";
+        public static string ColHistFiles => IsVi ? "Số tệp" : "Files";
+        public static string ColHistErrors => IsVi ? "Cảnh báo / Lỗi" : "Warnings / Errors";
+        public static string ColHistMessage => IsVi ? "Thông điệp / Điểm phục hồi" : "Message / Restore Point";
+        public static string ClearHistory => IsVi ? "Xóa lịch sử" : "Clear History";
+        public static string ConfirmClearHistory => IsVi
+            ? "Bạn có chắc chắn muốn xóa toàn bộ lịch sử chạy của Job này không?"
+            : "Are you sure you want to clear the execution history for this job?";
+        public static string ConfirmClearAllHistory => IsVi
+            ? "Bạn có chắc chắn muốn xóa toàn bộ lịch sử sao lưu hệ thống không?"
+            : "Are you sure you want to clear all backup execution history?";
+        public static string HistTotalRuns(int count) => IsVi ? $"Tổng số lần chạy: {count}" : $"Total runs: {count}";
+        public static string HistNoRuns => IsVi ? "(Chưa có lịch sử thực thi)" : "(No execution history)";
+
         // Job Grid columns
         public static string ColJobName => IsVi ? "Tên Job sao lưu" : "Job Name";
         public static string ColEnabled => IsVi ? "Kích hoạt" : "Enabled";
