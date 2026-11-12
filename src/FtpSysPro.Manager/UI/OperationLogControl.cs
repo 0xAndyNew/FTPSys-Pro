@@ -29,6 +29,7 @@ namespace FtpSysPro.Manager.UI
         private Button btnOpenInNotepad;
         private Button btnOpenFolder;
         private Button btnClear;
+        private CheckBox chkWordWrap;
         private CheckBox chkAutoRefresh;
         private CheckBox chkAutoScroll;
         private Label lblMatchCount;
@@ -65,9 +66,16 @@ namespace FtpSysPro.Manager.UI
             pnlTop = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 66,
-                BackColor = Color.FromArgb(246, 248, 250),
-                Padding = new Padding(8, 5, 8, 3)
+                Height = 64,
+                BackColor = Color.FromArgb(248, 250, 252),
+                Padding = new Padding(8, 6, 8, 4)
+            };
+            pnlTop.Paint += (s, e) =>
+            {
+                using (var pen = new Pen(Color.FromArgb(226, 232, 240), 1))
+                {
+                    e.Graphics.DrawLine(pen, 0, pnlTop.Height - 1, pnlTop.Width, pnlTop.Height - 1);
+                }
             };
 
             // Tier 1: Responsive TableLayoutPanel
@@ -80,7 +88,7 @@ namespace FtpSysPro.Manager.UI
                 Margin = new Padding(0),
                 Padding = new Padding(0)
             };
-            tblRow1.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize)); // Job Title
+            tblRow1.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize)); // Job Title Pill Badge
             tblRow1.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize)); // Filter label
             tblRow1.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 105F)); // Level Dropdown
             tblRow1.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F)); // Search box (responsive stretch)
@@ -89,12 +97,14 @@ namespace FtpSysPro.Manager.UI
 
             lblJobTitle = new Label
             {
-                Text = Strings.IsVi ? "📌 Nhật ký: (Chưa chọn Job)" : "📌 Log: (No job selected)",
-                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
-                ForeColor = Color.FromArgb(9, 105, 218),
+                Text = Strings.IsVi ? "📌 Chưa chọn Job" : "📌 No job selected",
+                Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(100, 116, 139),
+                BackColor = Color.FromArgb(241, 245, 249),
                 AutoSize = true,
                 Anchor = AnchorStyles.Left,
-                Margin = new Padding(0, 0, 10, 0)
+                Padding = new Padding(6, 3, 6, 3),
+                Margin = new Padding(0, 0, 8, 0)
             };
 
             lblLvl = new Label
@@ -102,7 +112,7 @@ namespace FtpSysPro.Manager.UI
                 Text = Strings.FilterLevel,
                 AutoSize = true,
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
-                ForeColor = Color.FromArgb(87, 96, 106),
+                ForeColor = Color.FromArgb(100, 116, 139),
                 Anchor = AnchorStyles.Left,
                 Margin = new Padding(0, 0, 4, 0)
             };
@@ -112,6 +122,7 @@ namespace FtpSysPro.Manager.UI
                 Dock = DockStyle.Fill,
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 Font = new Font("Segoe UI", 8.5F),
+                BackColor = Color.White,
                 Margin = new Padding(0, 0, 8, 0)
             };
             cboLevel.Items.AddRange(new object[] {
@@ -131,29 +142,30 @@ namespace FtpSysPro.Manager.UI
             {
                 Dock = DockStyle.Fill,
                 Font = new Font("Segoe UI", 8.5F),
-                ForeColor = Color.FromArgb(140, 149, 159),
-                Text = Strings.SearchKeywords,
-                Margin = new Padding(0, 0, 8, 0)
+                ForeColor = Color.FromArgb(148, 163, 184),
+                Text = "🔍 " + Strings.SearchKeywords,
+                Margin = new Padding(0, 0, 8, 0),
+                BorderStyle = BorderStyle.FixedSingle
             };
             txtSearch.GotFocus += (s, e) =>
             {
-                if (txtSearch.Text == Strings.SearchKeywords)
+                if (txtSearch.Text == "🔍 " + Strings.SearchKeywords || txtSearch.Text == Strings.SearchKeywords)
                 {
                     txtSearch.Text = "";
-                    txtSearch.ForeColor = Color.FromArgb(36, 41, 47);
+                    txtSearch.ForeColor = Color.FromArgb(30, 41, 59);
                 }
             };
             txtSearch.LostFocus += (s, e) =>
             {
                 if (string.IsNullOrWhiteSpace(txtSearch.Text))
                 {
-                    txtSearch.Text = Strings.SearchKeywords;
-                    txtSearch.ForeColor = Color.FromArgb(140, 149, 159);
+                    txtSearch.Text = "🔍 " + Strings.SearchKeywords;
+                    txtSearch.ForeColor = Color.FromArgb(148, 163, 184);
                 }
             };
             txtSearch.TextChanged += (s, e) =>
             {
-                if (txtSearch.Text != Strings.SearchKeywords)
+                if (txtSearch.Text != "🔍 " + Strings.SearchKeywords && txtSearch.Text != Strings.SearchKeywords)
                 {
                     _searchTimer?.Stop();
                     _searchTimer?.Start();
@@ -162,11 +174,13 @@ namespace FtpSysPro.Manager.UI
 
             lblMatchCount = new Label
             {
-                Text = Strings.IsVi ? "0 dòng" : "0 entries",
+                Text = Strings.IsVi ? "0 dòng" : "0 lines",
                 AutoSize = true,
                 Anchor = AnchorStyles.Right,
-                Font = new Font("Segoe UI", 8F),
-                ForeColor = Color.FromArgb(87, 96, 106),
+                Font = new Font("Segoe UI", 8F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(100, 116, 139),
+                BackColor = Color.FromArgb(241, 245, 249),
+                Padding = new Padding(6, 3, 6, 3),
                 Margin = new Padding(0)
             };
 
@@ -180,22 +194,14 @@ namespace FtpSysPro.Manager.UI
             var flowRow2 = new FlowLayoutPanel
             {
                 Dock = DockStyle.Top,
-                Height = 28,
+                Height = 26,
                 WrapContents = false,
                 AutoScroll = false,
                 Margin = new Padding(0, 3, 0, 0),
                 Padding = new Padding(0)
             };
 
-            btnRefresh = new Button
-            {
-                Text = "↻ " + Strings.Refresh,
-                Size = new Size(74, 25),
-                Margin = new Padding(0, 1, 4, 0),
-                BackColor = Color.White,
-                FlatStyle = FlatStyle.System
-            };
-            btnRefresh.Click += (s, e) =>
+            btnRefresh = CreateModernButton("↻ " + (Strings.IsVi ? "Làm mới" : "Refresh"), 80, (s, e) =>
             {
                 if (_currentJob != null)
                 {
@@ -203,82 +209,52 @@ namespace FtpSysPro.Manager.UI
                 }
                 _lastLoadedLength = 0;
                 LoadCurrentLog(appendOnly: false);
-            };
+            });
 
-            btnOpenInNotepad = new Button
-            {
-                Text = Strings.OpenInNotepad,
-                Size = new Size(95, 25),
-                Margin = new Padding(0, 1, 4, 0),
-                BackColor = Color.White,
-                FlatStyle = FlatStyle.System
-            };
-            btnOpenInNotepad.Click += (s, e) => OpenActiveLogInNotepad();
+            btnOpenInNotepad = CreateModernButton("📝 Notepad", 88, (s, e) => OpenActiveLogInNotepad());
 
-            btnOpenFolder = new Button
-            {
-                Text = Strings.OpenLogFolder,
-                Size = new Size(95, 25),
-                Margin = new Padding(0, 1, 4, 0),
-                BackColor = Color.White,
-                FlatStyle = FlatStyle.System
-            };
-            btnOpenFolder.Click += (s, e) => OpenLogDirectoryInExplorer();
+            btnOpenFolder = CreateModernButton("📁 " + (Strings.IsVi ? "Thư mục" : "Folder"), 80, (s, e) => OpenLogDirectoryInExplorer());
 
-            btnClear = new Button
-            {
-                Text = Strings.ClearScreen,
-                Size = new Size(68, 25),
-                Margin = new Padding(0, 1, 8, 0),
-                BackColor = Color.White,
-                FlatStyle = FlatStyle.System
-            };
-            btnClear.Click += (s, e) => txtLog.Clear();
+            btnClear = CreateModernButton("🗑 " + (Strings.IsVi ? "Xóa" : "Clear"), 64, (s, e) => txtLog.Clear());
 
-            chkAutoRefresh = new CheckBox
+            chkWordWrap = CreateModernCheckBox("↵ " + (Strings.IsVi ? "Xuống dòng" : "Word wrap"), true, (s, e) =>
             {
-                Text = Strings.AutoRefresh,
-                AutoSize = true,
-                Checked = true,
-                Margin = new Padding(0, 4, 8, 0),
-                Font = new Font("Segoe UI", 8.5F)
-            };
+                txtLog.WordWrap = chkWordWrap.Checked;
+                txtLog.ScrollBars = chkWordWrap.Checked ? RichTextBoxScrollBars.Vertical : RichTextBoxScrollBars.Both;
+            });
 
-            chkAutoScroll = new CheckBox
-            {
-                Text = Strings.AutoScroll,
-                AutoSize = true,
-                Checked = true,
-                Margin = new Padding(0, 4, 0, 0),
-                Font = new Font("Segoe UI", 8.5F)
-            };
+            chkAutoScroll = CreateModernCheckBox("↓ " + (Strings.IsVi ? "Tự cuộn" : "Auto scroll"), true);
+
+            chkAutoRefresh = CreateModernCheckBox("⚡ " + (Strings.IsVi ? "Tự làm mới (3s)" : "Auto refresh (3s)"), true);
 
             flowRow2.Controls.AddRange(new Control[] {
                 btnRefresh, btnOpenInNotepad, btnOpenFolder, btnClear,
-                chkAutoRefresh, chkAutoScroll
+                chkWordWrap, chkAutoScroll, chkAutoRefresh
             });
 
             pnlTop.Controls.Add(flowRow2);
             pnlTop.Controls.Add(tblRow1);
 
-            // Center: RichTextBox for high performance log rendering (Light Theme)
+            // Center: RichTextBox for high performance log rendering (Light Theme with WordWrap enabled)
             txtLog = new RichTextBox
             {
                 Dock = DockStyle.Fill,
                 BackColor = Color.White,
-                ForeColor = Color.FromArgb(36, 41, 47),
+                ForeColor = Color.FromArgb(30, 41, 59),
                 Font = new Font("Consolas", 9.5F),
                 ReadOnly = true,
-                WordWrap = false,
-                ScrollBars = RichTextBoxScrollBars.Both,
+                WordWrap = true,
+                ScrollBars = RichTextBoxScrollBars.Vertical,
                 BorderStyle = BorderStyle.None
             };
 
             // Bottom Status Strip
             statusStrip = new StatusStrip
             {
-                BackColor = Color.FromArgb(246, 248, 250),
-                ForeColor = Color.FromArgb(87, 96, 106)
+                BackColor = Color.FromArgb(248, 250, 252),
+                ForeColor = Color.FromArgb(100, 116, 139),
+                Font = new Font("Segoe UI", 8.5F),
+                SizingGrip = false
             };
             lblStatusFile = new ToolStripStatusLabel { Text = Strings.IsVi ? "Tệp nhật ký: (Chưa chọn Job)" : "Log file: (No job selected)", Width = 340, TextAlign = ContentAlignment.MiddleLeft };
             lblStatusLines = new ToolStripStatusLabel { Text = Strings.IsVi ? "Hiển thị: 0 dòng" : "Lines: 0", Width = 130 };
@@ -314,6 +290,44 @@ namespace FtpSysPro.Manager.UI
             timerAutoRefresh.Start();
         }
 
+        private static Button CreateModernButton(string text, int width, EventHandler onClick)
+        {
+            var btn = new Button
+            {
+                Text = text,
+                Width = width,
+                Height = 24,
+                Margin = new Padding(0, 1, 6, 1),
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(30, 41, 59),
+                Font = new Font("Segoe UI", 8.5F),
+                Cursor = Cursors.Hand
+            };
+            btn.FlatAppearance.BorderSize = 1;
+            btn.FlatAppearance.BorderColor = Color.FromArgb(203, 213, 225);
+            btn.FlatAppearance.MouseOverBackColor = Color.FromArgb(241, 245, 249);
+            btn.FlatAppearance.MouseDownBackColor = Color.FromArgb(226, 232, 240);
+            if (onClick != null) btn.Click += onClick;
+            return btn;
+        }
+
+        private static CheckBox CreateModernCheckBox(string text, bool isChecked, EventHandler onCheckChanged = null)
+        {
+            var chk = new CheckBox
+            {
+                Text = text,
+                AutoSize = true,
+                Checked = isChecked,
+                Margin = new Padding(0, 3, 10, 0),
+                Font = new Font("Segoe UI", 8.5F),
+                ForeColor = Color.FromArgb(51, 65, 85),
+                Cursor = Cursors.Hand
+            };
+            if (onCheckChanged != null) chk.CheckedChanged += onCheckChanged;
+            return chk;
+        }
+
         public void SetCurrentJob(BackupJob job)
         {
             _currentJob = job;
@@ -337,13 +351,15 @@ namespace FtpSysPro.Manager.UI
         {
             if (_currentJob != null)
             {
-                lblJobTitle.Text = $"📌 Job: {_currentJob.Name}";
+                lblJobTitle.Text = $"📌 {_currentJob.Name}";
                 lblJobTitle.ForeColor = Color.FromArgb(9, 105, 218);
+                lblJobTitle.BackColor = Color.FromArgb(221, 244, 255);
             }
             else
             {
-                lblJobTitle.Text = Strings.IsVi ? "📌 Nhật ký: (Chưa chọn Job)" : "📌 Log: (No job selected)";
-                lblJobTitle.ForeColor = Color.FromArgb(87, 96, 106);
+                lblJobTitle.Text = Strings.IsVi ? "📌 Chưa chọn Job" : "📌 No job selected";
+                lblJobTitle.ForeColor = Color.FromArgb(100, 116, 139);
+                lblJobTitle.BackColor = Color.FromArgb(241, 245, 249);
             }
         }
 
@@ -444,7 +460,11 @@ namespace FtpSysPro.Manager.UI
                 }
 
                 int filterLevelIndex = cboLevel.SelectedIndex;
-                string keyword = (txtSearch.Text != Strings.SearchKeywords) ? txtSearch.Text.Trim() : null;
+                string rawKeyword = txtSearch.Text?.Trim();
+                string keyword = (!string.IsNullOrWhiteSpace(rawKeyword) &&
+                                  rawKeyword != Strings.SearchKeywords &&
+                                  rawKeyword != "🔍 " + Strings.SearchKeywords &&
+                                  rawKeyword != "🔍") ? rawKeyword : null;
 
                 using (var fs = new FileStream(logFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
                 {
@@ -543,11 +563,11 @@ namespace FtpSysPro.Manager.UI
         private void AppendNotepadPlusPlusLine(int lineNumber, string line)
         {
             // 1. Notepad++ gutter line numbers: 0001 | (Steel Gray)
-            AppendColorText($"{lineNumber:D4} | ", Color.FromArgb(110, 119, 129));
+            AppendColorText($"{lineNumber:D4} | ", Color.FromArgb(148, 163, 184));
 
             if (string.IsNullOrWhiteSpace(line))
             {
-                AppendColorText(Environment.NewLine, Color.FromArgb(36, 41, 47));
+                AppendColorText(Environment.NewLine, Color.FromArgb(30, 41, 59));
                 return;
             }
 
@@ -557,9 +577,14 @@ namespace FtpSysPro.Manager.UI
 
             if (bracketIdx > 0 && bracketEnd > bracketIdx && bracketEnd - bracketIdx <= 6)
             {
-                // Timestamp (Slate Gray)
-                string timestamp = line.Substring(0, bracketIdx);
-                AppendColorText(timestamp, Color.FromArgb(87, 96, 106));
+                // Compact timestamp: strip .fff milliseconds and +zz:zz timezone clutter
+                string rawTimestamp = line.Substring(0, bracketIdx).Trim();
+                string cleanTimestamp = rawTimestamp;
+                if (rawTimestamp.Length >= 19 && DateTime.TryParse(rawTimestamp.Substring(0, 19), out var dt))
+                {
+                    cleanTimestamp = dt.ToString("yyyy-MM-dd HH:mm:ss");
+                }
+                AppendColorText(cleanTimestamp + " ", Color.FromArgb(100, 116, 139));
 
                 // Level tag [INF], [WRN], [ERR]
                 string levelTag = line.Substring(bracketIdx, bracketEnd - bracketIdx + 1);
@@ -567,14 +592,25 @@ namespace FtpSysPro.Manager.UI
                 if (levelTag.Contains("ERR") || levelTag.Contains("FTL"))
                     levelCol = Color.FromArgb(207, 34, 46); // Bold Crimson Red
                 else if (levelTag.Contains("WRN"))
-                    levelCol = Color.FromArgb(154, 103, 0); // Deep Amber
+                    levelCol = Color.FromArgb(180, 83, 9); // Amber / Warning
                 else if (levelTag.Contains("DBG") || levelTag.Contains("VRB"))
-                    levelCol = Color.FromArgb(110, 119, 129); // Slate Gray
+                    levelCol = Color.FromArgb(148, 163, 184); // Slate Gray
 
                 AppendColorText(levelTag + " ", levelCol);
 
                 // Remainder message
                 string message = line.Substring(bracketEnd + 1).TrimStart();
+
+                // Strip redundant [Job 'Name'] prefix if this log is already dedicated to the selected job
+                if (_currentJob != null)
+                {
+                    string jobPrefix = $"[Job '{_currentJob.Name}']";
+                    if (message.StartsWith(jobPrefix, StringComparison.OrdinalIgnoreCase))
+                    {
+                        message = message.Substring(jobPrefix.Length).TrimStart();
+                    }
+                }
+
                 Color msgCol = DetermineLineColor(line);
                 AppendColorText(message + Environment.NewLine, msgCol);
             }

@@ -64,16 +64,17 @@ namespace FtpSysPro.Manager
                 FtpSysPro.Core.Resources.Strings.SetLanguage("en");
             }
 
-            // Check Administrator privileges and prompt user if running as standard user
-            bool skipAdminPrompt = false;
+            // Handle optional elevation request (--admin / --runas)
+            bool runAsAdmin = false;
             bool startMinimized = false;
             if (args != null)
             {
                 foreach (var a in args)
                 {
-                    if (string.Equals(a, "--no-admin-prompt", StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(a, "--admin", StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(a, "--runas", StringComparison.OrdinalIgnoreCase))
                     {
-                        skipAdminPrompt = true;
+                        runAsAdmin = true;
                     }
                     else if (string.Equals(a, "--minimized", StringComparison.OrdinalIgnoreCase) ||
                              string.Equals(a, "-m", StringComparison.OrdinalIgnoreCase))
@@ -83,52 +84,54 @@ namespace FtpSysPro.Manager
                 }
             }
 
-            if (!IsAdministrator() && !skipAdminPrompt)
+            if (runAsAdmin && !IsAdministrator())
             {
-                var promptResult = MessageBox.Show(
-                    FtpSysPro.Core.Resources.Strings.AdminPromptMessage,
-                    FtpSysPro.Core.Resources.Strings.AdminPromptTitle,
-                    MessageBoxButtons.YesNo,
-                    MessageBoxIcon.Question,
-                    MessageBoxDefaultButton.Button1);
-
-                if (promptResult == DialogResult.Yes)
+                try
                 {
-                    try
+                    var startInfo = new System.Diagnostics.ProcessStartInfo
                     {
-                        var startInfo = new System.Diagnostics.ProcessStartInfo
-                        {
-                            FileName = Application.ExecutablePath,
-                            UseShellExecute = true,
-                            Verb = "runas"
-                        };
+                        FileName = Application.ExecutablePath,
+                        UseShellExecute = true,
+                        Verb = "runas"
+                    };
 
-                        if (args != null && args.Length > 0)
+                    var passArgs = new System.Collections.Generic.List<string>();
+                    if (args != null)
+                    {
+                        foreach (var a in args)
                         {
-                            startInfo.Arguments = string.Join(" ", args);
+                            if (!string.Equals(a, "--admin", StringComparison.OrdinalIgnoreCase) &&
+                                !string.Equals(a, "--runas", StringComparison.OrdinalIgnoreCase))
+                            {
+                                passArgs.Add(a);
+                            }
                         }
-
-                        // Release mutex before launching elevated instance so it can acquire it
-                        _singleInstanceMutex.ReleaseMutex();
-                        _singleInstanceMutex.Dispose();
-                        _singleInstanceMutex = null;
-
-                        System.Diagnostics.Process.Start(startInfo);
-                        return; // Exit non-elevated instance
                     }
-                    catch (System.ComponentModel.Win32Exception)
+                    if (passArgs.Count > 0)
                     {
-                        // User cancelled the Windows UAC consent prompt; re-acquire mutex and continue standard
-                        _singleInstanceMutex = new Mutex(true, "FtpSysPro.Manager.SingleInstanceMutex", out _);
+                        startInfo.Arguments = string.Join(" ", passArgs);
                     }
-                    catch (Exception ex)
-                    {
-                        string errMsg = FtpSysPro.Core.Resources.Strings.IsVi
-                            ? "Không thể khởi chạy với quyền Administrator: " + ex.Message
-                            : "Could not restart as Administrator: " + ex.Message;
-                        MessageBox.Show(errMsg, FtpSysPro.Core.Resources.Strings.AppName, MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                        _singleInstanceMutex = new Mutex(true, "FtpSysPro.Manager.SingleInstanceMutex", out _);
-                    }
+
+                    // Release mutex before launching elevated instance so it can acquire it
+                    _singleInstanceMutex.ReleaseMutex();
+                    _singleInstanceMutex.Dispose();
+                    _singleInstanceMutex = null;
+
+                    System.Diagnostics.Process.Start(startInfo);
+                    return; // Exit non-elevated instance
+                }
+                catch (System.ComponentModel.Win32Exception)
+                {
+                    // User cancelled the Windows UAC consent prompt; re-acquire mutex and continue standard
+                    _singleInstanceMutex = new Mutex(true, "FtpSysPro.Manager.SingleInstanceMutex", out _);
+                }
+                catch (Exception ex)
+                {
+                    string errMsg = FtpSysPro.Core.Resources.Strings.IsVi
+                        ? "Không thể khởi chạy với quyền Administrator: " + ex.Message
+                        : "Could not restart as Administrator: " + ex.Message;
+                    MessageBox.Show(errMsg, FtpSysPro.Core.Resources.Strings.AppName, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    _singleInstanceMutex = new Mutex(true, "FtpSysPro.Manager.SingleInstanceMutex", out _);
                 }
             }
 

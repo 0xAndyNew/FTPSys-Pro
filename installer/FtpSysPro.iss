@@ -58,7 +58,7 @@ Filename: "sc.exe"; Parameters: "start FtpSysProService"; Flags: runhidden; Stat
 ; Register Scheduled Task to auto-start Manager with highest privileges upon user logon
 Filename: "schtasks.exe"; Parameters: "/Create /TN ""FTPSys Pro Manager Startup"" /TR ""\""{app}\{#MyAppExeName}\"" --minimized"" /SC ONLOGON /RL HIGHEST /F"; Tasks: autostart; Flags: runhidden
 ; Run Manager at end of setup with elevated admin privileges using ShellExecuteEx (shellexec prevents code 740 elevation error)
-Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; WorkingDir: "{app}"; Flags: nowait postinstall skipifsilent shellexec
+Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Parameters: "{code:GetLaunchParameters}"; WorkingDir: "{app}"; Flags: nowait postinstall skipifsilent shellexec
 
 [UninstallRun]
 ; Stop and uninstall Manager auto-start task
@@ -72,6 +72,38 @@ Filename: "sc.exe"; Parameters: "stop FtpSysProService"; Flags: runhidden; RunOn
 Filename: "{app}\{#MyServiceExeName}"; Parameters: "--uninstall"; Flags: runhidden; RunOnceId: "UninstallService"
 
 [Code]
+var
+  RunAsAdminCheckbox: TNewCheckBox;
+
+procedure RunListClick(Sender: TObject);
+begin
+  if (WizardForm.RunList <> nil) and (RunAsAdminCheckbox <> nil) then
+  begin
+    RunAsAdminCheckbox.Enabled := WizardForm.RunList.Checked[0];
+  end;
+end;
+
+procedure InitializeWizard();
+begin
+  RunAsAdminCheckbox := TNewCheckBox.Create(WizardForm);
+  RunAsAdminCheckbox.Parent := WizardForm.FinishedPage;
+  RunAsAdminCheckbox.Left := WizardForm.RunList.Left;
+  RunAsAdminCheckbox.Top := WizardForm.RunList.Top + WizardForm.RunList.Height + ScaleY(6);
+  RunAsAdminCheckbox.Width := WizardForm.RunList.Width;
+  RunAsAdminCheckbox.Height := ScaleY(22);
+  RunAsAdminCheckbox.Caption := 'Chạy với quyền Quản trị viên (Run as administrator)';
+  RunAsAdminCheckbox.Checked := False;
+  WizardForm.RunList.OnClickCheck := @RunListClick;
+end;
+
+function GetLaunchParameters(Param: String): String;
+begin
+  if (WizardForm.RunList <> nil) and (WizardForm.RunList.Checked[0]) and (RunAsAdminCheckbox <> nil) and (RunAsAdminCheckbox.Checked) then
+    Result := '--admin'
+  else
+    Result := '';
+end;
+
 // Check .NET Framework 4.8 presence
 function IsDotNet48Detected(): Boolean;
 var

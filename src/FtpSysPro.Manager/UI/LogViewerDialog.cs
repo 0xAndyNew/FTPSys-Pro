@@ -29,6 +29,7 @@ namespace FtpSysPro.Manager.UI
         private Button btnClear;
         private CheckBox chkAutoRefresh;
         private CheckBox chkAutoScroll;
+        private CheckBox chkWordWrap;
         private Label lblMatchCount;
 
         private RichTextBox txtLog;
@@ -292,10 +293,24 @@ namespace FtpSysPro.Manager.UI
                 Font = new Font("Segoe UI", 8.5F)
             };
 
+            chkWordWrap = new CheckBox
+            {
+                Text = Strings.IsVi ? "Xuống dòng" : "Word wrap",
+                Location = new Point(780, 47),
+                AutoSize = true,
+                Checked = true,
+                Font = new Font("Segoe UI", 8.5F)
+            };
+            chkWordWrap.CheckedChanged += (s, e) =>
+            {
+                txtLog.WordWrap = chkWordWrap.Checked;
+                txtLog.ScrollBars = chkWordWrap.Checked ? RichTextBoxScrollBars.Vertical : RichTextBoxScrollBars.Both;
+            };
+
             lblMatchCount = new Label
             {
                 Text = Strings.IsVi ? "0 dòng nhật ký" : "0 log entries",
-                Location = new Point(780, 48),
+                Location = new Point(885, 48),
                 AutoSize = true,
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Italic),
                 ForeColor = Color.FromArgb(70, 80, 100)
@@ -307,10 +322,10 @@ namespace FtpSysPro.Manager.UI
                 lblLvl, cboLevel,
                 txtSearch,
                 btnRefresh, btnOpenInNotepad, btnOpenFolder, btnClear,
-                chkAutoRefresh, chkAutoScroll, lblMatchCount
+                chkAutoRefresh, chkAutoScroll, chkWordWrap, lblMatchCount
             });
 
-            // Center: RichTextBox for high performance log rendering (Light Theme)
+            // Center: RichTextBox for high performance log rendering (Light Theme with WordWrap)
             txtLog = new RichTextBox
             {
                 Dock = DockStyle.Fill,
@@ -318,8 +333,8 @@ namespace FtpSysPro.Manager.UI
                 ForeColor = Color.FromArgb(36, 41, 47),
                 Font = new Font("Consolas", 9.5F),
                 ReadOnly = true,
-                WordWrap = false,
-                ScrollBars = RichTextBoxScrollBars.Both,
+                WordWrap = true,
+                ScrollBars = RichTextBoxScrollBars.Vertical,
                 BorderStyle = BorderStyle.None
             };
 
