@@ -14,7 +14,7 @@ namespace FtpSysPro.Core.Engine
                 throw new FileNotFoundException("File not found for checksum", filePath);
 
             using (var sha = SHA256.Create())
-            using (var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            using (var stream = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete))
             {
                 byte[] hash = sha.ComputeHash(stream);
                 return BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();

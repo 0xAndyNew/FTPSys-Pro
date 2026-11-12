@@ -51,12 +51,44 @@ namespace FtpSysPro.Core.Engine
             var result = new ScanResult();
             var compiledPatterns = CompilePatterns(excludePatterns);
 
-            foreach (var root in sourceDirectories)
+            var validRoots = new List<string>();
+            if (sourceDirectories != null)
+            {
+                foreach (var dir in sourceDirectories)
+                {
+                    if (!string.IsNullOrWhiteSpace(dir))
+                        validRoots.Add(dir);
+                }
+            }
+
+            bool multiSource = validRoots.Count > 1;
+            var rootFolderNames = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            if (multiSource)
+            {
+                var usedNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var r in validRoots)
+                {
+                    var clean = r.TrimEnd('\\', '/');
+                    var name = Path.GetFileName(clean);
+                    if (string.IsNullOrEmpty(name))
+                    {
+                        // Drive root e.g. D: -> Drive_D
+                        name = clean.Replace(":", "_Drive").Replace("\\", "").Replace("/", "");
+                    }
+                    var uniqueName = name;
+                    int counter = 2;
+                    while (usedNames.Contains(uniqueName))
+                    {
+                        uniqueName = $"{name}_{counter++}";
+                    }
+                    usedNames.Add(uniqueName);
+                    rootFolderNames[r] = uniqueName;
+                }
+            }
+
+            foreach (var root in validRoots)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-
-                if (string.IsNullOrWhiteSpace(root))
-                    continue;
 
                 if (!Directory.Exists(root))
                 {
@@ -64,7 +96,13 @@ namespace FtpSysPro.Core.Engine
                     continue;
                 }
 
-                ScanDirectoryRecursive(root, root, compiledPatterns, result, cancellationToken);
+                string folderPrefix = null;
+                if (multiSource && rootFolderNames.TryGetValue(root, out var prefix))
+                {
+                    folderPrefix = prefix;
+                }
+
+                ScanDirectoryRecursive(root, root, folderPrefix, compiledPatterns, result, cancellationToken);
             }
 
             return result;
@@ -73,6 +111,7 @@ namespace FtpSysPro.Core.Engine
         private static void ScanDirectoryRecursive(
             string root,
             string currentDir,
+            string folderPrefix,
             List<Regex> excludePatterns,
             ScanResult result,
             CancellationToken cancellationToken)
@@ -136,6 +175,10 @@ namespace FtpSysPro.Core.Engine
                     {
                         var fi = new FileInfo(file);
                         var relPath = GetRelativePath(root, file);
+                        if (!string.IsNullOrEmpty(folderPrefix))
+                        {
+                            relPath = Path.Combine(folderPrefix, relPath);
+                        }
 
                         result.Files.Add(new ScannedFile
                         {
@@ -159,7 +202,7 @@ namespace FtpSysPro.Core.Engine
             {
                 foreach (var subDir in subDirs)
                 {
-                    ScanDirectoryRecursive(root, subDir, excludePatterns, result, cancellationToken);
+                    ScanDirectoryRecursive(root, subDir, folderPrefix, excludePatterns, result, cancellationToken);
                 }
             }
         }

@@ -2,12 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Management;
 using System.Text.RegularExpressions;
 
 namespace FtpSysPro.Core.Engine
 {
     /// <summary>
-    /// Manages Volume Shadow Copy (VSS) snapshots using Windows native vssadmin utility.
+    /// Manages Volume Shadow Copy (VSS) snapshots using Windows native vssadmin utility or WMI Win32_ShadowCopy.
     /// Provides transparent access to locked/in-use files by creating a shadow copy of the volume,
     /// creating a temporary symbolic directory link to it, and releasing the shadow copy when done.
     /// </summary>
@@ -85,61 +86,124 @@ namespace FtpSysPro.Core.Engine
             var volLetter = volumeDrive.TrimEnd('\\').Substring(0, 1);
             var volParam = volLetter + ":";
 
-            // Run vssadmin create shadow /for=C:
-            var psi = new ProcessStartInfo
+            string shadowDevice = null;
+            string shadowId = null;
+
+            // Strategy 1: Attempt native vssadmin create shadow (supported on Windows Server)
+            try
             {
-                FileName = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "vssadmin.exe"),
-                Arguments = $"create shadow /for={volParam}",
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                CreateNoWindow = true
-            };
-
-            using (var proc = Process.Start(psi))
-            {
-                if (proc == null)
-                    throw new InvalidOperationException("Failed to start vssadmin.exe");
-
-                var output = proc.StandardOutput.ReadToEnd();
-                var error = proc.StandardError.ReadToEnd();
-                proc.WaitForExit(60000);
-
-                if (proc.ExitCode != 0)
+                var psi = new ProcessStartInfo
                 {
-                    throw new InvalidOperationException($"vssadmin returned code {proc.ExitCode}: {error} {output}");
-                }
+                    FileName = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "vssadmin.exe"),
+                    Arguments = $"create shadow /for={volParam}",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    CreateNoWindow = true
+                };
 
-                // Parse shadow copy device name: \\?\GLOBALROOT\Device\HarddiskVolumeShadowCopyXX
-                var match = Regex.Match(output, @"(\\\\(\?|.)\\GLOBALROOT\\Device\\HarddiskVolumeShadowCopy\d+)", RegexOptions.IgnoreCase);
-                if (!match.Success)
+                using (var proc = Process.Start(psi))
                 {
-                    // Alternate parse format
-                    match = Regex.Match(output, @"(HarddiskVolumeShadowCopy\d+)", RegexOptions.IgnoreCase);
-                    if (!match.Success)
-                        throw new InvalidOperationException("Shadow copy device path not found in vssadmin output: " + output);
+                    if (proc != null)
+                    {
+                        var output = proc.StandardOutput.ReadToEnd();
+                        var error = proc.StandardError.ReadToEnd();
+                        proc.WaitForExit(60000);
+
+                        if (proc.ExitCode == 0)
+                        {
+                            var match = Regex.Match(output, @"(\\\\(\?|.)\\GLOBALROOT\\Device\\HarddiskVolumeShadowCopy\d+)", RegexOptions.IgnoreCase);
+                            if (!match.Success)
+                                match = Regex.Match(output, @"(HarddiskVolumeShadowCopy\d+)", RegexOptions.IgnoreCase);
+
+                            if (match.Success)
+                            {
+                                shadowDevice = match.Value;
+                                if (!shadowDevice.StartsWith(@"\\"))
+                                    shadowDevice = @"\\?\GLOBALROOT\Device\" + shadowDevice;
+
+                                var idMatch = Regex.Match(output, @"\{[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}\}");
+                                if (idMatch.Success)
+                                    shadowId = idMatch.Value;
+                            }
+                        }
+                    }
                 }
-
-                var shadowDevice = match.Value;
-                if (!shadowDevice.StartsWith(@"\\"))
-                {
-                    shadowDevice = @"\\?\GLOBALROOT\Device\" + shadowDevice;
-                }
-
-                // Also parse Shadow Copy Set/ID if present
-                var idMatch = Regex.Match(output, @"\{[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}\}");
-                if (idMatch.Success)
-                {
-                    _createdShadowIds.Add(idMatch.Value);
-                }
-
-                // Create a directory symbolic link using mklink /d so standard .NET file APIs can traverse it
-                var linkPath = Path.Combine(_tempMountDir, "vol_" + volLetter);
-                CreateSymlink(linkPath, shadowDevice + @"\");
-                _createdSymlinks.Add(linkPath);
-
-                _volumeToShadowPath[volumeDrive] = linkPath;
             }
+            catch { }
+
+            // Strategy 2: If vssadmin not supported (Windows 10/11 client), use WMI Win32_ShadowCopy
+            if (string.IsNullOrEmpty(shadowDevice))
+            {
+                if (TryCreateShadowCopyWmi(volLetter, out var wmiId, out var wmiDevice))
+                {
+                    shadowId = wmiId;
+                    shadowDevice = wmiDevice;
+                }
+            }
+
+            if (string.IsNullOrEmpty(shadowDevice))
+            {
+                throw new InvalidOperationException($"VSS shadow copy creation is not supported on this volume or system for '{volumeDrive}'");
+            }
+
+            if (!string.IsNullOrEmpty(shadowId))
+            {
+                _createdShadowIds.Add(shadowId);
+            }
+
+            // Create a directory symbolic link using mklink /d so standard .NET file APIs can traverse it
+            var linkPath = Path.Combine(_tempMountDir, "vol_" + volLetter);
+            CreateSymlink(linkPath, shadowDevice + @"\");
+            _createdSymlinks.Add(linkPath);
+
+            _volumeToShadowPath[volumeDrive] = linkPath;
+        }
+
+        private bool TryCreateShadowCopyWmi(string volLetter, out string shadowId, out string shadowDevice)
+        {
+            shadowId = null;
+            shadowDevice = null;
+            try
+            {
+                var volPath = volLetter + @":\";
+                using (var shadowClass = new ManagementClass("Win32_ShadowCopy"))
+                {
+                    var inParams = shadowClass.GetMethodParameters("Create");
+                    inParams["Volume"] = volPath;
+                    inParams["Context"] = "ClientAccessible";
+
+                    using (var outParams = shadowClass.InvokeMethod("Create", inParams, null))
+                    {
+                        if (outParams != null)
+                        {
+                            var retVal = Convert.ToUInt32(outParams["ReturnValue"]);
+                            if (retVal == 0)
+                            {
+                                shadowId = outParams["ShadowID"]?.ToString();
+                                if (!string.IsNullOrEmpty(shadowId))
+                                {
+                                    using (var searcher = new ManagementObjectSearcher($"SELECT DeviceObject FROM Win32_ShadowCopy WHERE ID = '{shadowId}'"))
+                                    using (var results = searcher.Get())
+                                    {
+                                        foreach (ManagementObject obj in results)
+                                        {
+                                            var dev = obj["DeviceObject"]?.ToString();
+                                            if (!string.IsNullOrEmpty(dev))
+                                            {
+                                                shadowDevice = dev;
+                                                return true;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch { }
+            return false;
         }
 
         private static void CreateSymlink(string linkPath, string targetPath)

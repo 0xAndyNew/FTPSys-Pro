@@ -52,12 +52,11 @@ namespace FtpSysPro.Core.Compression
                         newEntry.AESKeySize = 256;
                     }
 
-                    zipStream.PutNextEntry(newEntry);
-
                     try
                     {
-                        using (var fileStream = new FileStream(file.FullPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                        using (var fileStream = new FileStream(file.FullPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete))
                         {
+                            zipStream.PutNextEntry(newEntry);
                             int bytesRead;
                             while ((bytesRead = fileStream.Read(buffer, 0, buffer.Length)) > 0)
                             {
@@ -66,15 +65,18 @@ namespace FtpSysPro.Core.Compression
                                 totalBytesWritten += bytesRead;
                                 progress?.Report(totalBytesWritten);
                             }
+                            zipStream.CloseEntry();
                         }
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        throw;
                     }
                     catch (Exception ex)
                     {
-                        // If file cannot be read during zip creation, log and continue
-                        throw new IOException($"Failed to compress file '{file.FullPath}': {ex.Message}", ex);
+                        // If file cannot be read during zip creation, log warning and continue so remaining files can be compressed
+                        Serilog.Log.Warning("[ZipArchiveHelper] Không thể nén tệp '{FilePath}': {Message}. Bỏ qua tệp này.", file.FullPath, ex.Message);
                     }
-
-                    zipStream.CloseEntry();
                 }
 
                 zipStream.IsStreamOwner = true;

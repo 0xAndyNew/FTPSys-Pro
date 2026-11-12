@@ -100,7 +100,7 @@ namespace FtpSysPro.Core.Destinations
                 if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
                     Directory.CreateDirectory(dir);
 
-                using (var source = new FileStream(localFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                using (var source = new FileStream(localFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete))
                 using (var dest = new FileStream(target, FileMode.Create, FileAccess.Write, FileShare.None))
                 {
                     CopyStreamWithProgress(source, dest, progress, cancellationToken);

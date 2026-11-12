@@ -41,6 +41,7 @@ namespace FtpSysPro.Manager.UI
         private ToolStripStatusLabel lblServiceStatus;
         private ToolStripStatusLabel lblServiceAction;
         private ToolStripProgressBar progressBar;
+        private ToolStripStatusLabel lblProgressPercent;
 
         // Right-side Cobian-style TabControl
         private SplitContainer splitContainer;
@@ -451,9 +452,25 @@ namespace FtpSysPro.Manager.UI
             lblServiceAction = new ToolStripStatusLabel { IsLink = true, Text = "" };
             lblServiceAction.Click += async (s, e) => await StartOrRestartServiceAsync();
 
-            progressBar = new ToolStripProgressBar { Visible = false, Style = ProgressBarStyle.Marquee };
+            progressBar = new ToolStripProgressBar
+            {
+                Visible = false,
+                Style = ProgressBarStyle.Continuous,
+                Minimum = 0,
+                Maximum = 100,
+                Width = 150
+            };
 
-            statusStrip.Items.AddRange(new ToolStripItem[] { lblServiceStatus, lblServiceAction, progressBar });
+            lblProgressPercent = new ToolStripStatusLabel
+            {
+                Visible = false,
+                Text = "",
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(0, 102, 204),
+                Margin = new Padding(4, 3, 0, 2)
+            };
+
+            statusStrip.Items.AddRange(new ToolStripItem[] { lblServiceStatus, lblServiceAction, progressBar, lblProgressPercent });
 
             // Tray
             trayMenu = new ContextMenuStrip();
@@ -840,16 +857,35 @@ namespace FtpSysPro.Manager.UI
                         var running = Newtonsoft.Json.JsonConvert.DeserializeObject<List<JobProgressInfo>>(resp.PayloadJson);
                         if (running != null && running.Count > 0)
                         {
+                            var first = running[0];
+                            int percent = (int)Math.Max(0, Math.Min(100, Math.Round(first.PercentComplete)));
+
                             progressBar.Visible = true;
+                            progressBar.Style = ProgressBarStyle.Continuous;
+                            progressBar.Value = percent;
+
+                            string phase = string.IsNullOrEmpty(first.CurrentPhase) ? "" : $" ({first.CurrentPhase})";
+                            lblProgressPercent.Visible = true;
+                            lblProgressPercent.Text = $"{percent}%{phase}";
+                            lblProgressPercent.ToolTipText = $"{first.JobName}: {percent}%{phase} - {JobViewModel.FormatBytes(first.ProcessedBytes)} / {JobViewModel.FormatBytes(first.TotalBytes)}";
+
                             btnStop.Enabled = true;
                             btnRun.Enabled = false;
                             _wasRunning = true;
+
+                            if (refreshTimer.Interval != 1000)
+                                refreshTimer.Interval = 1000;
                         }
                         else
                         {
                             progressBar.Visible = false;
+                            lblProgressPercent.Visible = false;
+                            lblProgressPercent.Text = "";
                             btnStop.Enabled = false;
                             btnRun.Enabled = true;
+
+                            if (refreshTimer.Interval != 3000)
+                                refreshTimer.Interval = 3000;
 
                             if (_wasRunning)
                             {
@@ -870,6 +906,8 @@ namespace FtpSysPro.Manager.UI
                     lblServiceStatus.ForeColor = Color.Red;
                     lblServiceAction.Text = Strings.ServiceStartPrompt;
                     progressBar.Visible = false;
+                    lblProgressPercent.Visible = false;
+                    lblProgressPercent.Text = "";
                 }
             }
             catch { }

@@ -98,5 +98,37 @@ namespace FtpSysPro.Core.Tests
                 }
             }
         }
+
+        [Fact]
+        public void FileScanner_MultiSource_SeparatesFoldersWithoutCollision()
+        {
+            var baseDir = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "FtpSysPro_MultiTest_" + Guid.NewGuid().ToString("N"));
+            var dir1 = System.IO.Path.Combine(baseDir, "Source1");
+            var dir2 = System.IO.Path.Combine(baseDir, "Source2");
+
+            try
+            {
+                System.IO.Directory.CreateDirectory(dir1);
+                System.IO.Directory.CreateDirectory(dir2);
+
+                // Both sources have a file with the identical relative name ".gitignore"
+                System.IO.File.WriteAllText(System.IO.Path.Combine(dir1, ".gitignore"), "ignore1");
+                System.IO.File.WriteAllText(System.IO.Path.Combine(dir2, ".gitignore"), "ignore2");
+
+                var scan = FileScanner.Scan(new[] { dir1, dir2 }, new string[0]);
+
+                Assert.Equal(2, scan.Files.Count);
+                var relPaths = new List<string>(scan.Files.ConvertAll(f => f.RelativePath.Replace('\\', '/')));
+                Assert.Contains("Source1/.gitignore", relPaths);
+                Assert.Contains("Source2/.gitignore", relPaths);
+            }
+            finally
+            {
+                if (System.IO.Directory.Exists(baseDir))
+                {
+                    try { System.IO.Directory.Delete(baseDir, true); } catch { }
+                }
+            }
+        }
     }
 }

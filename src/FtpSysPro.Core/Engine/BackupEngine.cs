@@ -268,10 +268,12 @@ namespace FtpSysPro.Core.Engine
                 else
                 {
                     await ExecuteUncompressedBackupAsync(
+                        job.Name,
                         filesToBackup,
                         destination,
                         setRemoteDir,
                         manifest,
+                        result.Warnings,
                         progressInfo,
                         progress,
                         retryCount,
@@ -477,10 +479,12 @@ namespace FtpSysPro.Core.Engine
         }
 
         private static async Task ExecuteUncompressedBackupAsync(
+            string jobName,
             List<ScannedFile> files,
             IDestination destination,
             string setRemoteDir,
             BackupSetManifest manifest,
+            List<string> warnings,
             JobProgressInfo progressInfo,
             IProgress<JobProgressInfo> progress,
             int retryCount,
@@ -510,32 +514,46 @@ namespace FtpSysPro.Core.Engine
                     progress?.Report(progressInfo);
                 });
 
-                await RetryHelper.ExecuteWithRetryAsync(
-                    () => destination.UploadFileAsync(file.FullPath, remoteFilePath, fileProgress, cancellationToken),
-                    retryCount,
-                    2000,
-                    null,
-                    cancellationToken);
-
-                // Verify file checksum after upload if enabled
-                if (verifySha256)
+                try
                 {
-                    var manifestEntry = manifest?.Files.Find(x => x.RelativePath == file.RelativePath);
-                    if (manifestEntry != null && !string.IsNullOrEmpty(manifestEntry.Sha256))
+                    await RetryHelper.ExecuteWithRetryAsync(
+                        () => destination.UploadFileAsync(file.FullPath, remoteFilePath, fileProgress, cancellationToken),
+                        retryCount,
+                        2000,
+                        null,
+                        cancellationToken);
+
+                    // Verify file checksum after upload if enabled
+                    if (verifySha256)
                     {
-                        using (var remoteStream = await destination.OpenReadStreamAsync(remoteFilePath, cancellationToken))
+                        var manifestEntry = manifest?.Files.Find(x => x.RelativePath == file.RelativePath);
+                        if (manifestEntry != null && !string.IsNullOrEmpty(manifestEntry.Sha256))
                         {
-                            var remoteSha = await ChecksumVerifier.ComputeSha256Async(remoteStream, cancellationToken);
-                            if (!ChecksumVerifier.VerifyChecksum(manifestEntry.Sha256, remoteSha))
+                            using (var remoteStream = await destination.OpenReadStreamAsync(remoteFilePath, cancellationToken))
                             {
-                                throw new InvalidOperationException($"Checksum verification failed for '{file.RelativePath}'. " +
-                                    $"Nguồn ({manifestEntry.Sha256}) không khớp với đích ({remoteSha}).");
+                                var remoteSha = await ChecksumVerifier.ComputeSha256Async(remoteStream, cancellationToken);
+                                if (!ChecksumVerifier.VerifyChecksum(manifestEntry.Sha256, remoteSha))
+                                {
+                                    throw new InvalidOperationException($"Checksum verification failed for '{file.RelativePath}'. " +
+                                        $"Nguồn ({manifestEntry.Sha256}) không khớp với đích ({remoteSha}).");
+                                }
                             }
                         }
                     }
-                }
 
-                totalBytesUploaded += file.SizeBytes;
+                    totalBytesUploaded += file.SizeBytes;
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    // Isolate single-file errors so one inaccessible/failing file doesn't stop the entire multi-GB backup job
+                    Serilog.Log.Warning("[BackupEngine] [Job '{JobName}'] Cảnh báo: Lỗi sao lưu tệp '{FilePath}': {Message}. Bỏ qua tệp này và tiếp tục sao lưu.", jobName, file.RelativePath, ex.Message);
+                    warnings?.Add($"Lỗi sao lưu '{file.RelativePath}': {ex.Message}");
+                    manifest?.Files.RemoveAll(x => x.RelativePath == file.RelativePath);
+                }
             }
         }
 
