@@ -138,6 +138,12 @@ namespace FtpSysPro.Core.Resources
         public static string AlertSubjectPrefix => IsVi ? "Tiền tố tiêu đề Email:" : "Email Subject Prefix:";
 
         // Detail Card in MainForm
+        public static string DetailCardTitle => IsVi ? "Thông tin chi tiết Job sao lưu" : "Backup Job Details";
+        public static string DetailNotScannedOrZero => IsVi ? "(Chưa quét hoặc 0 B)" : "(Not scanned or 0 B)";
+        public static string DetailDirectCopy => IsVi ? "Sao chép trực tiếp (Không nén)" : "Direct Copy (Uncompressed)";
+        public static string DetailZipLevel(object level) => IsVi ? $"Nén đóng gói .ZIP (Mức: {level})" : $"ZIP Compression (Level: {level})";
+        public static string ModeFullShort => IsVi ? "Toàn phần" : "Full";
+        public static string ModeIncrementalShort => IsVi ? "Gia tăng" : "Incremental";
         public static string HeaderSourceSize => IsVi ? "DUNG LƯỢNG NGUỒN:" : "SOURCE SIZE:";
         public static string HeaderTransfer => IsVi ? "HÌNH THỨC ĐÓNG GÓI:" : "PACKAGING MODE:";
         public static string HeaderDest => IsVi ? "KHO LƯU TRỮ ĐÍCH:" : "DESTINATION REPOSITORY:";
@@ -197,6 +203,15 @@ namespace FtpSysPro.Core.Resources
         public static string TrayRunJob => IsVi ? "Thực thi Job sao lưu" : "Run Backup Job";
         public static string TrayBalloonSuccess => IsVi ? "Sao lưu hoàn tất thành công" : "Backup Succeeded";
         public static string TrayBalloonFailed => IsVi ? "Sao lưu phát sinh lỗi" : "Backup Failed";
+        public static string TrayRunningBackground => IsVi ? "Ứng dụng đang chạy nền trong khay hệ thống." : "Application is running in the background tray.";
+        public static string ConfirmDeleteTitle => IsVi ? "Xác nhận xóa Job" : "Confirm Delete";
+        public static string StopJobTitle => IsVi ? "Dừng Job sao lưu" : "Stop Backup Job";
+        public static string ExecutionErrorTitle => IsVi ? "Lỗi thực thi" : "Execution Error";
+        public static string UnableToStartJob => IsVi ? "Không thể khởi động Job sao lưu: " : "Unable to start backup job: ";
+        public static string StartingService => IsVi ? "Đang khởi động dịch vụ..." : "Starting service...";
+        public static string UnableToStartService => IsVi ? "Không thể khởi động Windows Service: " : "Unable to start Windows Service: ";
+        public static string ServiceErrorTitle => IsVi ? "Lỗi dịch vụ" : "Service Error";
+        public static string DefaultNewJobName(int index) => (IsVi ? "Job sao lưu " : "Backup Job ") + index;
 
         // Log Viewer
         public static string LogViewerTitle => IsVi ? "FTPSys Pro - Nhật ký vận hành hệ thống" : "FTPSys Pro - Operation Logs";

@@ -293,7 +293,7 @@ namespace FtpSysPro.Manager.UI
 
             lblMatchCount = new Label
             {
-                Text = "0 dòng nhật ký",
+                Text = Strings.IsVi ? "0 dòng nhật ký" : "0 log entries",
                 Location = new Point(780, 48),
                 AutoSize = true,
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Italic),
@@ -324,10 +324,10 @@ namespace FtpSysPro.Manager.UI
 
             // Bottom Status Strip
             statusStrip = new StatusStrip();
-            lblStatusFile = new ToolStripStatusLabel { Text = "Tệp nhật ký: (Chưa chọn)", Width = 380, TextAlign = ContentAlignment.MiddleLeft };
-            lblStatusLines = new ToolStripStatusLabel { Text = "Hiển thị: 0 dòng", Width = 150 };
-            lblStatusSize = new ToolStripStatusLabel { Text = "Dung lượng: 0 B", Width = 150 };
-            lblStatusUpdated = new ToolStripStatusLabel { Text = "Cập nhật: -", Spring = true, TextAlign = ContentAlignment.MiddleRight };
+            lblStatusFile = new ToolStripStatusLabel { Text = Strings.IsVi ? "Tệp nhật ký: (Chưa chọn)" : "Log file: (None selected)", Width = 380, TextAlign = ContentAlignment.MiddleLeft };
+            lblStatusLines = new ToolStripStatusLabel { Text = Strings.IsVi ? "Hiển thị: 0 dòng" : "Lines: 0", Width = 150 };
+            lblStatusSize = new ToolStripStatusLabel { Text = Strings.IsVi ? "Dung lượng: 0 B" : "Size: 0 B", Width = 150 };
+            lblStatusUpdated = new ToolStripStatusLabel { Text = Strings.IsVi ? "Cập nhật: -" : "Updated: -", Spring = true, TextAlign = ContentAlignment.MiddleRight };
 
             statusStrip.Items.AddRange(new ToolStripItem[] {
                 lblStatusFile, lblStatusLines, lblStatusSize, lblStatusUpdated
@@ -452,7 +452,7 @@ namespace FtpSysPro.Manager.UI
             }
             catch (Exception ex)
             {
-                lblStatusFile.Text = "Lỗi khi quét thư mục log: " + ex.Message;
+                lblStatusFile.Text = (Strings.IsVi ? "Lỗi khi quét thư mục log: " : "Error scanning log folder: ") + ex.Message;
             }
         }
 
@@ -586,7 +586,7 @@ namespace FtpSysPro.Manager.UI
                 {
                     if (filterByJob || levelIndex > 0 || !string.IsNullOrWhiteSpace(searchKeyword))
                     {
-                        AppendColorText("(Không có dòng nhật ký vận hành nào phù hợp với bộ lọc đã chọn)" + Environment.NewLine, Color.DarkGray);
+                        AppendColorText((Strings.IsVi ? "(Không có dòng nhật ký vận hành nào phù hợp với bộ lọc đã chọn)" : "(No log entries match the selected filter)") + Environment.NewLine, Color.DarkGray);
                     }
                 }
 
@@ -596,15 +596,15 @@ namespace FtpSysPro.Manager.UI
                     txtLog.ScrollToCaret();
                 }
 
-                lblMatchCount.Text = $"{matchingLines:N0} dòng hiển thị";
-                lblStatusFile.Text = $"Tệp nhật ký: {Path.GetFileName(_activeFilePath)}";
-                lblStatusLines.Text = $"Dòng hiển thị: {matchingLines:N0}";
-                lblStatusSize.Text = $"Dung lượng: {FormatBytes(fi.Length)}";
-                lblStatusUpdated.Text = $"Cập nhật: {_lastLoadedTime:HH:mm:ss}";
+                lblMatchCount.Text = Strings.IsVi ? $"{matchingLines:N0} dòng hiển thị" : $"{matchingLines:N0} lines shown";
+                lblStatusFile.Text = (Strings.IsVi ? "Tệp nhật ký: " : "Log file: ") + Path.GetFileName(_activeFilePath);
+                lblStatusLines.Text = (Strings.IsVi ? "Dòng hiển thị: " : "Lines: ") + $"{matchingLines:N0}";
+                lblStatusSize.Text = (Strings.IsVi ? "Dung lượng: " : "Size: ") + FormatBytes(fi.Length);
+                lblStatusUpdated.Text = (Strings.IsVi ? "Cập nhật: " : "Updated: ") + $"{_lastLoadedTime:HH:mm:ss}";
             }
             catch (Exception ex)
             {
-                lblStatusFile.Text = "Lỗi khi đọc tệp nhật ký: " + ex.Message;
+                lblStatusFile.Text = (Strings.IsVi ? "Lỗi khi đọc tệp nhật ký: " : "Error reading log file: ") + ex.Message;
             }
             finally
             {
@@ -618,7 +618,7 @@ namespace FtpSysPro.Manager.UI
 
         private static Color DetermineLineColor(string line)
         {
-            if (line.Contains("[ERR]") || line.Contains("[FTL]") || line.IndexOf("Exception", StringComparison.OrdinalIgnoreCase) >= 0 || line.Contains("Thất bại"))
+            if (line.Contains("[ERR]") || line.Contains("[FTL]") || line.IndexOf("Exception", StringComparison.OrdinalIgnoreCase) >= 0 || line.Contains("Thất bại") || line.IndexOf("Failed", StringComparison.OrdinalIgnoreCase) >= 0)
             {
                 return Color.FromArgb(255, 115, 115); // Red / Pink
             }
@@ -652,7 +652,7 @@ namespace FtpSysPro.Manager.UI
             {
                 if (string.IsNullOrEmpty(_activeFilePath) || !File.Exists(_activeFilePath))
                 {
-                    MessageBox.Show("Chưa chọn tệp nhật ký hoặc tệp không tồn tại.", Strings.AppName, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show(Strings.IsVi ? "Chưa chọn tệp nhật ký hoặc tệp không tồn tại." : "No log file selected or file does not exist.", Strings.AppName, MessageBoxButtons.OK, MessageBoxIcon.Information);
                     return;
                 }
 
@@ -660,7 +660,7 @@ namespace FtpSysPro.Manager.UI
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Không thể mở Notepad: " + ex.Message, Strings.AppName, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show((Strings.IsVi ? "Không thể mở Notepad: " : "Cannot open Notepad: ") + ex.Message, Strings.AppName, MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
         }
 
@@ -680,12 +680,12 @@ namespace FtpSysPro.Manager.UI
                 }
                 else
                 {
-                    MessageBox.Show("Thư mục nhật ký không tồn tại: " + dir, Strings.AppName, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show((Strings.IsVi ? "Thư mục nhật ký không tồn tại: " : "Log directory does not exist: ") + dir, Strings.AppName, MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Không thể mở thư mục nhật ký: " + ex.Message, Strings.AppName, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show((Strings.IsVi ? "Không thể mở thư mục nhật ký: " : "Cannot open log directory: ") + ex.Message, Strings.AppName, MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
         }
 

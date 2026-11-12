@@ -42,13 +42,30 @@ namespace FtpSysPro.Manager.UI
 
         // Side Detail Panel
         private SplitContainer splitContainer;
+        private GroupBox grpDetail;
         private Label lblDetailName;
+        private Label lblHeaderSourceSize;
         private Label lblDetailSourceSize;
+        private Label lblHeaderTransfer;
         private Label lblDetailTransfer;
+        private Label lblHeaderDest;
         private Label lblDetailDest;
+        private Label lblHeaderSources;
         private TextBox txtDetailSources;
+        private Label lblHeaderLast;
         private Label lblDetailLast;
+        private Label lblHeaderNext;
         private Label lblDetailNext;
+
+        // Context menus
+        private ToolStripMenuItem itemRun;
+        private ToolStripMenuItem itemStop;
+        private ToolStripMenuItem itemEdit;
+        private ToolStripMenuItem itemClone;
+        private ToolStripMenuItem itemDelete;
+        private ToolStripMenuItem itemLogs;
+        private ToolStripMenuItem itemTrayOpen;
+        private ToolStripMenuItem itemTrayExit;
 
         private NotifyIcon trayIcon;
         private ContextMenuStrip trayMenu;
@@ -64,6 +81,7 @@ namespace FtpSysPro.Manager.UI
 
             ApplyLanguage();
             InitializeComponents();
+            UpdateUiLanguage();
         }
 
         private void InitializeComponents()
@@ -118,28 +136,28 @@ namespace FtpSysPro.Manager.UI
                 BorderStyle = BorderStyle.None
             };
 
-            gridJobs.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = Strings.ColJobName, DataPropertyName = "Name", Width = 150 });
-            gridJobs.Columns.Add(new DataGridViewCheckBoxColumn { HeaderText = Strings.ColEnabled, DataPropertyName = "Enabled", Width = 45 });
-            gridJobs.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = Strings.ColBackupType, DataPropertyName = "BackupTypeDisplay", Width = 85 });
-            gridJobs.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = Strings.ColSource, DataPropertyName = "SourceDisplay", Width = 230 });
-            gridJobs.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = Strings.ColDestination, DataPropertyName = "DestinationDisplay", Width = 210 });
-            gridJobs.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = Strings.ColSourceSize, DataPropertyName = "SourceSizeDisplay", Width = 130 });
-            gridJobs.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = Strings.ColTransferMode, DataPropertyName = "CompressionDisplay", Width = 110 });
-            gridJobs.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = Strings.ColLastRun, DataPropertyName = "LastRunDisplay", Width = 120 });
-            gridJobs.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = Strings.ColStatus, DataPropertyName = "StatusDisplay", Width = 90 });
-            gridJobs.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = Strings.ColNextRun, DataPropertyName = "NextRunDisplay", Width = 120 });
-            gridJobs.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = Strings.ColSize, DataPropertyName = "SizeDisplay", Width = 100 });
+            gridJobs.Columns.Add(new DataGridViewTextBoxColumn { Name = "colJobName", HeaderText = Strings.ColJobName, DataPropertyName = "Name", Width = 150 });
+            gridJobs.Columns.Add(new DataGridViewCheckBoxColumn { Name = "colEnabled", HeaderText = Strings.ColEnabled, DataPropertyName = "Enabled", Width = 45 });
+            gridJobs.Columns.Add(new DataGridViewTextBoxColumn { Name = "colBackupType", HeaderText = Strings.ColBackupType, DataPropertyName = "BackupTypeDisplay", Width = 85 });
+            gridJobs.Columns.Add(new DataGridViewTextBoxColumn { Name = "colSource", HeaderText = Strings.ColSource, DataPropertyName = "SourceDisplay", Width = 230 });
+            gridJobs.Columns.Add(new DataGridViewTextBoxColumn { Name = "colDestination", HeaderText = Strings.ColDestination, DataPropertyName = "DestinationDisplay", Width = 210 });
+            gridJobs.Columns.Add(new DataGridViewTextBoxColumn { Name = "colSourceSize", HeaderText = Strings.ColSourceSize, DataPropertyName = "SourceSizeDisplay", Width = 130 });
+            gridJobs.Columns.Add(new DataGridViewTextBoxColumn { Name = "colTransferMode", HeaderText = Strings.ColTransferMode, DataPropertyName = "CompressionDisplay", Width = 110 });
+            gridJobs.Columns.Add(new DataGridViewTextBoxColumn { Name = "colLastRun", HeaderText = Strings.ColLastRun, DataPropertyName = "LastRunDisplay", Width = 120 });
+            gridJobs.Columns.Add(new DataGridViewTextBoxColumn { Name = "colStatus", HeaderText = Strings.ColStatus, DataPropertyName = "StatusDisplay", Width = 90 });
+            gridJobs.Columns.Add(new DataGridViewTextBoxColumn { Name = "colNextRun", HeaderText = Strings.ColNextRun, DataPropertyName = "NextRunDisplay", Width = 120 });
+            gridJobs.Columns.Add(new DataGridViewTextBoxColumn { Name = "colSize", HeaderText = Strings.ColSize, DataPropertyName = "SizeDisplay", Width = 100 });
 
             gridJobs.CellDoubleClick += (s, e) => EditSelectedJob();
             gridJobs.SelectionChanged += (s, e) => UpdateSelectedJobDetail();
 
             var jobMenu = new ContextMenuStrip();
-            var itemRun = new ToolStripMenuItem("▶ " + Strings.Run, null, async (s, e) => await RunSelectedJobAsync());
-            var itemStop = new ToolStripMenuItem("■ " + Strings.Stop, null, async (s, e) => await StopSelectedJobAsync());
-            var itemEdit = new ToolStripMenuItem("✏ " + Strings.Edit, null, (s, e) => EditSelectedJob());
-            var itemClone = new ToolStripMenuItem("📋 " + Strings.Clone, null, (s, e) => CloneSelectedJob());
-            var itemDelete = new ToolStripMenuItem("🗑 " + Strings.Delete, null, (s, e) => DeleteSelectedJob());
-            var itemLogs = new ToolStripMenuItem("📋 " + Strings.ViewJobLog, null, (s, e) =>
+            itemRun = new ToolStripMenuItem("▶ " + Strings.Run, null, async (s, e) => await RunSelectedJobAsync());
+            itemStop = new ToolStripMenuItem("■ " + Strings.Stop, null, async (s, e) => await StopSelectedJobAsync());
+            itemEdit = new ToolStripMenuItem("✏ " + Strings.Edit, null, (s, e) => EditSelectedJob());
+            itemClone = new ToolStripMenuItem("📋 " + Strings.Clone, null, (s, e) => CloneSelectedJob());
+            itemDelete = new ToolStripMenuItem("🗑 " + Strings.Delete, null, (s, e) => DeleteSelectedJob());
+            itemLogs = new ToolStripMenuItem("📋 " + Strings.ViewJobLog, null, (s, e) =>
             {
                 var job = GetSelectedJob();
                 OpenLogViewer(job?.Name);
@@ -166,9 +184,9 @@ namespace FtpSysPro.Manager.UI
             };
 
             // Right side Job Detail Card
-            var grpDetail = new GroupBox
+            grpDetail = new GroupBox
             {
-                Text = Strings.IsVi ? "Thông tin chi tiết Job sao lưu" : "Backup Job Details",
+                Text = Strings.DetailCardTitle,
                 Dock = DockStyle.Fill,
                 Font = new Font("Segoe UI", 9F, FontStyle.Bold),
                 Padding = new Padding(12),
@@ -190,7 +208,7 @@ namespace FtpSysPro.Manager.UI
                 AutoSize = true
             };
 
-            var lblHeaderSourceSize = new Label
+            lblHeaderSourceSize = new Label
             {
                 Text = Strings.HeaderSourceSize,
                 Font = new Font("Segoe UI", 8F, FontStyle.Bold),
@@ -208,7 +226,7 @@ namespace FtpSysPro.Manager.UI
                 AutoSize = true
             };
 
-            var lblHeaderTransfer = new Label
+            lblHeaderTransfer = new Label
             {
                 Text = Strings.HeaderTransfer,
                 Font = new Font("Segoe UI", 8F, FontStyle.Bold),
@@ -226,7 +244,7 @@ namespace FtpSysPro.Manager.UI
                 AutoSize = true
             };
 
-            var lblHeaderDest = new Label
+            lblHeaderDest = new Label
             {
                 Text = Strings.HeaderDest,
                 Font = new Font("Segoe UI", 8F, FontStyle.Bold),
@@ -244,7 +262,7 @@ namespace FtpSysPro.Manager.UI
                 AutoSize = true
             };
 
-            var lblHeaderSources = new Label
+            lblHeaderSources = new Label
             {
                 Text = Strings.HeaderSources,
                 Font = new Font("Segoe UI", 8F, FontStyle.Bold),
@@ -264,7 +282,7 @@ namespace FtpSysPro.Manager.UI
                 Font = new Font("Consolas", 8.25F)
             };
 
-            var lblHeaderLast = new Label
+            lblHeaderLast = new Label
             {
                 Text = Strings.HeaderLast,
                 Font = new Font("Segoe UI", 8F, FontStyle.Bold),
@@ -282,7 +300,7 @@ namespace FtpSysPro.Manager.UI
                 AutoSize = true
             };
 
-            var lblHeaderNext = new Label
+            lblHeaderNext = new Label
             {
                 Text = Strings.HeaderNext,
                 Font = new Font("Segoe UI", 8F, FontStyle.Bold),
@@ -332,10 +350,10 @@ namespace FtpSysPro.Manager.UI
 
             // Tray
             trayMenu = new ContextMenuStrip();
-            var itemOpen = new ToolStripMenuItem(Strings.TrayOpen, null, (s, e) => ShowMainWindow());
+            itemTrayOpen = new ToolStripMenuItem(Strings.TrayOpen, null, (s, e) => ShowMainWindow());
             var itemSep = new ToolStripSeparator();
-            var itemExit = new ToolStripMenuItem(Strings.TrayExit, null, (s, e) => ExitApplication());
-            trayMenu.Items.AddRange(new ToolStripItem[] { itemOpen, itemSep, itemExit });
+            itemTrayExit = new ToolStripMenuItem(Strings.TrayExit, null, (s, e) => ExitApplication());
+            trayMenu.Items.AddRange(new ToolStripItem[] { itemTrayOpen, itemSep, itemTrayExit });
 
             trayIcon = new NotifyIcon
             {
@@ -384,6 +402,86 @@ namespace FtpSysPro.Manager.UI
             Strings.SetLanguage(cfg?.Settings?.Language ?? "en");
         }
 
+        public void UpdateUiLanguage()
+        {
+            if (InvokeRequired)
+            {
+                Invoke(new Action(UpdateUiLanguage));
+                return;
+            }
+
+            // Window Title
+            Text = $"{Strings.AppName} v{Strings.AppVersion}";
+
+            // ToolStrip buttons
+            if (btnAdd != null) btnAdd.Text = "➕ " + Strings.Add;
+            if (btnEdit != null) btnEdit.Text = "✏ " + Strings.Edit;
+            if (btnDelete != null) btnDelete.Text = "🗑 " + Strings.Delete;
+            if (btnClone != null) btnClone.Text = "📋 " + Strings.Clone;
+            if (btnRun != null) btnRun.Text = "▶ " + Strings.Run;
+            if (btnStop != null) btnStop.Text = "■ " + Strings.Stop;
+            if (btnRestore != null) btnRestore.Text = "🔄 " + Strings.Restore;
+            if (btnLogs != null) btnLogs.Text = "📋 " + Strings.Logs;
+            if (btnSettings != null) btnSettings.Text = "⚙ " + Strings.Settings;
+            if (btnRefresh != null) btnRefresh.Text = "↻ " + Strings.Refresh;
+
+            // Grid Column Headers
+            if (gridJobs != null)
+            {
+                if (gridJobs.Columns["colJobName"] != null) gridJobs.Columns["colJobName"].HeaderText = Strings.ColJobName;
+                if (gridJobs.Columns["colEnabled"] != null) gridJobs.Columns["colEnabled"].HeaderText = Strings.ColEnabled;
+                if (gridJobs.Columns["colBackupType"] != null) gridJobs.Columns["colBackupType"].HeaderText = Strings.ColBackupType;
+                if (gridJobs.Columns["colSource"] != null) gridJobs.Columns["colSource"].HeaderText = Strings.ColSource;
+                if (gridJobs.Columns["colDestination"] != null) gridJobs.Columns["colDestination"].HeaderText = Strings.ColDestination;
+                if (gridJobs.Columns["colSourceSize"] != null) gridJobs.Columns["colSourceSize"].HeaderText = Strings.ColSourceSize;
+                if (gridJobs.Columns["colTransferMode"] != null) gridJobs.Columns["colTransferMode"].HeaderText = Strings.ColTransferMode;
+                if (gridJobs.Columns["colLastRun"] != null) gridJobs.Columns["colLastRun"].HeaderText = Strings.ColLastRun;
+                if (gridJobs.Columns["colStatus"] != null) gridJobs.Columns["colStatus"].HeaderText = Strings.ColStatus;
+                if (gridJobs.Columns["colNextRun"] != null) gridJobs.Columns["colNextRun"].HeaderText = Strings.ColNextRun;
+                if (gridJobs.Columns["colSize"] != null) gridJobs.Columns["colSize"].HeaderText = Strings.ColSize;
+            }
+
+            // Context Menu Items
+            if (itemRun != null) itemRun.Text = "▶ " + Strings.Run;
+            if (itemStop != null) itemStop.Text = "■ " + Strings.Stop;
+            if (itemEdit != null) itemEdit.Text = "✏ " + Strings.Edit;
+            if (itemClone != null) itemClone.Text = "📋 " + Strings.Clone;
+            if (itemDelete != null) itemDelete.Text = "🗑 " + Strings.Delete;
+            if (itemLogs != null) itemLogs.Text = "📋 " + Strings.ViewJobLog;
+
+            // Detail Card
+            if (grpDetail != null) grpDetail.Text = Strings.DetailCardTitle;
+            if (lblHeaderSourceSize != null) lblHeaderSourceSize.Text = Strings.HeaderSourceSize;
+            if (lblHeaderTransfer != null) lblHeaderTransfer.Text = Strings.HeaderTransfer;
+            if (lblHeaderDest != null) lblHeaderDest.Text = Strings.HeaderDest;
+            if (lblHeaderSources != null) lblHeaderSources.Text = Strings.HeaderSources;
+            if (lblHeaderLast != null) lblHeaderLast.Text = Strings.HeaderLast;
+            if (lblHeaderNext != null) lblHeaderNext.Text = Strings.HeaderNext;
+
+            // Tray
+            if (itemTrayOpen != null) itemTrayOpen.Text = Strings.TrayOpen;
+            if (itemTrayExit != null) itemTrayExit.Text = Strings.TrayExit;
+            if (trayIcon != null) trayIcon.Text = $"FTPSys Pro v{Strings.AppVersion}";
+
+            // Status strip
+            if (lblServiceStatus != null && lblServiceAction != null)
+            {
+                if (lblServiceStatus.ForeColor == Color.DarkGreen)
+                {
+                    lblServiceStatus.Text = Strings.ServiceStatusConnected;
+                    lblServiceAction.Text = "";
+                }
+                else
+                {
+                    lblServiceStatus.Text = Strings.ServiceStatusDisconnected;
+                    lblServiceAction.Text = Strings.ServiceStartPrompt;
+                }
+            }
+
+            // Refresh grid data to re-evaluate ViewModel string properties
+            RefreshJobGrid();
+        }
+
         private BackupJob GetSelectedJob()
         {
             if (gridJobs.SelectedRows.Count == 0) return null;
@@ -393,7 +491,7 @@ namespace FtpSysPro.Manager.UI
 
         private void AddNewJob()
         {
-            var newJob = new BackupJob { Name = (Strings.IsVi ? "Job sao lưu " : "Backup Job ") + (_currentConfig.Jobs.Count + 1) };
+            var newJob = new BackupJob { Name = Strings.DefaultNewJobName(_currentConfig.Jobs.Count + 1) };
             using (var dlg = new JobEditDialog(newJob, true))
             {
                 if (dlg.ShowDialog(this) == DialogResult.OK)
@@ -441,7 +539,7 @@ namespace FtpSysPro.Manager.UI
             var job = GetSelectedJob();
             if (job == null) return;
 
-            if (MessageBox.Show(this, $"{Strings.ConfirmDeleteJob}\n\nJob: {job.Name}", Strings.IsVi ? "Xác nhận xóa Job" : "Confirm Delete", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+            if (MessageBox.Show(this, $"{Strings.ConfirmDeleteJob}\n\nJob: {job.Name}", Strings.ConfirmDeleteTitle, MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
             {
                 _currentConfig.Jobs.RemoveAll(j => j.Id == job.Id);
                 SaveConfigToService();
@@ -472,7 +570,7 @@ namespace FtpSysPro.Manager.UI
                 }
                 else
                 {
-                    MessageBox.Show(this, (Strings.IsVi ? "Không thể khởi động Job sao lưu: " : "Unable to start backup job: ") + resp?.ErrorMessage, Strings.IsVi ? "Lỗi thực thi" : "Execution Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show(this, Strings.UnableToStartJob + resp?.ErrorMessage, Strings.ExecutionErrorTitle, MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
             finally
@@ -486,7 +584,7 @@ namespace FtpSysPro.Manager.UI
             var job = GetSelectedJob();
             if (job == null) return;
 
-            if (MessageBox.Show(this, Strings.ConfirmStopJob, Strings.IsVi ? "Dừng Job sao lưu" : "Stop Backup Job", MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
+            if (MessageBox.Show(this, Strings.ConfirmStopJob, Strings.StopJobTitle, MessageBoxButtons.YesNo, MessageBoxIcon.Warning) == DialogResult.Yes)
             {
                 await _pipeClient.SendAsync(new IpcMessage
                 {
@@ -513,6 +611,8 @@ namespace FtpSysPro.Manager.UI
                 if (dlg.ShowDialog(this) == DialogResult.OK)
                 {
                     _currentConfig.Settings = dlg.ResultSettings;
+                    Strings.SetLanguage(_currentConfig.Settings.Language);
+                    UpdateUiLanguage();
                     SaveConfigToService();
                 }
             }
@@ -548,7 +648,18 @@ namespace FtpSysPro.Manager.UI
                     var resp = await _pipeClient.SendAsync(new IpcMessage { Action = IpcActions.GetConfig });
                     if (resp != null && resp.Success)
                     {
-                        _currentConfig = Newtonsoft.Json.JsonConvert.DeserializeObject<AppConfig>(resp.PayloadJson);
+                        var serviceConfig = Newtonsoft.Json.JsonConvert.DeserializeObject<AppConfig>(resp.PayloadJson);
+                        if (serviceConfig?.Settings?.Language != null &&
+                            !string.Equals(serviceConfig.Settings.Language, _currentConfig?.Settings?.Language, StringComparison.OrdinalIgnoreCase))
+                        {
+                            _currentConfig = serviceConfig;
+                            Strings.SetLanguage(_currentConfig.Settings.Language);
+                            UpdateUiLanguage();
+                        }
+                        else
+                        {
+                            _currentConfig = serviceConfig;
+                        }
                     }
                 }
                 catch { }
@@ -632,7 +743,7 @@ namespace FtpSysPro.Manager.UI
 
         private async Task StartOrRestartServiceAsync()
         {
-            lblServiceAction.Text = Strings.IsVi ? "Đang khởi động dịch vụ..." : "Starting service...";
+            lblServiceAction.Text = Strings.StartingService;
             await Task.Run(() =>
             {
                 try
@@ -667,7 +778,7 @@ namespace FtpSysPro.Manager.UI
                     }
                     catch (Exception ex)
                     {
-                        MessageBox.Show(this, (Strings.IsVi ? "Không thể khởi động Windows Service: " : "Unable to start Windows Service: ") + ex.Message, Strings.IsVi ? "Lỗi dịch vụ" : "Service Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        MessageBox.Show(this, Strings.UnableToStartService + ex.Message, Strings.ServiceErrorTitle, MessageBoxButtons.OK, MessageBoxIcon.Error);
                     }
                 }
             });
@@ -689,10 +800,10 @@ namespace FtpSysPro.Manager.UI
                 lblDetailName.Text = $"{job.Name} ({vm.BackupTypeDisplay})";
                 lblDetailSourceSize.Text = job.SourceSizeBytes > 0
                     ? $"{JobViewModel.FormatBytes(job.SourceSizeBytes)} ({job.SourceFileCount:N0} {Strings.FilesUnit})"
-                    : (job.SourceDirectories != null && job.SourceDirectories.Count > 0 ? (Strings.IsVi ? "(Chưa quét hoặc 0 B)" : "(Not scanned or 0 B)") : "-");
+                    : (job.SourceDirectories != null && job.SourceDirectories.Count > 0 ? Strings.DetailNotScannedOrZero : "-");
                 lblDetailTransfer.Text = job.Compression.Enabled
-                    ? (Strings.IsVi ? $"Nén đóng gói .ZIP (Mức: {job.Compression.Level})" : $"ZIP Compression (Level: {job.Compression.Level})") + (job.Compression.EncryptWithPassword ? " [AES-256]" : "")
-                    : (Strings.IsVi ? "Sao chép trực tiếp (Không nén)" : "Direct Copy (Uncompressed)");
+                    ? Strings.DetailZipLevel(job.Compression.Level) + (job.Compression.EncryptWithPassword ? " [AES-256]" : "")
+                    : Strings.DetailDirectCopy;
                 lblDetailDest.Text = vm.DestinationDisplay;
                 txtDetailSources.Lines = job.SourceDirectories != null ? job.SourceDirectories.ToArray() : new string[0];
                 lblDetailLast.Text = job.LastRunUtc.HasValue
@@ -782,7 +893,7 @@ namespace FtpSysPro.Manager.UI
                 Hide();
                 try
                 {
-                    trayIcon.ShowBalloonTip(2000, Strings.AppName, Strings.IsVi ? "Ứng dụng đang chạy nền trong khay hệ thống." : "Application is running in the background tray.", ToolTipIcon.Info);
+                    trayIcon.ShowBalloonTip(2000, Strings.AppName, Strings.TrayRunningBackground, ToolTipIcon.Info);
                 }
                 catch { }
             }
@@ -801,8 +912,8 @@ namespace FtpSysPro.Manager.UI
         public string Name => Job.Name;
         public bool Enabled => Job.Enabled;
         public string BackupTypeDisplay => Job.BackupType == BackupType.Full
-            ? (Strings.IsVi ? "Toàn phần" : "Full")
-            : (Strings.IsVi ? "Gia tăng" : "Incremental");
+            ? Strings.ModeFullShort
+            : Strings.ModeIncrementalShort;
 
         public string SourceDisplay => (Job.SourceDirectories != null && Job.SourceDirectories.Count > 0)
             ? string.Join("; ", Job.SourceDirectories)
