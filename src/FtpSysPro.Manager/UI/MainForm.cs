@@ -48,27 +48,16 @@ namespace FtpSysPro.Manager.UI
         private Label lblDetailName;
         private Label lblDetailBadge;
         private Label lblDetailDesc;
-        private Label lblHeaderSourceSize;
-        private Label lblDetailSourceSize;
         private Label lblHeaderSources;
         private Label lblDetailSources;
-        private Label lblHeaderExcludes;
-        private Label lblDetailExcludes;
+        private Label lblHeaderSourceSize;
+        private Label lblDetailSourceSize;
         private Label lblHeaderDest;
         private Label lblDetailDest;
         private Label lblHeaderTransfer;
         private Label lblDetailTransfer;
-        private Label lblHeaderIntegrity;
-        private Label lblDetailIntegrity;
-        private Label lblHeaderSchedule;
-        private Label lblDetailSchedule;
-        private Label lblHeaderRetention;
-        private Label lblDetailRetention;
-        private Label lblHeaderAlert;
-        private Label lblDetailAlert;
         private Label lblHeaderLast;
         private Label lblDetailLast;
-        private Label lblHeaderLastResult;
         private Label lblDetailLastResult;
         private Label lblHeaderNext;
         private Label lblDetailNext;
@@ -253,15 +242,15 @@ namespace FtpSysPro.Manager.UI
             lblDetailName = new Label
             {
                 Text = Strings.NoJobSelected,
-                Font = new Font("Segoe UI", 12F, FontStyle.Bold),
+                Font = new Font("Segoe UI", 11.5F, FontStyle.Bold),
                 ForeColor = Color.FromArgb(12, 35, 75)
             };
 
             lblDetailBadge = new Label
             {
                 Text = "",
-                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
-                ForeColor = Color.FromArgb(40, 120, 50)
+                Font = new Font("Segoe UI", 8.5F),
+                ForeColor = Color.FromArgb(30, 120, 50)
             };
 
             lblDetailDesc = new Label
@@ -272,25 +261,11 @@ namespace FtpSysPro.Manager.UI
                 Visible = false
             };
 
-            lblHeaderSourceSize = new Label
-            {
-                Text = Strings.HeaderSourceSize,
-                Font = new Font("Segoe UI", 8F, FontStyle.Bold),
-                ForeColor = Color.DimGray
-            };
-
-            lblDetailSourceSize = new Label
-            {
-                Text = "-",
-                Font = new Font("Segoe UI", 11.5F, FontStyle.Bold),
-                ForeColor = Color.DarkBlue
-            };
-
             lblHeaderSources = new Label
             {
                 Text = Strings.HeaderSources,
                 Font = new Font("Segoe UI", 8F, FontStyle.Bold),
-                ForeColor = Color.DimGray
+                ForeColor = Color.FromArgb(100, 110, 130)
             };
 
             lblDetailSources = new Label
@@ -300,31 +275,31 @@ namespace FtpSysPro.Manager.UI
                 ForeColor = Color.FromArgb(20, 30, 50)
             };
 
-            lblHeaderExcludes = new Label
+            lblHeaderSourceSize = new Label
             {
-                Text = Strings.HeaderExcludes,
+                Text = Strings.HeaderSourceSize,
                 Font = new Font("Segoe UI", 8F, FontStyle.Bold),
-                ForeColor = Color.DimGray
+                ForeColor = Color.FromArgb(100, 110, 130)
             };
 
-            lblDetailExcludes = new Label
+            lblDetailSourceSize = new Label
             {
                 Text = "-",
-                Font = new Font("Segoe UI", 8.5F),
-                ForeColor = Color.FromArgb(70, 80, 95)
+                Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+                ForeColor = Color.DarkBlue
             };
 
             lblHeaderDest = new Label
             {
                 Text = Strings.HeaderDest,
                 Font = new Font("Segoe UI", 8F, FontStyle.Bold),
-                ForeColor = Color.DimGray
+                ForeColor = Color.FromArgb(100, 110, 130)
             };
 
             lblDetailDest = new Label
             {
                 Text = "-",
-                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                Font = new Font("Segoe UI", 9F),
                 ForeColor = Color.FromArgb(20, 30, 50)
             };
 
@@ -332,7 +307,7 @@ namespace FtpSysPro.Manager.UI
             {
                 Text = Strings.HeaderTransfer,
                 Font = new Font("Segoe UI", 8F, FontStyle.Bold),
-                ForeColor = Color.DimGray
+                ForeColor = Color.FromArgb(100, 110, 130)
             };
 
             lblDetailTransfer = new Label
@@ -342,95 +317,33 @@ namespace FtpSysPro.Manager.UI
                 ForeColor = Color.FromArgb(20, 30, 50)
             };
 
-            lblHeaderIntegrity = new Label
+            lblHeaderLast = new Label
             {
-                Text = Strings.HeaderIntegrity,
+                Text = Strings.HeaderLast,
                 Font = new Font("Segoe UI", 8F, FontStyle.Bold),
-                ForeColor = Color.DimGray
+                ForeColor = Color.FromArgb(100, 110, 130)
             };
 
-            lblDetailIntegrity = new Label
-            {
-                Text = "-",
-                Font = new Font("Segoe UI", 8.5F),
-                ForeColor = Color.FromArgb(40, 70, 50)
-            };
-
-            lblHeaderSchedule = new Label
-            {
-                Text = Strings.HeaderSchedule,
-                Font = new Font("Segoe UI", 8F, FontStyle.Bold),
-                ForeColor = Color.DimGray
-            };
-
-            lblDetailSchedule = new Label
+            lblDetailLast = new Label
             {
                 Text = "-",
                 Font = new Font("Segoe UI", 9F),
                 ForeColor = Color.FromArgb(20, 30, 50)
             };
 
-            lblHeaderRetention = new Label
-            {
-                Text = Strings.HeaderRetention,
-                Font = new Font("Segoe UI", 8F, FontStyle.Bold),
-                ForeColor = Color.DimGray
-            };
-
-            lblDetailRetention = new Label
-            {
-                Text = "-",
-                Font = new Font("Segoe UI", 8.5F),
-                ForeColor = Color.FromArgb(40, 50, 70)
-            };
-
-            lblHeaderAlert = new Label
-            {
-                Text = Strings.HeaderAlert,
-                Font = new Font("Segoe UI", 8F, FontStyle.Bold),
-                ForeColor = Color.DimGray
-            };
-
-            lblDetailAlert = new Label
-            {
-                Text = "-",
-                Font = new Font("Segoe UI", 8.5F),
-                ForeColor = Color.FromArgb(40, 50, 70)
-            };
-
-            lblHeaderLast = new Label
-            {
-                Text = Strings.HeaderLast,
-                Font = new Font("Segoe UI", 8F, FontStyle.Bold),
-                ForeColor = Color.DimGray
-            };
-
-            lblDetailLast = new Label
-            {
-                Text = "-",
-                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
-                ForeColor = Color.FromArgb(20, 30, 50)
-            };
-
-            lblHeaderLastResult = new Label
-            {
-                Text = Strings.HeaderLastResult,
-                Font = new Font("Segoe UI", 8F, FontStyle.Bold),
-                ForeColor = Color.DimGray
-            };
-
             lblDetailLastResult = new Label
             {
-                Text = "-",
-                Font = new Font("Segoe UI", 8.5F),
-                ForeColor = Color.FromArgb(60, 70, 85)
+                Text = "",
+                Font = new Font("Segoe UI", 8F),
+                ForeColor = Color.DimGray,
+                Visible = false
             };
 
             lblHeaderNext = new Label
             {
                 Text = Strings.HeaderNext,
                 Font = new Font("Segoe UI", 8F, FontStyle.Bold),
-                ForeColor = Color.DimGray
+                ForeColor = Color.FromArgb(100, 110, 130)
             };
 
             lblDetailNext = new Label
@@ -440,45 +353,28 @@ namespace FtpSysPro.Manager.UI
                 ForeColor = Color.FromArgb(0, 90, 180)
             };
 
-            // Add rows to TableLayoutPanel
+            // Add rows to TableLayoutPanel (simple, clean, matching job grid)
             AddDetailRow(lblDetailName, 2, 2);
             AddDetailRow(lblDetailBadge, 0, 4);
             AddDetailRow(lblDetailDesc, 0, 6);
 
-            AddDetailRow(lblHeaderSourceSize, 8, 1);
-            AddDetailRow(lblDetailSourceSize, 0, 5);
+            AddDetailRow(lblHeaderSources, 8, 2);
+            AddDetailRow(lblDetailSources, 0, 6);
 
-            AddDetailRow(lblHeaderSources, 6, 1);
-            AddDetailRow(lblDetailSources, 0, 5);
+            AddDetailRow(lblHeaderSourceSize, 6, 2);
+            AddDetailRow(lblDetailSourceSize, 0, 6);
 
-            AddDetailRow(lblHeaderExcludes, 6, 1);
-            AddDetailRow(lblDetailExcludes, 0, 5);
+            AddDetailRow(lblHeaderDest, 6, 2);
+            AddDetailRow(lblDetailDest, 0, 6);
 
-            AddDetailRow(lblHeaderDest, 6, 1);
-            AddDetailRow(lblDetailDest, 0, 5);
+            AddDetailRow(lblHeaderTransfer, 6, 2);
+            AddDetailRow(lblDetailTransfer, 0, 6);
 
-            AddDetailRow(lblHeaderTransfer, 6, 1);
-            AddDetailRow(lblDetailTransfer, 0, 5);
+            AddDetailRow(lblHeaderLast, 6, 2);
+            AddDetailRow(lblDetailLast, 0, 2);
+            AddDetailRow(lblDetailLastResult, 0, 6);
 
-            AddDetailRow(lblHeaderIntegrity, 6, 1);
-            AddDetailRow(lblDetailIntegrity, 0, 5);
-
-            AddDetailRow(lblHeaderSchedule, 6, 1);
-            AddDetailRow(lblDetailSchedule, 0, 5);
-
-            AddDetailRow(lblHeaderRetention, 6, 1);
-            AddDetailRow(lblDetailRetention, 0, 5);
-
-            AddDetailRow(lblHeaderAlert, 6, 1);
-            AddDetailRow(lblDetailAlert, 0, 5);
-
-            AddDetailRow(lblHeaderLast, 6, 1);
-            AddDetailRow(lblDetailLast, 0, 3);
-
-            AddDetailRow(lblHeaderLastResult, 4, 1);
-            AddDetailRow(lblDetailLastResult, 0, 5);
-
-            AddDetailRow(lblHeaderNext, 6, 1);
+            AddDetailRow(lblHeaderNext, 6, 2);
             AddDetailRow(lblDetailNext, 0, 8);
 
             pnlDetailScroll.Controls.Add(tblDetail);
@@ -622,17 +518,11 @@ namespace FtpSysPro.Manager.UI
 
             // Detail Card
             if (lblCardTitle != null) lblCardTitle.Text = "📋 " + Strings.DetailCardTitle;
-            if (lblHeaderSourceSize != null) lblHeaderSourceSize.Text = Strings.HeaderSourceSize;
             if (lblHeaderSources != null) lblHeaderSources.Text = Strings.HeaderSources;
-            if (lblHeaderExcludes != null) lblHeaderExcludes.Text = Strings.HeaderExcludes;
+            if (lblHeaderSourceSize != null) lblHeaderSourceSize.Text = Strings.HeaderSourceSize;
             if (lblHeaderDest != null) lblHeaderDest.Text = Strings.HeaderDest;
             if (lblHeaderTransfer != null) lblHeaderTransfer.Text = Strings.HeaderTransfer;
-            if (lblHeaderIntegrity != null) lblHeaderIntegrity.Text = Strings.HeaderIntegrity;
-            if (lblHeaderSchedule != null) lblHeaderSchedule.Text = Strings.HeaderSchedule;
-            if (lblHeaderRetention != null) lblHeaderRetention.Text = Strings.HeaderRetention;
-            if (lblHeaderAlert != null) lblHeaderAlert.Text = Strings.HeaderAlert;
             if (lblHeaderLast != null) lblHeaderLast.Text = Strings.HeaderLast;
-            if (lblHeaderLastResult != null) lblHeaderLastResult.Text = Strings.HeaderLastResult;
             if (lblHeaderNext != null) lblHeaderNext.Text = Strings.HeaderNext;
 
             // Tray
@@ -998,10 +888,10 @@ namespace FtpSysPro.Manager.UI
                     return;
                 }
 
-                // 1. Name & Status Badge & Description
+                // 1. Job Name & Status Badge & Description
                 lblDetailName.Text = job.Name ?? string.Empty;
-                lblDetailBadge.Text = $"[ {(job.Enabled ? "● " + Strings.BadgeEnabled : "○ " + Strings.BadgeDisabled)} ]  •  {vm.BackupTypeDisplay}";
-                lblDetailBadge.ForeColor = job.Enabled ? Color.FromArgb(30, 130, 60) : Color.Gray;
+                lblDetailBadge.Text = $"● {(job.Enabled ? Strings.BadgeEnabled : Strings.BadgeDisabled)}  •  {Strings.BackupMode}: {vm.BackupTypeDisplay}  •  {vm.StatusDisplay}";
+                lblDetailBadge.ForeColor = job.Enabled ? Color.FromArgb(30, 120, 50) : Color.Gray;
 
                 if (!string.IsNullOrWhiteSpace(job.Description))
                 {
@@ -1013,111 +903,55 @@ namespace FtpSysPro.Manager.UI
                     lblDetailDesc.Visible = false;
                 }
 
-                // 2. Source Size
-                lblDetailSourceSize.Text = job.SourceSizeBytes > 0
-                    ? $"{JobViewModel.FormatBytes(job.SourceSizeBytes)}  ({job.SourceFileCount:N0} {Strings.FilesUnit})"
-                    : (job.SourceDirectories != null && job.SourceDirectories.Count > 0 ? Strings.DetailNotScannedOrZero : "-");
-
-                // 3. Source Directories (borderless label with bullet icons)
+                // 2. Source Directories (borderless text, clean lines)
                 if (job.SourceDirectories != null && job.SourceDirectories.Count > 0)
                 {
-                    lblDetailSources.Text = string.Join(Environment.NewLine, job.SourceDirectories.Select(d => "📁 " + d));
+                    lblDetailSources.Text = string.Join(Environment.NewLine, job.SourceDirectories);
                 }
                 else
                 {
                     lblDetailSources.Text = Strings.NoneOrEmpty;
                 }
 
-                // 4. Exclude Patterns
-                if (job.ExcludePatterns != null && job.ExcludePatterns.Count > 0)
-                {
-                    lblDetailExcludes.Text = string.Join(", ", job.ExcludePatterns.Select(e => "🚫 " + e));
-                }
-                else
-                {
-                    lblDetailExcludes.Text = Strings.NoneOrEmpty;
-                }
+                // 3. Source Size
+                lblDetailSourceSize.Text = job.SourceSizeBytes > 0
+                    ? $"{JobViewModel.FormatBytes(job.SourceSizeBytes)} ({job.SourceFileCount:N0} {Strings.FilesUnit})"
+                    : (job.SourceDirectories != null && job.SourceDirectories.Count > 0 ? Strings.DetailNotScannedOrZero : "-");
 
-                // 5. Destination
+                // 4. Destination Repository
                 lblDetailDest.Text = vm.DestinationDisplay;
 
-                // 6. Transfer / Packaging & Encryption
+                // 5. Transfer / Packaging Mode
                 lblDetailTransfer.Text = job.Compression != null && job.Compression.Enabled
-                    ? Strings.DetailZipLevel(job.Compression.Level) + (job.Compression.EncryptWithPassword ? "  🔒 [AES-256]" : "")
+                    ? Strings.DetailZipLevel(job.Compression.Level) + (job.Compression.EncryptWithPassword ? " [AES-256]" : "")
                     : Strings.DetailDirectCopy;
 
-                // 7. Data Integrity & VSS & Network Retry
-                var integrity = job.Integrity ?? new IntegrityOptions();
-                var vssText = integrity.EnableVss ? "🛡 " + Strings.VssEnabledText : "○ " + Strings.VssDisabledText;
-                var shaText = integrity.VerifySha256Checksum ? "  |  ✔ " + Strings.ShaVerifiedText : "";
-                var retryText = $"  |  {Strings.RetryCountText(integrity.NetworkRetryCount)}";
-                lblDetailIntegrity.Text = vssText + shaText + retryText;
-
-                // 8. Schedule
-                if (job.Schedules != null && job.Schedules.Count > 0)
-                {
-                    lblDetailSchedule.Text = string.Join(Environment.NewLine, job.Schedules.Select(s => "⏰ " + JobEditDialog.FormatScheduleDetail(s)));
-                }
-                else
-                {
-                    lblDetailSchedule.Text = "⏰ " + Strings.ScheduleManualOnly;
-                }
-
-                // 9. Retention Policy
-                if (job.Retention != null)
-                {
-                    switch (job.Retention.Type)
-                    {
-                        case RetentionType.KeepDays:
-                            lblDetailRetention.Text = "🛡 " + Strings.RetentionDaysText(job.Retention.KeepDays);
-                            break;
-                        case RetentionType.KeepFullCount:
-                            lblDetailRetention.Text = "🛡 " + Strings.RetentionCountText(job.Retention.KeepFullCount);
-                            break;
-                        default:
-                            lblDetailRetention.Text = "🛡 " + Strings.RetentionKeepAllText;
-                            break;
-                    }
-                }
-                else
-                {
-                    lblDetailRetention.Text = "🛡 " + Strings.RetentionKeepAllText;
-                }
-
-                // 10. Email Alerts
-                if (job.Notification != null && job.Notification.Enabled && job.Notification.Recipients != null && job.Notification.Recipients.Count > 0)
-                {
-                    string condStr = job.Notification.Condition == NotificationCondition.Always
-                        ? Strings.ConditionAlways
-                        : (job.Notification.Condition == NotificationCondition.OnFailureOnly ? Strings.ConditionFailureOnly : Strings.ConditionSuccessOnly);
-                    lblDetailAlert.Text = $"✉ {string.Join(", ", job.Notification.Recipients)}  ({condStr})";
-                }
-                else
-                {
-                    lblDetailAlert.Text = "✉ " + Strings.AlertDisabled;
-                }
-
-                // 11. Last Run
+                // 6. Last Run & Backup Size
                 lblDetailLast.Text = job.LastRunUtc.HasValue
                     ? $"{job.LastRunUtc.Value.ToLocalTime():yyyy-MM-dd HH:mm}  ({vm.StatusDisplay})  •  {(vm.SizeDisplay != "-" ? vm.SizeDisplay : Strings.NotScanned)}"
                     : Strings.NeverExecuted;
 
-                // 12. Last Result / Message
                 if (!string.IsNullOrWhiteSpace(job.LastMessage))
                 {
                     lblDetailLastResult.Text = job.LastMessage;
-                }
-                else if (job.LastRunUtc.HasValue)
-                {
-                    lblDetailLastResult.Text = vm.StatusDisplay;
+                    lblDetailLastResult.Visible = true;
                 }
                 else
                 {
-                    lblDetailLastResult.Text = "-";
+                    lblDetailLastResult.Text = "";
+                    lblDetailLastResult.Visible = false;
                 }
 
-                // 13. Next Run
-                lblDetailNext.Text = "⏰ " + vm.NextRunDisplay;
+                // 7. Next Run & Schedule summary
+                if (job.Schedules != null && job.Schedules.Count > 0)
+                {
+                    var schedSummary = string.Join("; ", job.Schedules.Select(s => JobEditDialog.FormatScheduleDetail(s)));
+                    lblDetailNext.Text = $"{vm.NextRunDisplay} ({schedSummary})";
+                }
+                else
+                {
+                    lblDetailNext.Text = $"{vm.NextRunDisplay} ({Strings.ScheduleManualOnly})";
+                }
             }
             else
             {
@@ -1130,17 +964,13 @@ namespace FtpSysPro.Manager.UI
             lblDetailName.Text = Strings.NoJobSelected;
             lblDetailBadge.Text = "";
             lblDetailDesc.Visible = false;
-            lblDetailSourceSize.Text = "-";
             lblDetailSources.Text = "-";
-            lblDetailExcludes.Text = "-";
+            lblDetailSourceSize.Text = "-";
             lblDetailDest.Text = "-";
             lblDetailTransfer.Text = "-";
-            lblDetailIntegrity.Text = "-";
-            lblDetailSchedule.Text = "-";
-            lblDetailRetention.Text = "-";
-            lblDetailAlert.Text = "-";
             lblDetailLast.Text = "-";
-            lblDetailLastResult.Text = "-";
+            lblDetailLastResult.Text = "";
+            lblDetailLastResult.Visible = false;
             lblDetailNext.Text = "-";
         }
 
