@@ -71,8 +71,8 @@ namespace FtpSysPro.Manager.UI
             {
                 Dock = DockStyle.Fill,
                 ReadOnly = true,
-                BackColor = Color.FromArgb(18, 22, 30),
-                ForeColor = Color.FromArgb(220, 225, 235),
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(36, 41, 47),
                 Font = new Font("Consolas", 9.5F),
                 BorderStyle = BorderStyle.None
             };

@@ -309,5 +309,12 @@ namespace FtpSysPro.Core.Resources
         public static string ServiceStatusConnected => IsVi ? "Dịch vụ FtpSysProService: Đang hoạt động" : "FtpSysProService: Active (Running)";
         public static string ServiceStatusDisconnected => IsVi ? "Dịch vụ FtpSysProService: Mất kết nối / Đã dừng" : "FtpSysProService: Disconnected / Stopped";
         public static string ServiceStartPrompt => IsVi ? "Khởi động Dịch vụ" : "Start Service";
+
+        // Administrator Privilege
+        public static string AdminPromptTitle => IsVi ? "Yêu cầu quyền Quản trị viên (Administrator)" : "Administrator Privilege Required";
+        public static string AdminPromptMessage => IsVi
+            ? "Ứng dụng FTPSys Pro Manager cần quyền Quản trị viên (Administrator) để khởi động/dừng Windows Service và truy cập đầy đủ các tệp sao lưu hệ thống.\n\nBạn có muốn khởi chạy ứng dụng với quyền Administrator không?"
+            : "FTPSys Pro Manager requires Administrator privileges to manage the Windows Service and access system backup files.\n\nDo you want to run as Administrator?";
+        public static string AdministratorBadge => IsVi ? " (Quản trị viên)" : " (Administrator)";
     }
 }

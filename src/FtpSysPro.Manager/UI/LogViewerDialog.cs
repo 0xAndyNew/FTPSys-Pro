@@ -193,8 +193,9 @@ namespace FtpSysPro.Manager.UI
             {
                 Location = new Point(980, 8),
                 Width = 170,
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
                 Font = new Font("Segoe UI", 8.5F),
-                ForeColor = Color.Gray,
+                ForeColor = Color.FromArgb(140, 149, 159),
                 Text = Strings.SearchKeywords
             };
             txtSearch.GotFocus += (s, e) =>
@@ -309,12 +310,12 @@ namespace FtpSysPro.Manager.UI
                 chkAutoRefresh, chkAutoScroll, lblMatchCount
             });
 
-            // Center: RichTextBox for high performance log rendering
+            // Center: RichTextBox for high performance log rendering (Light Theme)
             txtLog = new RichTextBox
             {
                 Dock = DockStyle.Fill,
-                BackColor = Color.FromArgb(18, 22, 30),
-                ForeColor = Color.FromArgb(220, 225, 235),
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(36, 41, 47),
                 Font = new Font("Consolas", 9.5F),
                 ReadOnly = true,
                 WordWrap = false,
@@ -323,7 +324,11 @@ namespace FtpSysPro.Manager.UI
             };
 
             // Bottom Status Strip
-            statusStrip = new StatusStrip();
+            statusStrip = new StatusStrip
+            {
+                BackColor = Color.FromArgb(246, 248, 250),
+                ForeColor = Color.FromArgb(87, 96, 106)
+            };
             lblStatusFile = new ToolStripStatusLabel { Text = Strings.IsVi ? "Tệp nhật ký: (Chưa chọn)" : "Log file: (None selected)", Width = 380, TextAlign = ContentAlignment.MiddleLeft };
             lblStatusLines = new ToolStripStatusLabel { Text = Strings.IsVi ? "Hiển thị: 0 dòng" : "Lines: 0", Width = 150 };
             lblStatusSize = new ToolStripStatusLabel { Text = Strings.IsVi ? "Dung lượng: 0 B" : "Size: 0 B", Width = 150 };
@@ -586,7 +591,7 @@ namespace FtpSysPro.Manager.UI
                 {
                     if (filterByJob || levelIndex > 0 || !string.IsNullOrWhiteSpace(searchKeyword))
                     {
-                        AppendColorText((Strings.IsVi ? "(Không có dòng nhật ký vận hành nào phù hợp với bộ lọc đã chọn)" : "(No log entries match the selected filter)") + Environment.NewLine, Color.DarkGray);
+                        AppendColorText((Strings.IsVi ? "(Không có dòng nhật ký vận hành nào phù hợp với bộ lọc đã chọn)" : "(No log entries match the selected filter)") + Environment.NewLine, Color.FromArgb(87, 96, 106));
                     }
                 }
 
@@ -618,23 +623,26 @@ namespace FtpSysPro.Manager.UI
 
         private static Color DetermineLineColor(string line)
         {
+            if (string.IsNullOrWhiteSpace(line))
+                return Color.FromArgb(87, 96, 106);
+
             if (line.Contains("[ERR]") || line.Contains("[FTL]") || line.IndexOf("Exception", StringComparison.OrdinalIgnoreCase) >= 0 || line.Contains("Thất bại") || line.IndexOf("Failed", StringComparison.OrdinalIgnoreCase) >= 0)
             {
-                return Color.FromArgb(255, 115, 115); // Red / Pink
+                return Color.FromArgb(207, 34, 46); // Crimson Red
             }
             if (line.Contains("[WRN]") || line.Contains("Cảnh báo") || line.IndexOf("Warning", StringComparison.OrdinalIgnoreCase) >= 0)
             {
-                return Color.FromArgb(255, 200, 80); // Orange / Yellow
+                return Color.FromArgb(154, 103, 0); // Deep Amber / Orange
             }
             if (line.Contains("Hoàn tất") || line.Contains("Thành công") || line.Contains("Success"))
             {
-                return Color.FromArgb(130, 230, 140); // Soft Green
+                return Color.FromArgb(26, 127, 55); // Forest Green
             }
             if (line.Contains("[INF]"))
             {
-                return Color.FromArgb(215, 235, 255); // Soft Light Blue
+                return Color.FromArgb(9, 105, 218); // Royal Blue
             }
-            return Color.FromArgb(220, 225, 235); // Clean White/Gray
+            return Color.FromArgb(36, 41, 47); // Dark Charcoal Text
         }
 
         private void AppendColorText(string text, Color color)

@@ -97,7 +97,7 @@ namespace FtpSysPro.Manager.UI
 
         private void InitializeComponents()
         {
-            Text = $"{Strings.AppName} v{Strings.AppVersion}";
+            Text = $"{Strings.AppName} v{Strings.AppVersion}" + (Program.IsAdministrator() ? Strings.AdministratorBadge : "");
             Size = new Size(1150, 650);
             MinimumSize = new Size(950, 520);
             StartPosition = FormStartPosition.CenterScreen;
@@ -523,7 +523,7 @@ namespace FtpSysPro.Manager.UI
             }
 
             // Window Title
-            Text = $"{Strings.AppName} v{Strings.AppVersion}";
+            Text = $"{Strings.AppName} v{Strings.AppVersion}" + (Program.IsAdministrator() ? Strings.AdministratorBadge : "");
 
             // ToolStrip buttons
             if (btnAdd != null) btnAdd.Text = "➕ " + Strings.Add;
