@@ -20,6 +20,8 @@ namespace FtpSysPro.Manager.UI
         private BackupJob _currentJob;
 
         private Panel pnlTop;
+        private TableLayoutPanel tblRow1;
+        private FlowLayoutPanel flowRow2;
         private Label lblJobTitle;
         private Label lblLvl;
         private ComboBox cboLevel;
@@ -39,6 +41,7 @@ namespace FtpSysPro.Manager.UI
         private ToolStripStatusLabel lblStatusFile;
         private ToolStripStatusLabel lblStatusLines;
         private ToolStripStatusLabel lblStatusSize;
+        private ToolStripStatusLabel lblStatusEncoding;
         private ToolStripStatusLabel lblStatusUpdated;
 
         private Timer timerAutoRefresh;
@@ -79,7 +82,7 @@ namespace FtpSysPro.Manager.UI
             };
 
             // Tier 1: Responsive TableLayoutPanel
-            var tblRow1 = new TableLayoutPanel
+            tblRow1 = new TableLayoutPanel
             {
                 Dock = DockStyle.Top,
                 Height = 26,
@@ -90,7 +93,7 @@ namespace FtpSysPro.Manager.UI
             };
             tblRow1.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize)); // Job Title Pill Badge
             tblRow1.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize)); // Filter label
-            tblRow1.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 105F)); // Level Dropdown
+            tblRow1.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 95F)); // Level Dropdown
             tblRow1.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F)); // Search box (responsive stretch)
             tblRow1.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize)); // Match count label
             tblRow1.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
@@ -104,7 +107,7 @@ namespace FtpSysPro.Manager.UI
                 AutoSize = true,
                 Anchor = AnchorStyles.Left,
                 Padding = new Padding(6, 3, 6, 3),
-                Margin = new Padding(0, 0, 8, 0)
+                Margin = new Padding(0, 0, 6, 0)
             };
 
             lblLvl = new Label
@@ -123,7 +126,7 @@ namespace FtpSysPro.Manager.UI
                 DropDownStyle = ComboBoxStyle.DropDownList,
                 Font = new Font("Segoe UI", 8.5F),
                 BackColor = Color.White,
-                Margin = new Padding(0, 0, 8, 0)
+                Margin = new Padding(0, 0, 6, 0)
             };
             cboLevel.Items.AddRange(new object[] {
                 Strings.AllLevels,
@@ -144,7 +147,7 @@ namespace FtpSysPro.Manager.UI
                 Font = new Font("Segoe UI", 8.5F),
                 ForeColor = Color.FromArgb(148, 163, 184),
                 Text = "🔍 " + Strings.SearchKeywords,
-                Margin = new Padding(0, 0, 8, 0),
+                Margin = new Padding(0, 0, 6, 0),
                 BorderStyle = BorderStyle.FixedSingle
             };
             txtSearch.GotFocus += (s, e) =>
@@ -190,18 +193,18 @@ namespace FtpSysPro.Manager.UI
             tblRow1.Controls.Add(txtSearch, 3, 0);
             tblRow1.Controls.Add(lblMatchCount, 4, 0);
 
-            // Tier 2: FlowLayoutPanel for actions and auto-update toggles
-            var flowRow2 = new FlowLayoutPanel
+            // Tier 2: FlowLayoutPanel for actions and auto-update toggles (WrapContents enabled for responsive flow)
+            flowRow2 = new FlowLayoutPanel
             {
                 Dock = DockStyle.Top,
                 Height = 26,
-                WrapContents = false,
+                WrapContents = true,
                 AutoScroll = false,
                 Margin = new Padding(0, 3, 0, 0),
                 Padding = new Padding(0)
             };
 
-            btnRefresh = CreateModernButton("↻ " + (Strings.IsVi ? "Làm mới" : "Refresh"), 80, (s, e) =>
+            btnRefresh = CreateModernButton("↻ " + (Strings.IsVi ? "Làm mới" : "Refresh"), 72, (s, e) =>
             {
                 if (_currentJob != null)
                 {
@@ -211,11 +214,11 @@ namespace FtpSysPro.Manager.UI
                 LoadCurrentLog(appendOnly: false);
             });
 
-            btnOpenInNotepad = CreateModernButton("📝 Notepad", 88, (s, e) => OpenActiveLogInNotepad());
+            btnOpenInNotepad = CreateModernButton("📝 Notepad", 76, (s, e) => OpenActiveLogInNotepad());
 
-            btnOpenFolder = CreateModernButton("📁 " + (Strings.IsVi ? "Thư mục" : "Folder"), 80, (s, e) => OpenLogDirectoryInExplorer());
+            btnOpenFolder = CreateModernButton("📁 " + (Strings.IsVi ? "Thư mục" : "Folder"), 72, (s, e) => OpenLogDirectoryInExplorer());
 
-            btnClear = CreateModernButton("🗑 " + (Strings.IsVi ? "Xóa" : "Clear"), 64, (s, e) => txtLog.Clear());
+            btnClear = CreateModernButton("🗑 " + (Strings.IsVi ? "Xóa" : "Clear"), 54, (s, e) => txtLog.Clear());
 
             chkWordWrap = CreateModernCheckBox("↵ " + (Strings.IsVi ? "Xuống dòng" : "Word wrap"), true, (s, e) =>
             {
@@ -223,9 +226,9 @@ namespace FtpSysPro.Manager.UI
                 txtLog.ScrollBars = chkWordWrap.Checked ? RichTextBoxScrollBars.Vertical : RichTextBoxScrollBars.Both;
             });
 
-            chkAutoScroll = CreateModernCheckBox("↓ " + (Strings.IsVi ? "Tự cuộn" : "Auto scroll"), true);
+            chkAutoScroll = CreateModernCheckBox("↓ " + (Strings.IsVi ? "Cuộn" : "Scroll"), true);
 
-            chkAutoRefresh = CreateModernCheckBox("⚡ " + (Strings.IsVi ? "Tự làm mới (3s)" : "Auto refresh (3s)"), true);
+            chkAutoRefresh = CreateModernCheckBox("⚡ " + (Strings.IsVi ? "Tự làm mới (3s)" : "Auto (3s)"), true);
 
             flowRow2.Controls.AddRange(new Control[] {
                 btnRefresh, btnOpenInNotepad, btnOpenFolder, btnClear,
@@ -235,20 +238,21 @@ namespace FtpSysPro.Manager.UI
             pnlTop.Controls.Add(flowRow2);
             pnlTop.Controls.Add(tblRow1);
 
-            // Center: RichTextBox for high performance log rendering (Light Theme with WordWrap enabled)
+            // Center: RichTextBox for authentic Notepad++ log rendering (Light Theme with WordWrap enabled)
             txtLog = new RichTextBox
             {
                 Dock = DockStyle.Fill,
                 BackColor = Color.White,
                 ForeColor = Color.FromArgb(30, 41, 59),
-                Font = new Font("Consolas", 9.5F),
+                Font = new Font("Consolas", 9.75F),
                 ReadOnly = true,
                 WordWrap = true,
                 ScrollBars = RichTextBoxScrollBars.Vertical,
                 BorderStyle = BorderStyle.None
             };
+            txtLog.HandleCreated += (s, e) => SetRichTextBoxMargins(txtLog, 6, 6);
 
-            // Bottom Status Strip
+            // Bottom Status Strip (Notepad++ Status Style)
             statusStrip = new StatusStrip
             {
                 BackColor = Color.FromArgb(248, 250, 252),
@@ -256,18 +260,25 @@ namespace FtpSysPro.Manager.UI
                 Font = new Font("Segoe UI", 8.5F),
                 SizingGrip = false
             };
-            lblStatusFile = new ToolStripStatusLabel { Text = Strings.IsVi ? "Tệp nhật ký: (Chưa chọn Job)" : "Log file: (No job selected)", Width = 340, TextAlign = ContentAlignment.MiddleLeft };
-            lblStatusLines = new ToolStripStatusLabel { Text = Strings.IsVi ? "Hiển thị: 0 dòng" : "Lines: 0", Width = 130 };
-            lblStatusSize = new ToolStripStatusLabel { Text = Strings.IsVi ? "Dung lượng: 0 B" : "Size: 0 B", Width = 130 };
-            lblStatusUpdated = new ToolStripStatusLabel { Text = Strings.IsVi ? "Cập nhật: -" : "Updated: -", Spring = true, TextAlign = ContentAlignment.MiddleRight };
+            lblStatusFile = new ToolStripStatusLabel { Text = Strings.IsVi ? "Tệp: (Chưa chọn Job)" : "File: (No job selected)", Spring = true, TextAlign = ContentAlignment.MiddleLeft };
+            lblStatusLines = new ToolStripStatusLabel { Text = Strings.IsVi ? "0 dòng" : "0 lines", AutoSize = true };
+            lblStatusSize = new ToolStripStatusLabel { Text = "0 B", AutoSize = true };
+            lblStatusEncoding = new ToolStripStatusLabel { Text = "UTF-8", AutoSize = true, ForeColor = Color.FromArgb(100, 116, 139) };
+            lblStatusUpdated = new ToolStripStatusLabel { Text = Strings.IsVi ? "Cập nhật: -" : "Updated: -", AutoSize = true };
 
             statusStrip.Items.AddRange(new ToolStripItem[] {
-                lblStatusFile, lblStatusLines, lblStatusSize, lblStatusUpdated
+                lblStatusFile, lblStatusLines, lblStatusSize, lblStatusEncoding, lblStatusUpdated
             });
 
             Controls.Add(pnlTop);
             Controls.Add(statusStrip);
             Controls.Add(txtLog);
+            txtLog.BringToFront();
+
+            // Responsive auto-fit listeners for all window and panel dimensions
+            pnlTop.SizeChanged += (s, e) => UpdateTopPanelLayout();
+            this.SizeChanged += (s, e) => UpdateTopPanelLayout();
+            this.Layout += (s, e) => UpdateTopPanelLayout();
 
             // Debounce timer for search input (350 ms)
             _searchTimer = new Timer { Interval = 350 };
@@ -288,6 +299,71 @@ namespace FtpSysPro.Manager.UI
                 }
             };
             timerAutoRefresh.Start();
+        }
+
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        private static extern IntPtr SendMessage(IntPtr hWnd, int msg, IntPtr wp, IntPtr lp);
+        private const int EM_SETMARGINS = 0xd3;
+        private const int EC_LEFTMARGIN = 0x1;
+        private const int EC_RIGHTMARGIN = 0x2;
+
+        private static void SetRichTextBoxMargins(RichTextBox rtb, int left, int right)
+        {
+            try
+            {
+                if (rtb.IsHandleCreated)
+                {
+                    SendMessage(rtb.Handle, EM_SETMARGINS, (IntPtr)(EC_LEFTMARGIN | EC_RIGHTMARGIN), (IntPtr)((right << 16) | left));
+                }
+            }
+            catch { }
+        }
+
+        private void UpdateTopPanelLayout()
+        {
+            if (pnlTop == null || tblRow1 == null || flowRow2 == null) return;
+
+            pnlTop.SuspendLayout();
+
+            int availableWidth = pnlTop.ClientSize.Width - pnlTop.Padding.Horizontal;
+
+            // 1. Compact / adapt Tier 1 controls based on width
+            if (availableWidth < 460)
+            {
+                lblLvl.Visible = false;
+                cboLevel.Width = 78;
+                lblMatchCount.Visible = availableWidth > 320;
+            }
+            else
+            {
+                lblLvl.Visible = true;
+                cboLevel.Width = 95;
+                lblMatchCount.Visible = true;
+            }
+
+            // Compact job badge if very tight
+            if (_currentJob != null)
+            {
+                int maxLen = availableWidth < 420 ? 14 : (availableWidth < 600 ? 22 : 40);
+                string jName = _currentJob.Name ?? _currentJob.Id ?? "Job";
+                if (jName.Length > maxLen)
+                    jName = jName.Substring(0, maxLen - 2) + "..";
+                lblJobTitle.Text = $"📌 {jName}";
+            }
+
+            // 2. Responsive wrapping of Tier 2 (FlowLayoutPanel)
+            int flowWidth = Math.Max(120, availableWidth);
+            Size preferred = flowRow2.GetPreferredSize(new Size(flowWidth, 0));
+            int flowHeight = Math.Max(26, preferred.Height);
+            flowRow2.Height = flowHeight;
+
+            int neededHeight = tblRow1.Height + flowHeight + pnlTop.Padding.Vertical + 6;
+            if (pnlTop.Height != neededHeight && neededHeight >= 56)
+            {
+                pnlTop.Height = neededHeight;
+            }
+
+            pnlTop.ResumeLayout(true);
         }
 
         private static Button CreateModernButton(string text, int width, EventHandler onClick)
@@ -502,7 +578,7 @@ namespace FtpSysPro.Manager.UI
                             }
 
                             matchedLinesCount++;
-                            AppendNotepadPlusPlusLine(matchedLinesCount, line);
+                            AppendNotepadPlusPlusLine(matchedLinesCount, line, keyword);
                         }
 
                         if (matchedLinesCount == 0 && !appendOnly)
@@ -510,7 +586,7 @@ namespace FtpSysPro.Manager.UI
                             txtLog.Clear();
                             AppendColorText("--------------------------------------------------------------------------------" + Environment.NewLine, Color.FromArgb(208, 215, 222));
                             AppendColorText($"  NOTEPAD++ JOB LOG VIEWER - FTPSYS PRO" + Environment.NewLine, Color.FromArgb(9, 105, 218));
-                            AppendColorText($"  Job: {_currentJob.Name}  |  File: {Path.GetFileName(logFilePath)}" + Environment.NewLine, Color.FromArgb(36, 41, 47));
+                            AppendColorText($"  Job: {_currentJob.Name}  |  File: {Path.GetFileName(logFilePath)}  |  Format: UTF-8" + Environment.NewLine, Color.FromArgb(36, 41, 47));
                             AppendColorText("--------------------------------------------------------------------------------" + Environment.NewLine, Color.FromArgb(208, 215, 222));
                             if (rawLineNumber > 0)
                             {
@@ -560,10 +636,11 @@ namespace FtpSysPro.Manager.UI
             }
         }
 
-        private void AppendNotepadPlusPlusLine(int lineNumber, string line)
+        private void AppendNotepadPlusPlusLine(int lineNumber, string line, string keyword = null)
         {
-            // 1. Notepad++ gutter line numbers: 0001 | (Steel Gray)
-            AppendColorText($"{lineNumber:D4} | ", Color.FromArgb(148, 163, 184));
+            // 1. Notepad++ gutter line numbers: Right-aligned padded number (128,128,128) + separator (203,213,225)
+            AppendColorText($"{lineNumber,4} ", Color.FromArgb(128, 128, 128));
+            AppendColorText("| ", Color.FromArgb(203, 213, 225));
 
             if (string.IsNullOrWhiteSpace(line))
             {
@@ -584,7 +661,7 @@ namespace FtpSysPro.Manager.UI
                 {
                     cleanTimestamp = dt.ToString("yyyy-MM-dd HH:mm:ss");
                 }
-                AppendColorText(cleanTimestamp + " ", Color.FromArgb(100, 116, 139));
+                AppendColorText(cleanTimestamp + " ", Color.FromArgb(92, 99, 112));
 
                 // Level tag [INF], [WRN], [ERR]
                 string levelTag = line.Substring(bracketIdx, bracketEnd - bracketIdx + 1);
@@ -594,7 +671,7 @@ namespace FtpSysPro.Manager.UI
                 else if (levelTag.Contains("WRN"))
                     levelCol = Color.FromArgb(180, 83, 9); // Amber / Warning
                 else if (levelTag.Contains("DBG") || levelTag.Contains("VRB"))
-                    levelCol = Color.FromArgb(148, 163, 184); // Slate Gray
+                    levelCol = Color.FromArgb(100, 116, 139); // Slate Gray
 
                 AppendColorText(levelTag + " ", levelCol);
 
@@ -612,13 +689,56 @@ namespace FtpSysPro.Manager.UI
                 }
 
                 Color msgCol = DetermineLineColor(line);
-                AppendColorText(message + Environment.NewLine, msgCol);
+                AppendMessageWithHighlight(message, msgCol, keyword);
             }
             else
             {
                 Color col = DetermineLineColor(line);
-                AppendColorText(line + Environment.NewLine, col);
+                AppendMessageWithHighlight(line, col, keyword);
             }
+        }
+
+        private void AppendMessageWithHighlight(string message, Color defaultColor, string keyword)
+        {
+            if (string.IsNullOrEmpty(keyword))
+            {
+                AppendColorText(message + Environment.NewLine, defaultColor);
+                return;
+            }
+
+            int startIdx = 0;
+            while (startIdx < message.Length)
+            {
+                int matchIdx = message.IndexOf(keyword, startIdx, StringComparison.OrdinalIgnoreCase);
+                if (matchIdx < 0)
+                {
+                    AppendColorText(message.Substring(startIdx), defaultColor);
+                    break;
+                }
+
+                if (matchIdx > startIdx)
+                {
+                    AppendColorText(message.Substring(startIdx, matchIdx - startIdx), defaultColor);
+                }
+
+                // Highlight match with authentic Notepad++ yellow marker
+                string matchedWord = message.Substring(matchIdx, keyword.Length);
+                AppendHighlightText(matchedWord, Color.FromArgb(15, 23, 42), Color.FromArgb(254, 240, 138));
+
+                startIdx = matchIdx + keyword.Length;
+            }
+
+            AppendColorText(Environment.NewLine, defaultColor);
+        }
+
+        private void AppendHighlightText(string text, Color foreColor, Color backColor)
+        {
+            txtLog.SelectionStart = txtLog.TextLength;
+            txtLog.SelectionLength = 0;
+            txtLog.SelectionColor = foreColor;
+            txtLog.SelectionBackColor = backColor;
+            txtLog.AppendText(text);
+            txtLog.SelectionBackColor = Color.White;
         }
 
         private static Color DetermineLineColor(string line)
@@ -658,6 +778,7 @@ namespace FtpSysPro.Manager.UI
             txtLog.SelectionStart = txtLog.TextLength;
             txtLog.SelectionLength = 0;
             txtLog.SelectionColor = color;
+            txtLog.SelectionBackColor = Color.White;
             txtLog.AppendText(text);
             txtLog.SelectionColor = txtLog.ForeColor;
         }
@@ -725,12 +846,15 @@ namespace FtpSysPro.Manager.UI
                 txtSearch.Text = Strings.SearchKeywords;
             }
 
-            btnRefresh.Text = "↻ " + Strings.Refresh;
-            btnOpenInNotepad.Text = Strings.OpenInNotepad;
-            btnOpenFolder.Text = Strings.OpenLogFolder;
-            btnClear.Text = Strings.ClearScreen;
-            chkAutoRefresh.Text = Strings.AutoRefresh;
-            chkAutoScroll.Text = Strings.AutoScroll;
+            btnRefresh.Text = "↻ " + (Strings.IsVi ? "Làm mới" : "Refresh");
+            btnOpenInNotepad.Text = "📝 Notepad";
+            btnOpenFolder.Text = "📁 " + (Strings.IsVi ? "Thư mục" : "Folder");
+            btnClear.Text = "🗑 " + (Strings.IsVi ? "Xóa" : "Clear");
+            chkWordWrap.Text = "↵ " + (Strings.IsVi ? "Xuống dòng" : "Word wrap");
+            chkAutoScroll.Text = "↓ " + (Strings.IsVi ? "Cuộn" : "Scroll");
+            chkAutoRefresh.Text = "⚡ " + (Strings.IsVi ? "Tự làm mới (3s)" : "Auto (3s)");
+
+            UpdateTopPanelLayout();
 
             if (_currentJob != null)
             {

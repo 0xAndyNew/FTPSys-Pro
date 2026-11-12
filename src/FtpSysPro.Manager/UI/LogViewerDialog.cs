@@ -593,6 +593,8 @@ namespace FtpSysPro.Manager.UI
                             {
                                 matchingLines++;
                                 Color color = DetermineLineColor(line);
+                                AppendColorText($"{matchingLines,4} ", Color.FromArgb(128, 128, 128));
+                                AppendColorText("| ", Color.FromArgb(203, 213, 225));
                                 AppendColorText(line + Environment.NewLine, color);
                             }
                         }

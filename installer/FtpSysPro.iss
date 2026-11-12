@@ -72,33 +72,32 @@ Filename: "sc.exe"; Parameters: "stop FtpSysProService"; Flags: runhidden; RunOn
 Filename: "{app}\{#MyServiceExeName}"; Parameters: "--uninstall"; Flags: runhidden; RunOnceId: "UninstallService"
 
 [Code]
-var
-  RunAsAdminCheckbox: TNewCheckBox;
-
 procedure RunListClick(Sender: TObject);
 begin
-  if (WizardForm.RunList <> nil) and (RunAsAdminCheckbox <> nil) then
+  if (WizardForm.RunList <> nil) and (WizardForm.RunList.Items.Count > 1) then
   begin
-    RunAsAdminCheckbox.Enabled := WizardForm.RunList.Checked[0];
+    WizardForm.RunList.ItemEnabled[1] := WizardForm.RunList.Checked[0];
   end;
 end;
 
 procedure InitializeWizard();
 begin
-  RunAsAdminCheckbox := TNewCheckBox.Create(WizardForm);
-  RunAsAdminCheckbox.Parent := WizardForm.FinishedPage;
-  RunAsAdminCheckbox.Left := WizardForm.RunList.Left;
-  RunAsAdminCheckbox.Top := WizardForm.RunList.Top + WizardForm.RunList.Height + ScaleY(6);
-  RunAsAdminCheckbox.Width := WizardForm.RunList.Width;
-  RunAsAdminCheckbox.Height := ScaleY(22);
-  RunAsAdminCheckbox.Caption := 'Chạy với quyền Quản trị viên (Run as administrator)';
-  RunAsAdminCheckbox.Checked := False;
+  WizardForm.RunList.AddCheckBox('Chạy với quyền Quản trị viên (Run as administrator)', '', 0, False, True, False, True, nil);
   WizardForm.RunList.OnClickCheck := @RunListClick;
+end;
+
+procedure CurPageChanged(CurPageID: Integer);
+begin
+  if CurPageID = wpFinished then
+  begin
+    if (WizardForm.RunList <> nil) and (WizardForm.RunList.Items.Count > 1) then
+      WizardForm.RunList.ItemEnabled[1] := WizardForm.RunList.Checked[0];
+  end;
 end;
 
 function GetLaunchParameters(Param: String): String;
 begin
-  if (WizardForm.RunList <> nil) and (WizardForm.RunList.Checked[0]) and (RunAsAdminCheckbox <> nil) and (RunAsAdminCheckbox.Checked) then
+  if (WizardForm.RunList <> nil) and (WizardForm.RunList.Items.Count > 1) and (WizardForm.RunList.Checked[0]) and (WizardForm.RunList.Checked[1]) then
     Result := '--admin'
   else
     Result := '';
