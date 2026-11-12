@@ -100,6 +100,19 @@ namespace FtpSysPro.Core.Destinations
                 if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
                     Directory.CreateDirectory(dir);
 
+                if (File.Exists(target))
+                {
+                    try
+                    {
+                        var attrs = File.GetAttributes(target);
+                        if ((attrs & FileAttributes.ReadOnly) == FileAttributes.ReadOnly)
+                        {
+                            File.SetAttributes(target, attrs & ~FileAttributes.ReadOnly);
+                        }
+                    }
+                    catch { }
+                }
+
                 using (var source = new FileStream(localFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete))
                 using (var dest = new FileStream(target, FileMode.Create, FileAccess.Write, FileShare.None))
                 {
@@ -270,6 +283,12 @@ namespace FtpSysPro.Core.Destinations
             IProgress<long> progress,
             CancellationToken cancellationToken)
         {
+            if (source.CanSeek && source.Length == 0)
+            {
+                progress?.Report(0);
+                return;
+            }
+
             byte[] buffer = new byte[81920]; // 80 KB
             long totalRead = 0;
             int bytesRead;

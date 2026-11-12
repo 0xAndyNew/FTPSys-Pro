@@ -864,7 +864,8 @@ namespace FtpSysPro.Manager.UI
                             progressBar.Style = ProgressBarStyle.Continuous;
                             progressBar.Value = percent;
 
-                            string phase = string.IsNullOrEmpty(first.CurrentPhase) ? "" : $" ({first.CurrentPhase})";
+                            string phaseName = FormatPhase(first.CurrentPhase);
+                            string phase = string.IsNullOrEmpty(phaseName) ? "" : $" ({phaseName})";
                             lblProgressPercent.Visible = true;
                             lblProgressPercent.Text = $"{percent}%{phase}";
                             lblProgressPercent.ToolTipText = $"{first.JobName}: {percent}%{phase} - {JobViewModel.FormatBytes(first.ProcessedBytes)} / {JobViewModel.FormatBytes(first.TotalBytes)}";
@@ -1265,6 +1266,28 @@ namespace FtpSysPro.Manager.UI
             }
 
             operationLogControl?.CleanUp();
+        }
+
+        private static string FormatPhase(string phase)
+        {
+            if (string.IsNullOrWhiteSpace(phase)) return "";
+            if (Strings.IsVi)
+            {
+                switch (phase)
+                {
+                    case "Checking Disk Space": return "Kiểm tra dung lượng";
+                    case "Scanning": return "Đang quét dữ liệu";
+                    case "Uploading": return "Đang sao lưu";
+                    case "Compressing": return "Đang nén ZIP";
+                    case "Calculating Checksum": return "Tính mã băm";
+                    case "Verifying Checksum": return "Xác minh dữ liệu";
+                    case "Finalizing": return "Hoàn tất";
+                    case "VSS Snapshot": return "Chụp ảnh VSS";
+                    case "Applying Retention": return "Dọn dẹp bản cũ";
+                    default: return phase;
+                }
+            }
+            return phase;
         }
     }
 

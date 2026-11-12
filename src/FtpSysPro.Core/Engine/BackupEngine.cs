@@ -170,11 +170,14 @@ namespace FtpSysPro.Core.Engine
                     progressInfo.CurrentPhase = "Checking Disk Space";
                     progress?.Report(progressInfo);
 
-                    // Check Temp directory drive space
-                    var tempSpaceCheck = DiskSpaceChecker.CheckFreeSpace(tempDirForRun, changes.TotalBytesToBackup);
-                    if (!tempSpaceCheck.IsSufficient)
+                    // Check Temp directory drive space only if compression is enabled (as zip is built in temp)
+                    if (job.Compression.Enabled)
                     {
-                        throw new InvalidOperationException($"Không đủ dung lượng trống trong thư mục Temp ({tempDirForRun}): {tempSpaceCheck.ErrorMessage}");
+                        var tempSpaceCheck = DiskSpaceChecker.CheckFreeSpace(tempDirForRun, changes.TotalBytesToBackup);
+                        if (!tempSpaceCheck.IsSufficient)
+                        {
+                            throw new InvalidOperationException($"Không đủ dung lượng trống trong thư mục Temp ({tempDirForRun}): {tempSpaceCheck.ErrorMessage}");
+                        }
                     }
 
                     // Check Destination drive space if local/UNC
@@ -216,18 +219,12 @@ namespace FtpSysPro.Core.Engine
                     FileCount = filesToBackup.Count
                 };
 
-                // Step 4.5: Configure integrity parameters
+                // Step 4.5: Configure integrity parameters and initialize manifest (< 1ms instant memory setup)
                 int retryCount = job.Integrity?.NetworkRetryCount ?? 3;
                 bool verifySha = job.Integrity?.VerifySha256Checksum ?? true;
 
                 foreach (var f in filesToBackup)
                 {
-                    string sha = string.Empty;
-                    if (verifySha && !job.Compression.Enabled)
-                    {
-                        try { sha = ChecksumVerifier.ComputeSha256(f.FullPath, cancellationToken); } catch { }
-                    }
-
                     manifest.Files.Add(new ManifestFileEntry
                     {
                         SourceRoot = f.SourceRoot,
@@ -235,9 +232,14 @@ namespace FtpSysPro.Core.Engine
                         SizeBytes = f.SizeBytes,
                         LastWriteTimeUtc = f.LastWriteTimeUtc,
                         StoredRelativePath = f.RelativePath,
-                        Sha256 = sha
+                        Sha256 = string.Empty
                     });
                 }
+
+                // Immediately transition from Checking Disk Space to active phase so UI reflects progress instantly
+                progressInfo.CurrentPhase = job.Compression.Enabled ? "Compressing" : "Uploading";
+                progressInfo.PercentComplete = 0.0;
+                progress?.Report(progressInfo);
 
                 // If nothing to backup and incremental with no deleted files
                 if (filesToBackup.Count == 0 && changes.DeletedRelativePaths.Count == 0 && effectiveType == BackupType.Incremental)
@@ -502,6 +504,10 @@ namespace FtpSysPro.Core.Engine
                 fileIndex++;
                 progressInfo.CurrentFile = file.RelativePath;
                 progressInfo.ProcessedFiles = fileIndex;
+                progressInfo.CurrentPhase = "Uploading";
+                if (progressInfo.TotalBytes > 0)
+                    progressInfo.PercentComplete = Math.Min(100.0, (double)totalBytesUploaded / progressInfo.TotalBytes * 100.0);
+                progress?.Report(progressInfo);
 
                 var remoteFilePath = $"{setRemoteDir}/{file.RelativePath.Replace('\\', '/')}";
 
@@ -526,22 +532,29 @@ namespace FtpSysPro.Core.Engine
                     // Verify file checksum after upload if enabled
                     if (verifySha256)
                     {
+                        var localSha = ChecksumVerifier.ComputeSha256(file.FullPath, cancellationToken);
                         var manifestEntry = manifest?.Files.Find(x => x.RelativePath == file.RelativePath);
-                        if (manifestEntry != null && !string.IsNullOrEmpty(manifestEntry.Sha256))
+                        if (manifestEntry != null)
                         {
-                            using (var remoteStream = await destination.OpenReadStreamAsync(remoteFilePath, cancellationToken))
+                            manifestEntry.Sha256 = localSha;
+                        }
+
+                        using (var remoteStream = await destination.OpenReadStreamAsync(remoteFilePath, cancellationToken))
+                        {
+                            var remoteSha = await ChecksumVerifier.ComputeSha256Async(remoteStream, cancellationToken);
+                            if (!ChecksumVerifier.VerifyChecksum(localSha, remoteSha))
                             {
-                                var remoteSha = await ChecksumVerifier.ComputeSha256Async(remoteStream, cancellationToken);
-                                if (!ChecksumVerifier.VerifyChecksum(manifestEntry.Sha256, remoteSha))
-                                {
-                                    throw new InvalidOperationException($"Checksum verification failed for '{file.RelativePath}'. " +
-                                        $"Nguồn ({manifestEntry.Sha256}) không khớp với đích ({remoteSha}).");
-                                }
+                                throw new InvalidOperationException($"Checksum verification failed for '{file.RelativePath}'. " +
+                                    $"Nguồn ({localSha}) không khớp với đích ({remoteSha}).");
                             }
                         }
                     }
 
                     totalBytesUploaded += file.SizeBytes;
+                    progressInfo.ProcessedBytes = totalBytesUploaded;
+                    if (progressInfo.TotalBytes > 0)
+                        progressInfo.PercentComplete = Math.Min(100.0, (double)totalBytesUploaded / progressInfo.TotalBytes * 100.0);
+                    progress?.Report(progressInfo);
                 }
                 catch (OperationCanceledException)
                 {

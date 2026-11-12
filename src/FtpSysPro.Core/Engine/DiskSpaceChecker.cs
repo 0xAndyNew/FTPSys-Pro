@@ -30,6 +30,33 @@ namespace FtpSysPro.Core.Engine
 
             try
             {
+                // Run in a background task with 3-second timeout to prevent hangs on slow/network drives
+                var task = System.Threading.Tasks.Task.Run(() => InternalCheckFreeSpace(directoryPath, requiredBytes, safetyMarginRatio));
+                if (task.Wait(3000))
+                {
+                    return task.Result;
+                }
+                else
+                {
+                    result.IsSufficient = true;
+                    result.ErrorMessage = "Kiểm tra dung lượng ổ đĩa vượt quá thời gian chờ (3s). Bỏ qua và tiếp tục.";
+                    return result;
+                }
+            }
+            catch (Exception ex)
+            {
+                result.IsSufficient = true;
+                result.ErrorMessage = "Không thể kiểm tra dung lượng ổ đĩa: " + ex.Message;
+                return result;
+            }
+        }
+
+        private static DiskSpaceCheckResult InternalCheckFreeSpace(string directoryPath, long requiredBytes, double safetyMarginRatio)
+        {
+            var result = new DiskSpaceCheckResult();
+
+            try
+            {
                 // Ensure directory or parent exists to find root
                 var fullPath = Path.GetFullPath(directoryPath);
                 var root = Path.GetPathRoot(fullPath);
