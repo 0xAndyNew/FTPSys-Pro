@@ -19,8 +19,21 @@ namespace FtpSysPro.Core.Models
         public int BackedUpFiles { get; set; }
         public long BackedUpBytes { get; set; }
         public int DeletedFiles { get; set; }
-        public int WarningCount { get; set; }
-        public int ErrorCount { get; set; }
+
+        private int _warningCount;
+        private int _errorCount;
+
+        public int WarningCount
+        {
+            get => Math.Max(_warningCount, Warnings?.Count ?? 0);
+            set => _warningCount = value;
+        }
+
+        public int ErrorCount
+        {
+            get => Math.Max(_errorCount, Errors?.Count ?? 0);
+            set => _errorCount = value;
+        }
 
         public string BackupSetName { get; set; } = string.Empty;
         public string ManifestPathOnDestination { get; set; } = string.Empty;

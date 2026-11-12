@@ -110,8 +110,8 @@ namespace FtpSysPro.Manager.UI
 
             cboLogFiles = new ComboBox
             {
-                Location = new Point(78, 8),
-                Width = 210,
+                Location = new Point(76, 8),
+                Width = 180,
                 DropDownStyle = ComboBoxStyle.DropDownList
             };
             cboLogFiles.SelectedIndexChanged += (s, e) =>
@@ -123,7 +123,7 @@ namespace FtpSysPro.Manager.UI
             lblJob = new Label
             {
                 Text = Strings.FilterJob,
-                Location = new Point(296, 11),
+                Location = new Point(264, 11),
                 AutoSize = true,
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
                 ForeColor = Color.FromArgb(50, 60, 80)
@@ -131,8 +131,8 @@ namespace FtpSysPro.Manager.UI
 
             cboJobFilter = new ComboBox
             {
-                Location = new Point(346, 8),
-                Width = 155,
+                Location = new Point(340, 8),
+                Width = 140,
                 DropDownStyle = ComboBoxStyle.DropDownList
             };
             cboJobFilter.SelectedIndexChanged += (s, e) =>
@@ -144,7 +144,7 @@ namespace FtpSysPro.Manager.UI
             lblLvl = new Label
             {
                 Text = Strings.FilterLevel,
-                Location = new Point(509, 11),
+                Location = new Point(488, 11),
                 AutoSize = true,
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
                 ForeColor = Color.FromArgb(50, 60, 80)
@@ -152,8 +152,8 @@ namespace FtpSysPro.Manager.UI
 
             cboLevel = new ComboBox
             {
-                Location = new Point(555, 8),
-                Width = 110,
+                Location = new Point(532, 8),
+                Width = 98,
                 DropDownStyle = ComboBoxStyle.DropDownList
             };
             cboLevel.Items.AddRange(new object[] {
@@ -171,8 +171,9 @@ namespace FtpSysPro.Manager.UI
 
             txtSearch = new TextBox
             {
-                Location = new Point(673, 8),
-                Width = 160,
+                Location = new Point(638, 8),
+                Width = 150,
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
                 ForeColor = Color.DarkGray,
                 Text = Strings.SearchKeywords
             };
@@ -206,7 +207,7 @@ namespace FtpSysPro.Manager.UI
             {
                 Text = "↻ " + Strings.Refresh,
                 Location = new Point(8, 42),
-                Size = new Size(80, 27),
+                Size = new Size(76, 27),
                 BackColor = Color.White,
                 FlatStyle = FlatStyle.System
             };
@@ -220,8 +221,8 @@ namespace FtpSysPro.Manager.UI
             btnOpenInNotepad = new Button
             {
                 Text = Strings.OpenInNotepad,
-                Location = new Point(92, 42),
-                Size = new Size(125, 27),
+                Location = new Point(88, 42),
+                Size = new Size(120, 27),
                 BackColor = Color.White,
                 FlatStyle = FlatStyle.System
             };
@@ -230,8 +231,8 @@ namespace FtpSysPro.Manager.UI
             btnOpenFolder = new Button
             {
                 Text = Strings.OpenLogFolder,
-                Location = new Point(221, 42),
-                Size = new Size(130, 27),
+                Location = new Point(212, 42),
+                Size = new Size(120, 27),
                 BackColor = Color.White,
                 FlatStyle = FlatStyle.System
             };
@@ -240,8 +241,8 @@ namespace FtpSysPro.Manager.UI
             btnClear = new Button
             {
                 Text = Strings.ClearScreen,
-                Location = new Point(355, 42),
-                Size = new Size(90, 27),
+                Location = new Point(336, 42),
+                Size = new Size(88, 27),
                 BackColor = Color.White,
                 FlatStyle = FlatStyle.System
             };
@@ -250,7 +251,7 @@ namespace FtpSysPro.Manager.UI
             chkAutoRefresh = new CheckBox
             {
                 Text = Strings.AutoRefresh,
-                Location = new Point(452, 46),
+                Location = new Point(430, 46),
                 AutoSize = true,
                 Checked = true,
                 Font = new Font("Segoe UI", 8.5F)
@@ -259,7 +260,7 @@ namespace FtpSysPro.Manager.UI
             chkAutoScroll = new CheckBox
             {
                 Text = Strings.AutoScroll,
-                Location = new Point(585, 46),
+                Location = new Point(545, 46),
                 AutoSize = true,
                 Checked = true,
                 Font = new Font("Segoe UI", 8.5F)
@@ -268,7 +269,7 @@ namespace FtpSysPro.Manager.UI
             lblMatchCount = new Label
             {
                 Text = Strings.IsVi ? "0 dòng nhật ký" : "0 log entries",
-                Location = new Point(678, 47),
+                Location = new Point(640, 47),
                 AutoSize = true,
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Italic),
                 ForeColor = Color.FromArgb(70, 80, 100)
@@ -362,8 +363,9 @@ namespace FtpSysPro.Manager.UI
                 }
             }
 
-            if (cboJobFilter.Items.Count > selectIndex)
-                cboJobFilter.SelectedIndex = selectIndex;
+            // Default to All Jobs so logs are immediately visible
+            if (cboJobFilter.Items.Count > 0)
+                cboJobFilter.SelectedIndex = 0;
         }
 
         public void SelectJob(string jobId)
@@ -384,6 +386,25 @@ namespace FtpSysPro.Manager.UI
                     cboJobFilter.SelectedIndex = i;
                     return;
                 }
+            }
+        }
+
+        public void NavigateToDateAndJob(DateTime date, string jobId)
+        {
+            string targetFileName = $"service-{date:yyyyMMdd}.log";
+            for (int i = 0; i < cboLogFiles.Items.Count; i++)
+            {
+                if (cboLogFiles.Items[i] is LogFileItem item &&
+                    string.Equals(item.FileName, targetFileName, StringComparison.OrdinalIgnoreCase))
+                {
+                    cboLogFiles.SelectedIndex = i;
+                    break;
+                }
+            }
+
+            if (!string.IsNullOrEmpty(jobId))
+            {
+                SelectJob(jobId);
             }
         }
 
@@ -496,11 +517,14 @@ namespace FtpSysPro.Manager.UI
                     using (var reader = new StreamReader(fs, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 8192, leaveOpen: true))
                     {
                         string line;
+                        int rawLineNumber = 0;
                         int matchedLinesCount = 0;
                         txtLog.SuspendLayout();
 
                         while ((line = reader.ReadLine()) != null)
                         {
+                            rawLineNumber++;
+
                             if (!string.IsNullOrEmpty(filterJobId) || !string.IsNullOrEmpty(filterJobName))
                             {
                                 if (!LogFilterHelper.LineMatchesJob(line, filterJobName, filterJobId))
@@ -519,9 +543,27 @@ namespace FtpSysPro.Manager.UI
                                     continue;
                             }
 
-                            Color col = DetermineLineColor(line);
-                            AppendColorText(line + Environment.NewLine, col);
                             matchedLinesCount++;
+                            AppendNotepadPlusPlusLine(matchedLinesCount, line);
+                        }
+
+                        if (matchedLinesCount == 0 && !appendOnly)
+                        {
+                            txtLog.Clear();
+                            AppendColorText("--------------------------------------------------------------------------------" + Environment.NewLine, Color.FromArgb(100, 115, 135));
+                            AppendColorText($"  NOTEPAD++ LOG VIEWER - FTPSYS PRO" + Environment.NewLine, Color.FromArgb(88, 166, 255));
+                            AppendColorText($"  File: {item.FileName}  |  Job Filter: {filterJobName ?? Strings.AllJobs}" + Environment.NewLine, Color.FromArgb(135, 145, 160));
+                            AppendColorText("--------------------------------------------------------------------------------" + Environment.NewLine, Color.FromArgb(100, 115, 135));
+                            if (rawLineNumber > 0)
+                            {
+                                AppendColorText($"  [INFO] Tệp có {rawLineNumber} dòng nhật ký, nhưng không có dòng nào khớp với bộ lọc Job '{(filterJobName ?? filterJobId)}'." + Environment.NewLine, Color.FromArgb(255, 195, 85));
+                                AppendColorText($"  💡 Gợi ý: Chuyển 'Lọc theo Job' về '-- Tất cả Job --' để xem toàn bộ nội dung nhật ký hệ thống." + Environment.NewLine, Color.FromArgb(126, 231, 135));
+                            }
+                            else
+                            {
+                                AppendColorText($"  [INFO] {Strings.NoLogsFound}" + Environment.NewLine, Color.FromArgb(160, 170, 185));
+                            }
+                            AppendColorText("--------------------------------------------------------------------------------" + Environment.NewLine, Color.FromArgb(100, 115, 135));
                         }
 
                         _lastLoadedLength = fs.Position;
@@ -535,7 +577,7 @@ namespace FtpSysPro.Manager.UI
 
                         txtLog.ResumeLayout();
 
-                        int totalDisplayedLines = txtLog.Lines.Length;
+                        int totalDisplayedLines = matchedLinesCount;
                         lblStatusFile.Text = $"{Strings.SelectLogFile} {item.FileName}";
                         lblStatusLines.Text = Strings.IsVi ? $"Hiển thị: {totalDisplayedLines:N0} dòng" : $"Lines: {totalDisplayedLines:N0}";
                         lblStatusSize.Text = Strings.IsVi ? $"Dung lượng: {FormatBytes(currentLength)}" : $"Size: {FormatBytes(currentLength)}";
@@ -561,6 +603,51 @@ namespace FtpSysPro.Manager.UI
             if (cboLevel.SelectedIndex == 2) return "WRN";
             if (cboLevel.SelectedIndex == 3) return "INF";
             return null;
+        }
+
+        private void AppendNotepadPlusPlusLine(int lineNumber, string line)
+        {
+            // 1. Notepad++ gutter line numbers: 0001 |
+            AppendColorText($"{lineNumber:D4} | ", Color.FromArgb(105, 120, 140));
+
+            if (string.IsNullOrWhiteSpace(line))
+            {
+                AppendColorText(Environment.NewLine, Color.White);
+                return;
+            }
+
+            // 2. Notepad++ Serilog pattern coloring: "yyyy-MM-dd HH:mm:ss.fff +zz:zz [LVL] message"
+            int bracketIdx = line.IndexOf('[');
+            int bracketEnd = (bracketIdx >= 0) ? line.IndexOf(']', bracketIdx) : -1;
+
+            if (bracketIdx > 0 && bracketEnd > bracketIdx && bracketEnd - bracketIdx <= 6)
+            {
+                // Timestamp
+                string timestamp = line.Substring(0, bracketIdx);
+                AppendColorText(timestamp, Color.FromArgb(135, 145, 160));
+
+                // Level tag [INF], [WRN], [ERR]
+                string levelTag = line.Substring(bracketIdx, bracketEnd - bracketIdx + 1);
+                Color levelCol = Color.FromArgb(88, 166, 255); // Notepad++ Vivid Blue
+                if (levelTag.Contains("ERR") || levelTag.Contains("FTL"))
+                    levelCol = Color.FromArgb(255, 95, 95); // Notepad++ Vivid Red
+                else if (levelTag.Contains("WRN"))
+                    levelCol = Color.FromArgb(255, 175, 65); // Notepad++ Amber Orange
+                else if (levelTag.Contains("DBG") || levelTag.Contains("VRB"))
+                    levelCol = Color.FromArgb(160, 170, 185);
+
+                AppendColorText(levelTag + " ", levelCol);
+
+                // Remainder message
+                string message = line.Substring(bracketEnd + 1).TrimStart();
+                Color msgCol = DetermineLineColor(line);
+                AppendColorText(message + Environment.NewLine, msgCol);
+            }
+            else
+            {
+                Color col = DetermineLineColor(line);
+                AppendColorText(line + Environment.NewLine, col);
+            }
         }
 
         private static Color DetermineLineColor(string line)

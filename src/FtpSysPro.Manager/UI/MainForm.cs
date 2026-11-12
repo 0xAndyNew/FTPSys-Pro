@@ -147,17 +147,22 @@ namespace FtpSysPro.Manager.UI
                 BorderStyle = BorderStyle.None
             };
 
-            gridJobs.Columns.Add(new DataGridViewTextBoxColumn { Name = "colJobName", HeaderText = Strings.ColJobName, DataPropertyName = "Name", Width = 150 });
-            gridJobs.Columns.Add(new DataGridViewCheckBoxColumn { Name = "colEnabled", HeaderText = Strings.ColEnabled, DataPropertyName = "Enabled", Width = 45 });
-            gridJobs.Columns.Add(new DataGridViewTextBoxColumn { Name = "colBackupType", HeaderText = Strings.ColBackupType, DataPropertyName = "BackupTypeDisplay", Width = 85 });
-            gridJobs.Columns.Add(new DataGridViewTextBoxColumn { Name = "colSource", HeaderText = Strings.ColSource, DataPropertyName = "SourceDisplay", Width = 230 });
-            gridJobs.Columns.Add(new DataGridViewTextBoxColumn { Name = "colDestination", HeaderText = Strings.ColDestination, DataPropertyName = "DestinationDisplay", Width = 210 });
-            gridJobs.Columns.Add(new DataGridViewTextBoxColumn { Name = "colSourceSize", HeaderText = Strings.ColSourceSize, DataPropertyName = "SourceSizeDisplay", Width = 130 });
-            gridJobs.Columns.Add(new DataGridViewTextBoxColumn { Name = "colTransferMode", HeaderText = Strings.ColTransferMode, DataPropertyName = "CompressionDisplay", Width = 110 });
-            gridJobs.Columns.Add(new DataGridViewTextBoxColumn { Name = "colLastRun", HeaderText = Strings.ColLastRun, DataPropertyName = "LastRunDisplay", Width = 120 });
-            gridJobs.Columns.Add(new DataGridViewTextBoxColumn { Name = "colStatus", HeaderText = Strings.ColStatus, DataPropertyName = "StatusDisplay", Width = 90 });
-            gridJobs.Columns.Add(new DataGridViewTextBoxColumn { Name = "colNextRun", HeaderText = Strings.ColNextRun, DataPropertyName = "NextRunDisplay", Width = 120 });
-            gridJobs.Columns.Add(new DataGridViewTextBoxColumn { Name = "colSize", HeaderText = Strings.ColSize, DataPropertyName = "SizeDisplay", Width = 100 });
+            gridJobs.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "colJobName",
+                HeaderText = Strings.ColJobName,
+                DataPropertyName = "Name",
+                AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill,
+                MinimumWidth = 140
+            });
+            gridJobs.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "colSize",
+                HeaderText = Strings.ColSize,
+                DataPropertyName = "SizeDisplay",
+                Width = 110,
+                DefaultCellStyle = new DataGridViewCellStyle { Alignment = DataGridViewContentAlignment.MiddleRight }
+            });
 
             gridJobs.CellDoubleClick += (s, e) => EditSelectedJob();
             gridJobs.SelectionChanged += (s, e) => UpdateSelectedJobDetail();
@@ -280,12 +285,12 @@ namespace FtpSysPro.Manager.UI
             {
                 Name = "colPropName",
                 HeaderText = Strings.ColProperty,
-                Width = 190,
+                Width = 200,
                 ReadOnly = true
             };
-            colPropName.DefaultCellStyle.Font = new Font("Segoe UI", 8.5F, FontStyle.Bold);
-            colPropName.DefaultCellStyle.ForeColor = Color.FromArgb(40, 50, 70);
-            colPropName.DefaultCellStyle.BackColor = Color.FromArgb(248, 250, 253);
+            colPropName.DefaultCellStyle.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            colPropName.DefaultCellStyle.ForeColor = Color.FromArgb(20, 35, 60);
+            colPropName.DefaultCellStyle.BackColor = Color.FromArgb(246, 248, 252);
 
             colPropValue = new DataGridViewTextBoxColumn
             {
@@ -372,6 +377,7 @@ namespace FtpSysPro.Manager.UI
             {
                 Dock = DockStyle.Fill,
                 ReadOnly = true,
+                AutoGenerateColumns = false,
                 AllowUserToAddRows = false,
                 AllowUserToDeleteRows = false,
                 AllowUserToResizeRows = false,
@@ -396,10 +402,19 @@ namespace FtpSysPro.Manager.UI
             gridHistory.Columns.Add(new DataGridViewTextBoxColumn { Name = "colHistStatus", HeaderText = Strings.ColHistStatus, DataPropertyName = "StatusDisplay", Width = 90 });
             gridHistory.Columns.Add(new DataGridViewTextBoxColumn { Name = "colHistSize", HeaderText = Strings.ColHistSize, DataPropertyName = "SizeDisplay", Width = 90 });
             gridHistory.Columns.Add(new DataGridViewTextBoxColumn { Name = "colHistFiles", HeaderText = Strings.ColHistFiles, DataPropertyName = "FilesDisplay", Width = 70 });
-            gridHistory.Columns.Add(new DataGridViewTextBoxColumn { Name = "colHistErrors", HeaderText = Strings.ColHistErrors, DataPropertyName = "ErrorsDisplay", Width = 100 });
+            gridHistory.Columns.Add(new DataGridViewTextBoxColumn { Name = "colHistErrors", HeaderText = Strings.ColHistErrors, DataPropertyName = "ErrorsDisplay", Width = 110 });
             gridHistory.Columns.Add(new DataGridViewTextBoxColumn { Name = "colHistMessage", HeaderText = Strings.ColHistMessage, DataPropertyName = "MessageDisplay", AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill });
 
             gridHistory.CellDoubleClick += (s, e) => ShowSelectedHistoryDetail();
+            gridHistory.CellClick += (s, e) =>
+            {
+                if (e.RowIndex < 0 || e.RowIndex >= gridHistory.Rows.Count) return;
+                var col = gridHistory.Columns[e.ColumnIndex];
+                if (col.Name == "colHistErrors" || col.Name == "colHistStatus")
+                {
+                    ShowSelectedHistoryDetail(e.RowIndex);
+                }
+            };
             gridHistory.CellFormatting += GridHistory_CellFormatting;
 
             tabHistory.Controls.Add(gridHistory);
@@ -936,10 +951,19 @@ namespace FtpSysPro.Manager.UI
 
             UpdateSelectedJobProperties(job, vm);
             UpdateSelectedJobHistory(job?.Id);
+        }
 
-            if (job != null && operationLogControl != null)
+        private void AddPropertyRow(string name, string value, bool boldValue = false, Color? valueColor = null)
+        {
+            int rowIdx = gridProperties.Rows.Add(name, value);
+            var row = gridProperties.Rows[rowIdx];
+            if (boldValue)
             {
-                operationLogControl.SelectJob(job.Id);
+                row.Cells[1].Style.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            }
+            if (valueColor.HasValue)
+            {
+                row.Cells[1].Style.ForeColor = valueColor.Value;
             }
         }
 
@@ -952,7 +976,7 @@ namespace FtpSysPro.Manager.UI
             {
                 lblPropJobName.Text = Strings.NoJobSelected;
                 lblPropJobBadge.Text = "";
-                gridProperties.Rows.Add(Strings.PropTaskName, "-");
+                AddPropertyRow(Strings.PropTaskName, "-");
                 gridProperties.ResumeLayout();
                 return;
             }
@@ -963,39 +987,39 @@ namespace FtpSysPro.Manager.UI
             lblPropJobBadge.Text = $"● {(job.Enabled ? Strings.BadgeEnabled : Strings.BadgeDisabled)}  •  {Strings.BackupMode}: {(job.BackupType == BackupType.Full ? Strings.ModeFull : Strings.ModeIncremental)}  •  {statusStr}";
             lblPropJobBadge.ForeColor = job.Enabled ? Color.FromArgb(30, 120, 50) : Color.Gray;
 
-            // 2. Cobian Property | Value rows
-            gridProperties.Rows.Add(Strings.PropTaskName, job.Name ?? Strings.NoneOrEmpty);
-            gridProperties.Rows.Add(Strings.PropTaskId, job.Id ?? "-");
-            gridProperties.Rows.Add(Strings.PropEnabled, job.Enabled ? Strings.Yes : Strings.No);
-            gridProperties.Rows.Add(Strings.PropBackupType, job.BackupType == BackupType.Full ? Strings.ModeFull : Strings.ModeIncremental);
+            // 2. Cobian Property | Value rows (with bold styling on key items)
+            AddPropertyRow(Strings.PropTaskName, job.Name ?? Strings.NoneOrEmpty, boldValue: true);
+            AddPropertyRow(Strings.PropTaskId, job.Id ?? "-");
+            AddPropertyRow(Strings.PropEnabled, job.Enabled ? Strings.Yes : Strings.No);
+            AddPropertyRow(Strings.PropBackupType, job.BackupType == BackupType.Full ? Strings.ModeFull : Strings.ModeIncremental, boldValue: true);
 
             string sourcesText = (job.SourceDirectories != null && job.SourceDirectories.Count > 0)
                 ? string.Join(Environment.NewLine, job.SourceDirectories)
                 : Strings.NoneOrEmpty;
-            gridProperties.Rows.Add(Strings.PropSource, sourcesText);
+            AddPropertyRow(Strings.PropSource, sourcesText, boldValue: true, valueColor: Color.FromArgb(10, 80, 180));
 
             string sourceSizeText = job.SourceSizeBytes > 0
                 ? $"{JobViewModel.FormatBytes(job.SourceSizeBytes)} ({job.SourceFileCount:N0} {Strings.FilesUnit})"
                 : (job.SourceDirectories != null && job.SourceDirectories.Count > 0 ? Strings.DetailNotScannedOrZero : "-");
-            gridProperties.Rows.Add(Strings.PropSourceSize, sourceSizeText);
+            AddPropertyRow(Strings.PropSourceSize, sourceSizeText, boldValue: true);
 
-            gridProperties.Rows.Add(Strings.PropDestination, vm != null ? vm.DestinationDisplay : "-");
-            gridProperties.Rows.Add(Strings.PropVss, (job.Integrity?.EnableVss == true) ? Strings.Yes : Strings.No);
+            AddPropertyRow(Strings.PropDestination, vm != null ? vm.DestinationDisplay : "-", boldValue: true, valueColor: Color.FromArgb(10, 80, 180));
+            AddPropertyRow(Strings.PropVss, (job.Integrity?.EnableVss == true) ? Strings.Yes : Strings.No);
 
             string compText = (job.Compression != null && job.Compression.Enabled)
                 ? Strings.DetailZipLevel(job.Compression.Level)
                 : Strings.DirectCopyUncompressed;
-            gridProperties.Rows.Add(Strings.PropCompression, compText);
+            AddPropertyRow(Strings.PropCompression, compText);
 
             string encText = (job.Compression != null && job.Compression.EncryptWithPassword)
                 ? Strings.EncryptedAes256
                 : Strings.NotEncrypted;
-            gridProperties.Rows.Add(Strings.PropEncryption, encText);
+            AddPropertyRow(Strings.PropEncryption, encText);
 
             string schedText = (job.Schedules != null && job.Schedules.Count > 0)
                 ? string.Join(Environment.NewLine, job.Schedules.Select(s => JobEditDialog.FormatScheduleDetail(s)))
                 : Strings.ScheduleManualOnly;
-            gridProperties.Rows.Add(Strings.PropSchedule, schedText);
+            AddPropertyRow(Strings.PropSchedule, schedText);
 
             string retText = Strings.RetentionKeepAllText;
             if (job.Retention != null)
@@ -1005,30 +1029,30 @@ namespace FtpSysPro.Manager.UI
                 else if (job.Retention.Type == RetentionType.KeepFullCount)
                     retText = Strings.RetentionCountText(job.Retention.KeepFullCount);
             }
-            gridProperties.Rows.Add(Strings.PropRetention, retText);
+            AddPropertyRow(Strings.PropRetention, retText);
 
             string alertText = (job.Notification != null && job.Notification.Enabled && job.Notification.Recipients != null && job.Notification.Recipients.Count > 0)
                 ? $"{Strings.Yes} ({string.Join(", ", job.Notification.Recipients)})"
                 : Strings.AlertDisabled;
-            gridProperties.Rows.Add(Strings.PropAlert, alertText);
+            AddPropertyRow(Strings.PropAlert, alertText);
 
             string retryText = (job.Integrity != null) ? Strings.RetryCountText(job.Integrity.NetworkRetryCount) : "-";
-            gridProperties.Rows.Add(Strings.PropNetworkRetry, retryText);
+            AddPropertyRow(Strings.PropNetworkRetry, retryText);
 
             string lastRunText = job.LastRunUtc.HasValue
                 ? $"{job.LastRunUtc.Value.ToLocalTime():yyyy-MM-dd HH:mm:ss}"
                 : Strings.NeverExecuted;
-            gridProperties.Rows.Add(Strings.PropLastRun, lastRunText);
+            AddPropertyRow(Strings.PropLastRun, lastRunText);
 
             string lastResultText = !string.IsNullOrWhiteSpace(job.LastMessage)
                 ? job.LastMessage
                 : (job.LastRunUtc.HasValue ? statusStr : "-");
-            gridProperties.Rows.Add(Strings.PropLastResult, lastResultText);
+            AddPropertyRow(Strings.PropLastResult, lastResultText, boldValue: true);
 
             string nextRunText = job.NextRunUtc.HasValue
                 ? job.NextRunUtc.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")
                 : Strings.ScheduleManualOnly;
-            gridProperties.Rows.Add(Strings.PropNextRun, nextRunText);
+            AddPropertyRow(Strings.PropNextRun, nextRunText);
 
             gridProperties.ResumeLayout();
         }
@@ -1071,16 +1095,45 @@ namespace FtpSysPro.Manager.UI
                     e.CellStyle.Font = new Font(gridHistory.Font, FontStyle.Bold);
                 }
             }
+            else if (col.Name == "colHistErrors" && e.Value != null)
+            {
+                string val = e.Value.ToString();
+                if (val.Contains("❌"))
+                {
+                    e.CellStyle.ForeColor = Color.FromArgb(220, 30, 30);
+                    e.CellStyle.Font = new Font(gridHistory.Font, FontStyle.Bold);
+                }
+                else if (val.Contains("⚠️"))
+                {
+                    e.CellStyle.ForeColor = Color.FromArgb(200, 130, 0);
+                    e.CellStyle.Font = new Font(gridHistory.Font, FontStyle.Bold);
+                }
+            }
         }
 
-        private void ShowSelectedHistoryDetail()
+        private void ShowSelectedHistoryDetail(int rowIndex = -1)
         {
-            if (gridHistory.SelectedRows.Count == 0) return;
-            var vm = gridHistory.SelectedRows[0].DataBoundItem as HistoryViewModel;
+            HistoryViewModel vm = null;
+            if (rowIndex >= 0 && rowIndex < gridHistory.Rows.Count)
+            {
+                vm = gridHistory.Rows[rowIndex].DataBoundItem as HistoryViewModel;
+            }
+            else if (gridHistory.SelectedRows.Count > 0)
+            {
+                vm = gridHistory.SelectedRows[0].DataBoundItem as HistoryViewModel;
+            }
             if (vm?.Record == null) return;
 
             using (var dlg = new HistoryDetailDialog(vm.Record))
             {
+                dlg.OnViewLogRequested = (logTime, jobId) =>
+                {
+                    if (tabRight != null && tabLog != null)
+                    {
+                        tabRight.SelectedTab = tabLog;
+                    }
+                    operationLogControl?.NavigateToDateAndJob(logTime, jobId);
+                };
                 dlg.ShowDialog(this);
             }
         }
@@ -1105,15 +1158,15 @@ namespace FtpSysPro.Manager.UI
                 if (splitContainer == null) return;
 
                 int width = splitContainer.Width;
-                int minPanel1 = 340;
-                int minPanel2 = 460;
+                int minPanel1 = 220;
+                int minPanel2 = 500;
 
                 if (width > (minPanel1 + minPanel2))
                 {
                     splitContainer.Panel1MinSize = minPanel1;
                     splitContainer.Panel2MinSize = minPanel2;
 
-                    int calculated = (int)(width * 0.40);
+                    int calculated = (int)(width * 0.28);
                     int maxDistance = width - minPanel2;
                     splitContainer.SplitterDistance = Math.Max(minPanel1, Math.Min(calculated, maxDistance));
                 }
@@ -1237,7 +1290,15 @@ namespace FtpSysPro.Manager.UI
 
         public string NextRunDisplay => Job.NextRunUtc.HasValue ? Job.NextRunUtc.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm") : "-";
 
-        public string SizeDisplay => Job.LastSizeBytes > 0 ? FormatBytes(Job.LastSizeBytes) : "-";
+        public string SizeDisplay
+        {
+            get
+            {
+                if (Job.LastSizeBytes > 0) return FormatBytes(Job.LastSizeBytes);
+                if (Job.SourceSizeBytes > 0) return FormatBytes(Job.SourceSizeBytes);
+                return "-";
+            }
+        }
 
         public static string FormatBytes(long bytes)
         {
@@ -1255,6 +1316,7 @@ namespace FtpSysPro.Manager.UI
 
     public class HistoryViewModel
     {
+        [System.ComponentModel.Browsable(false)]
         public BackupRunResult Record { get; }
 
         public HistoryViewModel(BackupRunResult record)
@@ -1298,7 +1360,18 @@ namespace FtpSysPro.Manager.UI
 
         public string FilesDisplay => $"{Record.BackedUpFiles:N0}";
 
-        public string ErrorsDisplay => $"{Record.ErrorCount} / {Record.WarningCount}";
+        public string ErrorsDisplay
+        {
+            get
+            {
+                int errs = Record.ErrorCount;
+                int warns = Record.WarningCount;
+                if (errs > 0 && warns > 0) return $"❌ {errs} / ⚠️ {warns}";
+                if (errs > 0) return $"❌ {errs} err";
+                if (warns > 0) return $"⚠️ {warns} warn";
+                return "0 / 0";
+            }
+        }
 
         public string MessageDisplay => !string.IsNullOrEmpty(Record.Message) ? Record.Message : "-";
     }

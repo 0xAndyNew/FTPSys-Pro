@@ -10,6 +10,7 @@ namespace FtpSysPro.Manager.UI
     public class HistoryDetailDialog : Form
     {
         private readonly BackupRunResult _record;
+        public Action<DateTime, string> OnViewLogRequested { get; set; }
 
         public HistoryDetailDialog(BackupRunResult record)
         {
@@ -100,22 +101,24 @@ namespace FtpSysPro.Manager.UI
             if (_record.Warnings != null && _record.Warnings.Count > 0)
             {
                 sb.AppendLine();
-                sb.AppendLine("--------------------------------------------------------------------------------");
-                sb.AppendLine($"  [WARNINGS ({_record.Warnings.Count})]:");
+                sb.AppendLine("================================================================================");
+                sb.AppendLine($"  {Strings.WarningDetailsHeader} ({_record.Warnings.Count})");
+                sb.AppendLine("================================================================================");
                 foreach (var w in _record.Warnings)
                 {
-                    sb.AppendLine($"    • {w}");
+                    sb.AppendLine($"  ⚠️  {w}");
                 }
             }
 
             if (_record.Errors != null && _record.Errors.Count > 0)
             {
                 sb.AppendLine();
-                sb.AppendLine("--------------------------------------------------------------------------------");
-                sb.AppendLine($"  [ERRORS ({_record.Errors.Count})]:");
+                sb.AppendLine("================================================================================");
+                sb.AppendLine($"  {Strings.ErrorDetailsHeader} ({_record.Errors.Count})");
+                sb.AppendLine("================================================================================");
                 foreach (var err in _record.Errors)
                 {
-                    sb.AppendLine($"    • {err}");
+                    sb.AppendLine($"  ❌  {err}");
                 }
             }
 
@@ -148,6 +151,20 @@ namespace FtpSysPro.Manager.UI
                 catch { }
             };
 
+            var btnViewLog = new Button
+            {
+                Text = Strings.ViewLogForRun,
+                Size = new Size(160, 30),
+                Location = new Point(180, 9),
+                BackColor = Color.White,
+                FlatStyle = FlatStyle.System
+            };
+            btnViewLog.Click += (s, e) =>
+            {
+                OnViewLogRequested?.Invoke(_record.StartTimeUtc, _record.JobId);
+                Close();
+            };
+
             var btnClose = new Button
             {
                 Text = Strings.Close,
@@ -160,6 +177,7 @@ namespace FtpSysPro.Manager.UI
             };
 
             pnlBottom.Controls.Add(btnCopy);
+            pnlBottom.Controls.Add(btnViewLog);
             pnlBottom.Controls.Add(btnClose);
             AcceptButton = btnClose;
 

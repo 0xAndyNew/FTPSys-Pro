@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -317,7 +318,8 @@ namespace FtpSysPro.Core.Engine
                     var pruned = await retention.ApplyRetentionAsync(jobRemoteRoot, job.Retention, cancellationToken);
                     if (pruned > 0)
                     {
-                        result.Warnings.Add($"Retention: pruned {pruned} old backup set(s).");
+                        // Pruning old sets per retention policy is normal operation, not a warning
+                        Debug.WriteLine($"[BackupEngine] Retention: pruned {pruned} old backup set(s).");
                     }
                 }
                 catch (Exception ex)
@@ -342,6 +344,8 @@ namespace FtpSysPro.Core.Engine
             finally
             {
                 result.EndTimeUtc = DateTime.UtcNow;
+                result.WarningCount = result.Warnings.Count;
+                result.ErrorCount = result.Errors.Count;
                 destination?.Dispose();
                 vssContext?.Dispose();
 

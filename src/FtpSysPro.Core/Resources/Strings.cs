@@ -210,6 +210,9 @@ namespace FtpSysPro.Core.Resources
         public static string HistoryDetailTitle => IsVi ? "Chi tiết lần thực thi sao lưu" : "Backup Execution Details";
         public static string CopyToClipboard => IsVi ? "Sao chép vào Clipboard" : "Copy to Clipboard";
         public static string CopiedToClipboard => IsVi ? "Đã sao chép!" : "Copied!";
+        public static string ViewLogForRun => IsVi ? "🔍 Xem trong Nhật ký" : "🔍 View in Log";
+        public static string WarningDetailsHeader => IsVi ? "⚠️ CẢNH BÁO CHI TIẾT (WARNING DETAILS):" : "⚠️ WARNING DETAILS:";
+        public static string ErrorDetailsHeader => IsVi ? "❌ CHI TIẾT LỖI (ERROR DETAILS):" : "❌ ERROR DETAILS:";
 
         // History Grid & Toolbar
         public static string ColHistStartTime => IsVi ? "Thời gian bắt đầu" : "Start Time";
@@ -241,7 +244,7 @@ namespace FtpSysPro.Core.Resources
         public static string ColLastRun => IsVi ? "Lần thực thi cuối" : "Last Run";
         public static string ColStatus => IsVi ? "Trạng thái vận hành" : "Status";
         public static string ColNextRun => IsVi ? "Lịch chạy kế tiếp" : "Next Run";
-        public static string ColSize => IsVi ? "Dung lượng bản sao" : "Backup Size";
+        public static string ColSize => IsVi ? "Dung lượng" : "Size";
 
         // Statuses
         public static string StatusIdle => IsVi ? "Sẵn sàng" : "Ready";
