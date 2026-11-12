@@ -2,7 +2,7 @@
 ; Requires Inno Setup 6 (free from jrsoftware.org)
 
 #define MyAppName "FTPSys Pro"
-#define MyAppVersion "1.2.0"
+#define MyAppVersion "1.2.1"
 #define MyAppPublisher "0xAndyNew"
 #define MyAppURL "https://github.com/0xAndyNew/FTPSys-Pro"
 #define MyAppExeName "FtpSysPro.Manager.exe"
@@ -92,10 +92,14 @@ procedure CurPageChanged(CurPageID: Integer);
 begin
   if CurPageID = wpFinished then
   begin
-    if WizardForm.RunList <> nil then
+    if (WizardForm.RunList <> nil) and (RunAsAdminCheckbox <> nil) then
     begin
+      // Inno Setup default RunList has Height=221 in modern style, which pushes controls offscreen.
+      // Explicitly resize RunList to fit only its single postinstall item (~26px).
+      WizardForm.RunList.Height := ScaleY(26);
+
       RunAsAdminCheckbox.Left := WizardForm.RunList.Left;
-      RunAsAdminCheckbox.Top := WizardForm.RunList.Top + WizardForm.RunList.Height + ScaleY(8);
+      RunAsAdminCheckbox.Top := WizardForm.RunList.Top + WizardForm.RunList.Height + ScaleY(6);
       RunAsAdminCheckbox.Width := WizardForm.RunList.Width;
       RunAsAdminCheckbox.Height := ScaleY(24);
       RunAsAdminCheckbox.Font := WizardForm.FinishedLabel.Font;
