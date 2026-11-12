@@ -42,18 +42,34 @@ namespace FtpSysPro.Manager.UI
 
         // Side Detail Panel
         private SplitContainer splitContainer;
-        private GroupBox grpDetail;
+        private Panel pnlDetailCard;
+        private Label lblCardTitle;
+        private TableLayoutPanel tblDetail;
         private Label lblDetailName;
+        private Label lblDetailBadge;
+        private Label lblDetailDesc;
         private Label lblHeaderSourceSize;
         private Label lblDetailSourceSize;
-        private Label lblHeaderTransfer;
-        private Label lblDetailTransfer;
+        private Label lblHeaderSources;
+        private Label lblDetailSources;
+        private Label lblHeaderExcludes;
+        private Label lblDetailExcludes;
         private Label lblHeaderDest;
         private Label lblDetailDest;
-        private Label lblHeaderSources;
-        private TextBox txtDetailSources;
+        private Label lblHeaderTransfer;
+        private Label lblDetailTransfer;
+        private Label lblHeaderIntegrity;
+        private Label lblDetailIntegrity;
+        private Label lblHeaderSchedule;
+        private Label lblDetailSchedule;
+        private Label lblHeaderRetention;
+        private Label lblDetailRetention;
+        private Label lblHeaderAlert;
+        private Label lblDetailAlert;
         private Label lblHeaderLast;
         private Label lblDetailLast;
+        private Label lblHeaderLastResult;
+        private Label lblDetailLastResult;
         private Label lblHeaderNext;
         private Label lblDetailNext;
 
@@ -183,151 +199,293 @@ namespace FtpSysPro.Manager.UI
                 }
             };
 
-            // Right side Job Detail Card
-            grpDetail = new GroupBox
-            {
-                Text = Strings.DetailCardTitle,
-                Dock = DockStyle.Fill,
-                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
-                Padding = new Padding(12),
-                BackColor = Color.FromArgb(250, 251, 252)
-            };
-
-            var pnlDetailContent = new Panel
+            // Right side Job Detail Card (modern borderless design)
+            pnlDetailCard = new Panel
             {
                 Dock = DockStyle.Fill,
-                AutoScroll = true
+                BackColor = Color.FromArgb(250, 251, 253)
             };
 
+            var pnlDetailHeader = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 36,
+                BackColor = Color.FromArgb(242, 246, 251),
+                Padding = new Padding(12, 0, 12, 0)
+            };
+
+            lblCardTitle = new Label
+            {
+                Text = "📋 " + Strings.DetailCardTitle,
+                Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(20, 45, 85),
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleLeft
+            };
+            pnlDetailHeader.Controls.Add(lblCardTitle);
+
+            var pnlHeaderDivider = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 1,
+                BackColor = Color.FromArgb(220, 228, 238)
+            };
+
+            var pnlDetailScroll = new Panel
+            {
+                Dock = DockStyle.Fill,
+                AutoScroll = true,
+                Padding = new Padding(14, 10, 14, 20),
+                BackColor = Color.FromArgb(250, 251, 253)
+            };
+
+            tblDetail = new TableLayoutPanel
+            {
+                Dock = DockStyle.Top,
+                AutoSize = true,
+                AutoSizeMode = AutoSizeMode.GrowAndShrink,
+                ColumnCount = 1,
+                Padding = new Padding(0)
+            };
+            tblDetail.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+
+            // Controls initialization
             lblDetailName = new Label
             {
                 Text = Strings.NoJobSelected,
-                Font = new Font("Segoe UI", 11F, FontStyle.Bold),
-                ForeColor = Color.FromArgb(15, 30, 60),
-                Location = new Point(5, 5),
-                AutoSize = true
+                Font = new Font("Segoe UI", 12F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(12, 35, 75)
+            };
+
+            lblDetailBadge = new Label
+            {
+                Text = "",
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(40, 120, 50)
+            };
+
+            lblDetailDesc = new Label
+            {
+                Text = "",
+                Font = new Font("Segoe UI", 8.5F, FontStyle.Italic),
+                ForeColor = Color.FromArgb(100, 110, 125),
+                Visible = false
             };
 
             lblHeaderSourceSize = new Label
             {
                 Text = Strings.HeaderSourceSize,
                 Font = new Font("Segoe UI", 8F, FontStyle.Bold),
-                ForeColor = Color.DimGray,
-                Location = new Point(5, 38),
-                AutoSize = true
+                ForeColor = Color.DimGray
             };
 
             lblDetailSourceSize = new Label
             {
                 Text = "-",
-                Font = new Font("Segoe UI", 12F, FontStyle.Bold),
-                ForeColor = Color.DarkBlue,
-                Location = new Point(5, 56),
-                AutoSize = true
-            };
-
-            lblHeaderTransfer = new Label
-            {
-                Text = Strings.HeaderTransfer,
-                Font = new Font("Segoe UI", 8F, FontStyle.Bold),
-                ForeColor = Color.DimGray,
-                Location = new Point(5, 90),
-                AutoSize = true
-            };
-
-            lblDetailTransfer = new Label
-            {
-                Text = "-",
-                Font = new Font("Segoe UI", 9F),
-                ForeColor = Color.Black,
-                Location = new Point(5, 108),
-                AutoSize = true
-            };
-
-            lblHeaderDest = new Label
-            {
-                Text = Strings.HeaderDest,
-                Font = new Font("Segoe UI", 8F, FontStyle.Bold),
-                ForeColor = Color.DimGray,
-                Location = new Point(5, 138),
-                AutoSize = true
-            };
-
-            lblDetailDest = new Label
-            {
-                Text = "-",
-                Font = new Font("Segoe UI", 9F),
-                ForeColor = Color.Black,
-                Location = new Point(5, 156),
-                AutoSize = true
+                Font = new Font("Segoe UI", 11.5F, FontStyle.Bold),
+                ForeColor = Color.DarkBlue
             };
 
             lblHeaderSources = new Label
             {
                 Text = Strings.HeaderSources,
                 Font = new Font("Segoe UI", 8F, FontStyle.Bold),
-                ForeColor = Color.DimGray,
-                Location = new Point(5, 186),
-                AutoSize = true
+                ForeColor = Color.DimGray
             };
 
-            txtDetailSources = new TextBox
+            lblDetailSources = new Label
             {
-                Multiline = true,
-                ReadOnly = true,
-                BackColor = Color.White,
-                ScrollBars = ScrollBars.Vertical,
-                Location = new Point(5, 206),
-                Size = new Size(260, 90),
-                Font = new Font("Consolas", 8.25F)
+                Text = "-",
+                Font = new Font("Segoe UI", 9F),
+                ForeColor = Color.FromArgb(20, 30, 50)
+            };
+
+            lblHeaderExcludes = new Label
+            {
+                Text = Strings.HeaderExcludes,
+                Font = new Font("Segoe UI", 8F, FontStyle.Bold),
+                ForeColor = Color.DimGray
+            };
+
+            lblDetailExcludes = new Label
+            {
+                Text = "-",
+                Font = new Font("Segoe UI", 8.5F),
+                ForeColor = Color.FromArgb(70, 80, 95)
+            };
+
+            lblHeaderDest = new Label
+            {
+                Text = Strings.HeaderDest,
+                Font = new Font("Segoe UI", 8F, FontStyle.Bold),
+                ForeColor = Color.DimGray
+            };
+
+            lblDetailDest = new Label
+            {
+                Text = "-",
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(20, 30, 50)
+            };
+
+            lblHeaderTransfer = new Label
+            {
+                Text = Strings.HeaderTransfer,
+                Font = new Font("Segoe UI", 8F, FontStyle.Bold),
+                ForeColor = Color.DimGray
+            };
+
+            lblDetailTransfer = new Label
+            {
+                Text = "-",
+                Font = new Font("Segoe UI", 9F),
+                ForeColor = Color.FromArgb(20, 30, 50)
+            };
+
+            lblHeaderIntegrity = new Label
+            {
+                Text = Strings.HeaderIntegrity,
+                Font = new Font("Segoe UI", 8F, FontStyle.Bold),
+                ForeColor = Color.DimGray
+            };
+
+            lblDetailIntegrity = new Label
+            {
+                Text = "-",
+                Font = new Font("Segoe UI", 8.5F),
+                ForeColor = Color.FromArgb(40, 70, 50)
+            };
+
+            lblHeaderSchedule = new Label
+            {
+                Text = Strings.HeaderSchedule,
+                Font = new Font("Segoe UI", 8F, FontStyle.Bold),
+                ForeColor = Color.DimGray
+            };
+
+            lblDetailSchedule = new Label
+            {
+                Text = "-",
+                Font = new Font("Segoe UI", 9F),
+                ForeColor = Color.FromArgb(20, 30, 50)
+            };
+
+            lblHeaderRetention = new Label
+            {
+                Text = Strings.HeaderRetention,
+                Font = new Font("Segoe UI", 8F, FontStyle.Bold),
+                ForeColor = Color.DimGray
+            };
+
+            lblDetailRetention = new Label
+            {
+                Text = "-",
+                Font = new Font("Segoe UI", 8.5F),
+                ForeColor = Color.FromArgb(40, 50, 70)
+            };
+
+            lblHeaderAlert = new Label
+            {
+                Text = Strings.HeaderAlert,
+                Font = new Font("Segoe UI", 8F, FontStyle.Bold),
+                ForeColor = Color.DimGray
+            };
+
+            lblDetailAlert = new Label
+            {
+                Text = "-",
+                Font = new Font("Segoe UI", 8.5F),
+                ForeColor = Color.FromArgb(40, 50, 70)
             };
 
             lblHeaderLast = new Label
             {
                 Text = Strings.HeaderLast,
                 Font = new Font("Segoe UI", 8F, FontStyle.Bold),
-                ForeColor = Color.DimGray,
-                Location = new Point(5, 308),
-                AutoSize = true
+                ForeColor = Color.DimGray
             };
 
             lblDetailLast = new Label
             {
                 Text = "-",
-                Font = new Font("Segoe UI", 9F),
-                ForeColor = Color.Black,
-                Location = new Point(5, 326),
-                AutoSize = true
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(20, 30, 50)
+            };
+
+            lblHeaderLastResult = new Label
+            {
+                Text = Strings.HeaderLastResult,
+                Font = new Font("Segoe UI", 8F, FontStyle.Bold),
+                ForeColor = Color.DimGray
+            };
+
+            lblDetailLastResult = new Label
+            {
+                Text = "-",
+                Font = new Font("Segoe UI", 8.5F),
+                ForeColor = Color.FromArgb(60, 70, 85)
             };
 
             lblHeaderNext = new Label
             {
                 Text = Strings.HeaderNext,
                 Font = new Font("Segoe UI", 8F, FontStyle.Bold),
-                ForeColor = Color.DimGray,
-                Location = new Point(5, 356),
-                AutoSize = true
+                ForeColor = Color.DimGray
             };
 
             lblDetailNext = new Label
             {
                 Text = "-",
-                Font = new Font("Segoe UI", 9F),
-                ForeColor = Color.Black,
-                Location = new Point(5, 374),
-                AutoSize = true
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(0, 90, 180)
             };
 
-            pnlDetailContent.Controls.AddRange(new Control[] {
-                lblDetailName,
-                lblHeaderSourceSize, lblDetailSourceSize,
-                lblHeaderTransfer, lblDetailTransfer,
-                lblHeaderDest, lblDetailDest,
-                lblHeaderSources, txtDetailSources,
-                lblHeaderLast, lblDetailLast,
-                lblHeaderNext, lblDetailNext
-            });
-            grpDetail.Controls.Add(pnlDetailContent);
+            // Add rows to TableLayoutPanel
+            AddDetailRow(lblDetailName, 2, 2);
+            AddDetailRow(lblDetailBadge, 0, 4);
+            AddDetailRow(lblDetailDesc, 0, 6);
+
+            AddDetailRow(lblHeaderSourceSize, 8, 1);
+            AddDetailRow(lblDetailSourceSize, 0, 5);
+
+            AddDetailRow(lblHeaderSources, 6, 1);
+            AddDetailRow(lblDetailSources, 0, 5);
+
+            AddDetailRow(lblHeaderExcludes, 6, 1);
+            AddDetailRow(lblDetailExcludes, 0, 5);
+
+            AddDetailRow(lblHeaderDest, 6, 1);
+            AddDetailRow(lblDetailDest, 0, 5);
+
+            AddDetailRow(lblHeaderTransfer, 6, 1);
+            AddDetailRow(lblDetailTransfer, 0, 5);
+
+            AddDetailRow(lblHeaderIntegrity, 6, 1);
+            AddDetailRow(lblDetailIntegrity, 0, 5);
+
+            AddDetailRow(lblHeaderSchedule, 6, 1);
+            AddDetailRow(lblDetailSchedule, 0, 5);
+
+            AddDetailRow(lblHeaderRetention, 6, 1);
+            AddDetailRow(lblDetailRetention, 0, 5);
+
+            AddDetailRow(lblHeaderAlert, 6, 1);
+            AddDetailRow(lblDetailAlert, 0, 5);
+
+            AddDetailRow(lblHeaderLast, 6, 1);
+            AddDetailRow(lblDetailLast, 0, 3);
+
+            AddDetailRow(lblHeaderLastResult, 4, 1);
+            AddDetailRow(lblDetailLastResult, 0, 5);
+
+            AddDetailRow(lblHeaderNext, 6, 1);
+            AddDetailRow(lblDetailNext, 0, 8);
+
+            pnlDetailScroll.Controls.Add(tblDetail);
+
+            pnlDetailCard.Controls.Add(pnlDetailScroll);
+            pnlDetailCard.Controls.Add(pnlHeaderDivider);
+            pnlDetailCard.Controls.Add(pnlDetailHeader);
 
             // SplitContainer
             splitContainer = new SplitContainer
@@ -336,7 +494,7 @@ namespace FtpSysPro.Manager.UI
                 Orientation = Orientation.Vertical
             };
             splitContainer.Panel1.Controls.Add(gridJobs);
-            splitContainer.Panel2.Controls.Add(grpDetail);
+            splitContainer.Panel2.Controls.Add(pnlDetailCard);
 
             // StatusStrip
             statusStrip = new StatusStrip();
@@ -394,6 +552,14 @@ namespace FtpSysPro.Manager.UI
             };
             Shown += (s, e) => AdjustSplitterDistance();
             Resize += (s, e) => AdjustSplitterDistance();
+        }
+
+        private void AddDetailRow(Control ctrl, int topMargin = 0, int bottomMargin = 4)
+        {
+            ctrl.Dock = DockStyle.Top;
+            ctrl.AutoSize = true;
+            ctrl.Margin = new Padding(0, topMargin, 0, bottomMargin);
+            tblDetail.Controls.Add(ctrl);
         }
 
         private void ApplyLanguage()
@@ -455,12 +621,18 @@ namespace FtpSysPro.Manager.UI
             if (itemLogs != null) itemLogs.Text = "📋 " + Strings.ViewJobLog;
 
             // Detail Card
-            if (grpDetail != null) grpDetail.Text = Strings.DetailCardTitle;
+            if (lblCardTitle != null) lblCardTitle.Text = "📋 " + Strings.DetailCardTitle;
             if (lblHeaderSourceSize != null) lblHeaderSourceSize.Text = Strings.HeaderSourceSize;
-            if (lblHeaderTransfer != null) lblHeaderTransfer.Text = Strings.HeaderTransfer;
-            if (lblHeaderDest != null) lblHeaderDest.Text = Strings.HeaderDest;
             if (lblHeaderSources != null) lblHeaderSources.Text = Strings.HeaderSources;
+            if (lblHeaderExcludes != null) lblHeaderExcludes.Text = Strings.HeaderExcludes;
+            if (lblHeaderDest != null) lblHeaderDest.Text = Strings.HeaderDest;
+            if (lblHeaderTransfer != null) lblHeaderTransfer.Text = Strings.HeaderTransfer;
+            if (lblHeaderIntegrity != null) lblHeaderIntegrity.Text = Strings.HeaderIntegrity;
+            if (lblHeaderSchedule != null) lblHeaderSchedule.Text = Strings.HeaderSchedule;
+            if (lblHeaderRetention != null) lblHeaderRetention.Text = Strings.HeaderRetention;
+            if (lblHeaderAlert != null) lblHeaderAlert.Text = Strings.HeaderAlert;
             if (lblHeaderLast != null) lblHeaderLast.Text = Strings.HeaderLast;
+            if (lblHeaderLastResult != null) lblHeaderLastResult.Text = Strings.HeaderLastResult;
             if (lblHeaderNext != null) lblHeaderNext.Text = Strings.HeaderNext;
 
             // Tray
@@ -826,19 +998,126 @@ namespace FtpSysPro.Manager.UI
                     return;
                 }
 
-                lblDetailName.Text = $"{job.Name} ({vm.BackupTypeDisplay})";
+                // 1. Name & Status Badge & Description
+                lblDetailName.Text = job.Name ?? string.Empty;
+                lblDetailBadge.Text = $"[ {(job.Enabled ? "● " + Strings.BadgeEnabled : "○ " + Strings.BadgeDisabled)} ]  •  {vm.BackupTypeDisplay}";
+                lblDetailBadge.ForeColor = job.Enabled ? Color.FromArgb(30, 130, 60) : Color.Gray;
+
+                if (!string.IsNullOrWhiteSpace(job.Description))
+                {
+                    lblDetailDesc.Text = "❝ " + job.Description + " ❞";
+                    lblDetailDesc.Visible = true;
+                }
+                else
+                {
+                    lblDetailDesc.Visible = false;
+                }
+
+                // 2. Source Size
                 lblDetailSourceSize.Text = job.SourceSizeBytes > 0
-                    ? $"{JobViewModel.FormatBytes(job.SourceSizeBytes)} ({job.SourceFileCount:N0} {Strings.FilesUnit})"
+                    ? $"{JobViewModel.FormatBytes(job.SourceSizeBytes)}  ({job.SourceFileCount:N0} {Strings.FilesUnit})"
                     : (job.SourceDirectories != null && job.SourceDirectories.Count > 0 ? Strings.DetailNotScannedOrZero : "-");
-                lblDetailTransfer.Text = job.Compression != null && job.Compression.Enabled
-                    ? Strings.DetailZipLevel(job.Compression.Level) + (job.Compression.EncryptWithPassword ? " [AES-256]" : "")
-                    : Strings.DetailDirectCopy;
+
+                // 3. Source Directories (borderless label with bullet icons)
+                if (job.SourceDirectories != null && job.SourceDirectories.Count > 0)
+                {
+                    lblDetailSources.Text = string.Join(Environment.NewLine, job.SourceDirectories.Select(d => "📁 " + d));
+                }
+                else
+                {
+                    lblDetailSources.Text = Strings.NoneOrEmpty;
+                }
+
+                // 4. Exclude Patterns
+                if (job.ExcludePatterns != null && job.ExcludePatterns.Count > 0)
+                {
+                    lblDetailExcludes.Text = string.Join(", ", job.ExcludePatterns.Select(e => "🚫 " + e));
+                }
+                else
+                {
+                    lblDetailExcludes.Text = Strings.NoneOrEmpty;
+                }
+
+                // 5. Destination
                 lblDetailDest.Text = vm.DestinationDisplay;
-                txtDetailSources.Lines = job.SourceDirectories != null ? job.SourceDirectories.ToArray() : new string[0];
+
+                // 6. Transfer / Packaging & Encryption
+                lblDetailTransfer.Text = job.Compression != null && job.Compression.Enabled
+                    ? Strings.DetailZipLevel(job.Compression.Level) + (job.Compression.EncryptWithPassword ? "  🔒 [AES-256]" : "")
+                    : Strings.DetailDirectCopy;
+
+                // 7. Data Integrity & VSS & Network Retry
+                var integrity = job.Integrity ?? new IntegrityOptions();
+                var vssText = integrity.EnableVss ? "🛡 " + Strings.VssEnabledText : "○ " + Strings.VssDisabledText;
+                var shaText = integrity.VerifySha256Checksum ? "  |  ✔ " + Strings.ShaVerifiedText : "";
+                var retryText = $"  |  {Strings.RetryCountText(integrity.NetworkRetryCount)}";
+                lblDetailIntegrity.Text = vssText + shaText + retryText;
+
+                // 8. Schedule
+                if (job.Schedules != null && job.Schedules.Count > 0)
+                {
+                    lblDetailSchedule.Text = string.Join(Environment.NewLine, job.Schedules.Select(s => "⏰ " + JobEditDialog.FormatScheduleDetail(s)));
+                }
+                else
+                {
+                    lblDetailSchedule.Text = "⏰ " + Strings.ScheduleManualOnly;
+                }
+
+                // 9. Retention Policy
+                if (job.Retention != null)
+                {
+                    switch (job.Retention.Type)
+                    {
+                        case RetentionType.KeepDays:
+                            lblDetailRetention.Text = "🛡 " + Strings.RetentionDaysText(job.Retention.KeepDays);
+                            break;
+                        case RetentionType.KeepFullCount:
+                            lblDetailRetention.Text = "🛡 " + Strings.RetentionCountText(job.Retention.KeepFullCount);
+                            break;
+                        default:
+                            lblDetailRetention.Text = "🛡 " + Strings.RetentionKeepAllText;
+                            break;
+                    }
+                }
+                else
+                {
+                    lblDetailRetention.Text = "🛡 " + Strings.RetentionKeepAllText;
+                }
+
+                // 10. Email Alerts
+                if (job.Notification != null && job.Notification.Enabled && job.Notification.Recipients != null && job.Notification.Recipients.Count > 0)
+                {
+                    string condStr = job.Notification.Condition == NotificationCondition.Always
+                        ? Strings.ConditionAlways
+                        : (job.Notification.Condition == NotificationCondition.OnFailureOnly ? Strings.ConditionFailureOnly : Strings.ConditionSuccessOnly);
+                    lblDetailAlert.Text = $"✉ {string.Join(", ", job.Notification.Recipients)}  ({condStr})";
+                }
+                else
+                {
+                    lblDetailAlert.Text = "✉ " + Strings.AlertDisabled;
+                }
+
+                // 11. Last Run
                 lblDetailLast.Text = job.LastRunUtc.HasValue
-                    ? $"{job.LastRunUtc.Value.ToLocalTime():yyyy-MM-dd HH:mm} ({vm.StatusDisplay})"
+                    ? $"{job.LastRunUtc.Value.ToLocalTime():yyyy-MM-dd HH:mm}  ({vm.StatusDisplay})  •  {(vm.SizeDisplay != "-" ? vm.SizeDisplay : Strings.NotScanned)}"
                     : Strings.NeverExecuted;
-                lblDetailNext.Text = vm.NextRunDisplay;
+
+                // 12. Last Result / Message
+                if (!string.IsNullOrWhiteSpace(job.LastMessage))
+                {
+                    lblDetailLastResult.Text = job.LastMessage;
+                }
+                else if (job.LastRunUtc.HasValue)
+                {
+                    lblDetailLastResult.Text = vm.StatusDisplay;
+                }
+                else
+                {
+                    lblDetailLastResult.Text = "-";
+                }
+
+                // 13. Next Run
+                lblDetailNext.Text = "⏰ " + vm.NextRunDisplay;
             }
             else
             {
@@ -849,11 +1128,19 @@ namespace FtpSysPro.Manager.UI
         private void ResetJobDetail()
         {
             lblDetailName.Text = Strings.NoJobSelected;
+            lblDetailBadge.Text = "";
+            lblDetailDesc.Visible = false;
             lblDetailSourceSize.Text = "-";
-            lblDetailTransfer.Text = "-";
+            lblDetailSources.Text = "-";
+            lblDetailExcludes.Text = "-";
             lblDetailDest.Text = "-";
-            txtDetailSources.Text = "";
+            lblDetailTransfer.Text = "-";
+            lblDetailIntegrity.Text = "-";
+            lblDetailSchedule.Text = "-";
+            lblDetailRetention.Text = "-";
+            lblDetailAlert.Text = "-";
             lblDetailLast.Text = "-";
+            lblDetailLastResult.Text = "-";
             lblDetailNext.Text = "-";
         }
 
@@ -865,7 +1152,7 @@ namespace FtpSysPro.Manager.UI
 
                 int width = splitContainer.Width;
                 int minPanel1 = 350;
-                int minPanel2 = 270;
+                int minPanel2 = 300;
 
                 if (width > (minPanel1 + minPanel2))
                 {
@@ -873,7 +1160,7 @@ namespace FtpSysPro.Manager.UI
                     splitContainer.Panel2MinSize = minPanel2;
                     splitContainer.FixedPanel = FixedPanel.Panel2;
 
-                    int desiredDetailWidth = 320;
+                    int desiredDetailWidth = 350;
                     int maxDistance = width - splitContainer.Panel2MinSize;
                     int minDistance = splitContainer.Panel1MinSize;
                     int calculated = width - desiredDetailWidth;

@@ -148,7 +148,13 @@ namespace FtpSysPro.Core.Resources
         public static string HeaderTransfer => IsVi ? "HÌNH THỨC ĐÓNG GÓI:" : "PACKAGING MODE:";
         public static string HeaderDest => IsVi ? "KHO LƯU TRỮ ĐÍCH:" : "DESTINATION REPOSITORY:";
         public static string HeaderSources => IsVi ? "THƯ MỤC DỮ LIỆU NGUỒN:" : "SOURCE DIRECTORIES:";
+        public static string HeaderExcludes => IsVi ? "MẪU TỆP LOẠI TRỪ:" : "EXCLUDE PATTERNS:";
+        public static string HeaderIntegrity => IsVi ? "AN TOÀN DỮ LIỆU & VSS:" : "DATA INTEGRITY & VSS:";
+        public static string HeaderSchedule => IsVi ? "LỊCH THỰC THI TỰ ĐỘNG:" : "AUTOMATIC SCHEDULE:";
+        public static string HeaderRetention => IsVi ? "CHÍNH SÁCH LƯU GIỮ BẢN SAO:" : "RETENTION POLICY:";
+        public static string HeaderAlert => IsVi ? "CẢNH BÁO EMAIL:" : "EMAIL NOTIFICATIONS:";
         public static string HeaderLast => IsVi ? "LẦN THỰC THI GẦN NHẤT:" : "LAST RUN:";
+        public static string HeaderLastResult => IsVi ? "KẾT QUẢ / THÔNG BÁO LẦN CUỐI:" : "LAST RESULT / MESSAGE:";
         public static string HeaderNext => IsVi ? "LỊCH THỰC THI TIẾP THEO:" : "NEXT RUN:";
         public static string NoJobSelected => IsVi ? "(Chưa chọn Job)" : "(No Job Selected)";
         public static string NeverExecuted => IsVi ? "Chưa thực thi" : "Never executed";
@@ -156,6 +162,18 @@ namespace FtpSysPro.Core.Resources
         public static string DirectCopy => IsVi ? "Sao chép trực tiếp" : "Direct Copy";
         public static string ZipCompression => IsVi ? "Nén ZIP" : "ZIP Compression";
         public static string FilesUnit => IsVi ? "tệp" : "files";
+        public static string ScheduleManualOnly => IsVi ? "Chạy thủ công (Không đặt lịch)" : "Manual execution only";
+        public static string NoneOrEmpty => IsVi ? "(Không có)" : "(None)";
+        public static string BadgeEnabled => IsVi ? "Đang bật" : "Enabled";
+        public static string BadgeDisabled => IsVi ? "Đang tắt" : "Disabled";
+        public static string VssEnabledText => IsVi ? "VSS Snapshot: Bật" : "VSS Snapshot: Enabled";
+        public static string VssDisabledText => IsVi ? "VSS Snapshot: Tắt" : "VSS Snapshot: Disabled";
+        public static string ShaVerifiedText => IsVi ? "SHA-256: Bật" : "SHA-256: Enabled";
+        public static string RetryCountText(int count) => IsVi ? $"Thử lại mạng: {count} lần" : $"Network retry: {count} times";
+        public static string AlertDisabled => IsVi ? "Không gửi cảnh báo" : "Disabled";
+        public static string RetentionKeepAllText => IsVi ? "Lưu giữ vĩnh viễn toàn bộ bản sao" : "Keep all restore points permanently";
+        public static string RetentionDaysText(int days) => IsVi ? $"Lưu điểm phục hồi trong {days} ngày" : $"Keep restore points within {days} days";
+        public static string RetentionCountText(int count) => IsVi ? $"Duy trì {count} điểm phục hồi gần nhất" : $"Keep {count} latest restore points";
 
         // Job Grid columns
         public static string ColJobName => IsVi ? "Tên Job sao lưu" : "Job Name";

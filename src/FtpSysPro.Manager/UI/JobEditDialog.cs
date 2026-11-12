@@ -1370,7 +1370,7 @@ namespace FtpSysPro.Manager.UI
             }
         }
 
-        private static string FormatScheduleDetail(ScheduleDefinition s)
+        public static string FormatScheduleDetail(ScheduleDefinition s)
         {
             if (Strings.IsVi)
             {
