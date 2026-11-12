@@ -42,11 +42,24 @@ namespace FtpSysPro.Core.Engine
             BackupJob job,
             CancellationToken cancellationToken = default)
         {
+            var list = new List<BackupSetManifest>();
+
+            // 1. Load from local catalog if available
+            if (_configStore != null && !string.IsNullOrEmpty(job.Id))
+            {
+                var localSets = _configStore.LoadLocalManifests(job.Id);
+                foreach (var s in localSets)
+                {
+                    if (!list.Any(x => x.BackupSetId == s.BackupSetId))
+                        list.Add(s);
+                }
+            }
+
+            // 2. Discover sets on destination
             using (var destination = BackupEngine.CreateDestination(job.Destination))
             {
                 var jobRemoteRoot = SanitizeName(job.Name);
                 var items = await destination.ListAsync(jobRemoteRoot, cancellationToken);
-                var list = new List<BackupSetManifest>();
 
                 foreach (var item in items)
                 {
@@ -70,6 +83,7 @@ namespace FtpSysPro.Core.Engine
                     else if (item.IsDirectory)
                     {
                         var subManifestPath = $"{item.FullPath}/manifest.json";
+                        bool loaded = false;
                         if (await destination.FileExistsAsync(subManifestPath, cancellationToken))
                         {
                             try
@@ -80,16 +94,69 @@ namespace FtpSysPro.Core.Engine
                                     var json = await reader.ReadToEndAsync();
                                     var m = JsonConvert.DeserializeObject<BackupSetManifest>(json);
                                     if (m != null && !list.Any(x => x.BackupSetId == m.BackupSetId))
+                                    {
                                         list.Add(m);
+                                        loaded = true;
+                                    }
                                 }
                             }
                             catch { }
                         }
+
+                        if (!loaded && !list.Any(x => x.BackupSetId == item.Name))
+                        {
+                            var match = System.Text.RegularExpressions.Regex.Match(item.Name, @"_(\d{8}_\d{6})_(FULL|INCR)$", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                            if (match.Success)
+                            {
+                                string dateStr = match.Groups[1].Value;
+                                string typeStr = match.Groups[2].Value.ToUpperInvariant();
+                                if (DateTime.TryParseExact(dateStr, "yyyyMMdd_HHmmss", null, System.Globalization.DateTimeStyles.AssumeUniversal, out var dt))
+                                {
+                                    list.Add(new BackupSetManifest
+                                    {
+                                        BackupSetId = item.Name,
+                                        JobId = job.Id,
+                                        JobName = job.Name,
+                                        CreatedUtc = dt.ToUniversalTime(),
+                                        BackupType = typeStr == "FULL" ? BackupType.Full : BackupType.Incremental,
+                                        BaseFullBackupSetId = typeStr == "FULL" ? item.Name : string.Empty,
+                                        IsCompressed = false
+                                    });
+                                }
+                            }
+                        }
+                    }
+                    else if (item.Name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var setId = Path.GetFileNameWithoutExtension(item.Name);
+                        if (!list.Any(x => x.BackupSetId == setId))
+                        {
+                            var match = System.Text.RegularExpressions.Regex.Match(item.Name, @"_(\d{8}_\d{6})_(FULL|INCR)\.zip$", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                            if (match.Success)
+                            {
+                                string dateStr = match.Groups[1].Value;
+                                string typeStr = match.Groups[2].Value.ToUpperInvariant();
+                                if (DateTime.TryParseExact(dateStr, "yyyyMMdd_HHmmss", null, System.Globalization.DateTimeStyles.AssumeUniversal, out var dt))
+                                {
+                                    list.Add(new BackupSetManifest
+                                    {
+                                        BackupSetId = setId,
+                                        JobId = job.Id,
+                                        JobName = job.Name,
+                                        CreatedUtc = dt.ToUniversalTime(),
+                                        BackupType = typeStr == "FULL" ? BackupType.Full : BackupType.Incremental,
+                                        BaseFullBackupSetId = typeStr == "FULL" ? setId : string.Empty,
+                                        IsCompressed = true,
+                                        ArchiveFileName = item.Name
+                                    });
+                                }
+                            }
+                        }
                     }
                 }
-
-                return list.OrderByDescending(m => m.CreatedUtc).ToList();
             }
+
+            return list.OrderByDescending(m => m.CreatedUtc).ToList();
         }
 
         public async Task<RestoreResult> RestoreToPointInTimeAsync(
@@ -170,16 +237,23 @@ namespace FtpSysPro.Core.Engine
                         {
                             // Download uncompressed files
                             var remoteDir = $"{jobRemoteRoot}/{set.BackupSetId}";
-                            foreach (var f in set.Files)
+                            if (set.Files != null && set.Files.Count > 0)
                             {
-                                cancellationToken.ThrowIfCancellationRequested();
-                                var remoteFile = $"{remoteDir}/{f.RelativePath.Replace('\\', '/')}";
-                                var localFile = Path.Combine(options.TargetDirectory, f.RelativePath);
+                                foreach (var f in set.Files)
+                                {
+                                    cancellationToken.ThrowIfCancellationRequested();
+                                    var remoteFile = $"{remoteDir}/{f.RelativePath.Replace('\\', '/')}";
+                                    var localFile = Path.Combine(options.TargetDirectory, f.RelativePath);
 
-                                if (File.Exists(localFile) && !options.OverwriteExisting)
-                                    continue;
+                                    if (File.Exists(localFile) && !options.OverwriteExisting)
+                                        continue;
 
-                                await destination.DownloadFileAsync(remoteFile, localFile, null, cancellationToken);
+                                    await destination.DownloadFileAsync(remoteFile, localFile, null, cancellationToken);
+                                }
+                            }
+                            else
+                            {
+                                await DownloadRemoteDirectoryRecursiveAsync(destination, remoteDir, "", options.TargetDirectory, options.OverwriteExisting, cancellationToken);
                             }
                         }
 
@@ -218,6 +292,37 @@ namespace FtpSysPro.Core.Engine
             }
 
             return result;
+        }
+
+        private static async Task DownloadRemoteDirectoryRecursiveAsync(
+            IDestination destination,
+            string remoteBaseDir,
+            string relativePath,
+            string targetDir,
+            bool overwriteExisting,
+            CancellationToken cancellationToken)
+        {
+            var currentRemote = string.IsNullOrEmpty(relativePath) ? remoteBaseDir : $"{remoteBaseDir}/{relativePath}";
+            var items = await destination.ListAsync(currentRemote, cancellationToken);
+
+            foreach (var item in items)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var childRel = string.IsNullOrEmpty(relativePath) ? item.Name : $"{relativePath}/{item.Name}";
+
+                if (item.IsDirectory)
+                {
+                    await DownloadRemoteDirectoryRecursiveAsync(destination, remoteBaseDir, childRel, targetDir, overwriteExisting, cancellationToken);
+                }
+                else
+                {
+                    var localTarget = Path.Combine(targetDir, childRel.Replace('/', '\\'));
+                    if (File.Exists(localTarget) && !overwriteExisting)
+                        continue;
+
+                    await destination.DownloadFileAsync(item.FullPath, localTarget, null, cancellationToken);
+                }
+            }
         }
 
         private static string SanitizeName(string name)

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Security.AccessControl;
 using System.Security.Principal;
 using FtpSysPro.Core.Models;
@@ -426,6 +427,40 @@ namespace FtpSysPro.Core.Config
                 var file = Path.Combine(jobCatDir, $"{manifest.BackupSetId}.manifest.json");
                 var json = JsonConvert.SerializeObject(manifest, Formatting.Indented);
                 File.WriteAllText(file, json);
+            }
+        }
+
+        public List<BackupSetManifest> LoadLocalManifests(string jobId)
+        {
+            lock (_syncLock)
+            {
+                var list = new List<BackupSetManifest>();
+                if (string.IsNullOrEmpty(jobId))
+                    return list;
+
+                var jobCatDir = Path.Combine(_catalogDirectory, Sanitize(jobId));
+                if (!Directory.Exists(jobCatDir))
+                    return list;
+
+                var files = Directory.GetFiles(jobCatDir, "*.manifest.json");
+                Array.Sort(files);
+                Array.Reverse(files);
+
+                foreach (var f in files)
+                {
+                    try
+                    {
+                        var json = File.ReadAllText(f);
+                        var m = JsonConvert.DeserializeObject<BackupSetManifest>(json);
+                        if (m != null)
+                            list.Add(m);
+                    }
+                    catch
+                    {
+                        // Ignore corrupt manifest files
+                    }
+                }
+                return list.OrderByDescending(m => m.CreatedUtc).ToList();
             }
         }
 

@@ -113,11 +113,17 @@ namespace FtpSysPro.Core.Destinations
                     catch { }
                 }
 
-                using (var source = new FileStream(localFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete))
-                using (var dest = new FileStream(target, FileMode.Create, FileAccess.Write, FileShare.None))
+                using (var source = new FileStream(localFilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete, 1048576, FileOptions.SequentialScan))
+                using (var dest = new FileStream(target, FileMode.Create, FileAccess.Write, FileShare.None, 1048576, FileOptions.SequentialScan))
                 {
                     CopyStreamWithProgress(source, dest, progress, cancellationToken);
                 }
+
+                try
+                {
+                    File.SetLastWriteTimeUtc(target, File.GetLastWriteTimeUtc(localFilePath));
+                }
+                catch { }
             }, cancellationToken);
         }
 
@@ -289,16 +295,22 @@ namespace FtpSysPro.Core.Destinations
                 return;
             }
 
-            byte[] buffer = new byte[81920]; // 80 KB
+            byte[] buffer = new byte[1048576]; // 1 MB buffer for high-speed sequential disk I/O
             long totalRead = 0;
             int bytesRead;
+            long lastReported = 0;
 
             while ((bytesRead = source.Read(buffer, 0, buffer.Length)) > 0)
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 destination.Write(buffer, 0, bytesRead);
                 totalRead += bytesRead;
-                progress?.Report(totalRead);
+
+                if (progress != null && (totalRead - lastReported >= 4194304 || (source.CanSeek && totalRead == source.Length)))
+                {
+                    lastReported = totalRead;
+                    progress.Report(totalRead);
+                }
             }
         }
 

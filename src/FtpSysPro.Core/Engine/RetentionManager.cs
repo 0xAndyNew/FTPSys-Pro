@@ -52,7 +52,8 @@ namespace FtpSysPro.Core.Engine
                 }
                 else if (item.IsDirectory)
                 {
-                    // Check sub-manifest inside uncompressed folder
+                    // Check sub-manifest inside uncompressed folder if present
+                    bool loaded = false;
                     var subManifestPath = $"{item.FullPath}/manifest.json";
                     if (await _destination.FileExistsAsync(subManifestPath, cancellationToken))
                     {
@@ -63,10 +64,61 @@ namespace FtpSysPro.Core.Engine
                             {
                                 var json = await reader.ReadToEndAsync();
                                 var m = JsonConvert.DeserializeObject<BackupSetManifest>(json);
-                                if (m != null) manifests.Add(m);
+                                if (m != null)
+                                {
+                                    manifests.Add(m);
+                                    loaded = true;
+                                }
                             }
                         }
                         catch { }
+                    }
+
+                    // If no manifest file on destination, infer backup set info from directory name: {Name}_{yyyyMMdd_HHmmss}_{FULL|INCR}
+                    if (!loaded)
+                    {
+                        var match = System.Text.RegularExpressions.Regex.Match(item.Name, @"_(\d{8}_\d{6})_(FULL|INCR)$", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                        if (match.Success)
+                        {
+                            string dateStr = match.Groups[1].Value;
+                            string typeStr = match.Groups[2].Value.ToUpperInvariant();
+                            if (DateTime.TryParseExact(dateStr, "yyyyMMdd_HHmmss", null, System.Globalization.DateTimeStyles.AssumeUniversal, out var dt))
+                            {
+                                manifests.Add(new BackupSetManifest
+                                {
+                                    BackupSetId = item.Name,
+                                    CreatedUtc = dt.ToUniversalTime(),
+                                    BackupType = typeStr == "FULL" ? BackupType.Full : BackupType.Incremental,
+                                    BaseFullBackupSetId = typeStr == "FULL" ? item.Name : string.Empty,
+                                    IsCompressed = false
+                                });
+                            }
+                        }
+                    }
+                }
+                else if (item.Name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+                {
+                    var match = System.Text.RegularExpressions.Regex.Match(item.Name, @"_(\d{8}_\d{6})_(FULL|INCR)\.zip$", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                    if (match.Success)
+                    {
+                        string dateStr = match.Groups[1].Value;
+                        string typeStr = match.Groups[2].Value.ToUpperInvariant();
+                        if (DateTime.TryParseExact(dateStr, "yyyyMMdd_HHmmss", null, System.Globalization.DateTimeStyles.AssumeUniversal, out var dt))
+                        {
+                            var setId = Path.GetFileNameWithoutExtension(item.Name);
+                            if (!manifests.Any(m => m.BackupSetId == setId))
+                            {
+                                manifests.Add(new BackupSetManifest
+                                {
+                                    BackupSetId = setId,
+                                    CreatedUtc = dt.ToUniversalTime(),
+                                    BackupType = typeStr == "FULL" ? BackupType.Full : BackupType.Incremental,
+                                    BaseFullBackupSetId = typeStr == "FULL" ? setId : string.Empty,
+                                    IsCompressed = true,
+                                    ArchiveFileName = item.Name
+                                });
+                            }
+                        }
                     }
                 }
             }

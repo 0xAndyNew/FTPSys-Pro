@@ -164,33 +164,6 @@ namespace FtpSysPro.Core.Engine
                 progress?.Report(progressInfo);
                 _configStore.AppendJobLog(job.Id, job.Name, "INF", $"Phát hiện thay đổi: {filesToBackup.Count:N0} tệp cần sao lưu ({FormatBytes(changes.TotalBytesToBackup)}), {changes.DeletedRelativePaths.Count} tệp đã xóa");
 
-                // Step 3.5: Pre-flight Disk Space Check (if enabled)
-                if (job.Integrity != null && job.Integrity.CheckFreeDiskSpace && filesToBackup.Count > 0)
-                {
-                    progressInfo.CurrentPhase = "Checking Disk Space";
-                    progress?.Report(progressInfo);
-
-                    // Check Temp directory drive space only if compression is enabled (as zip is built in temp)
-                    if (job.Compression.Enabled)
-                    {
-                        var tempSpaceCheck = DiskSpaceChecker.CheckFreeSpace(tempDirForRun, changes.TotalBytesToBackup);
-                        if (!tempSpaceCheck.IsSufficient)
-                        {
-                            throw new InvalidOperationException($"Không đủ dung lượng trống trong thư mục Temp ({tempDirForRun}): {tempSpaceCheck.ErrorMessage}");
-                        }
-                    }
-
-                    // Check Destination drive space if local/UNC
-                    if (job.Destination.Type == DestinationType.LocalOrUnc && !string.IsNullOrEmpty(job.Destination.LocalPath))
-                    {
-                        var destSpaceCheck = DiskSpaceChecker.CheckFreeSpace(job.Destination.LocalPath, changes.TotalBytesToBackup);
-                        if (!destSpaceCheck.IsSufficient)
-                        {
-                            throw new InvalidOperationException($"Không đủ dung lượng trống tại thư mục đích ({job.Destination.LocalPath}): {destSpaceCheck.ErrorMessage}");
-                        }
-                    }
-                }
-
                 // Step 4: Prepare backup set name and remote folders
                 var timestamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
                 var typeSuffix = effectiveType == BackupType.Full ? "FULL" : "INCR";
@@ -279,43 +252,32 @@ namespace FtpSysPro.Core.Engine
                         progressInfo,
                         progress,
                         retryCount,
-                        verifySha,
+                        false, // Do not run SHA-256 loop on uncompressed direct copy for maximum native disk throughput
                         cancellationToken);
                 }
 
-                // Step 6: Upload manifest to destination (this commits the backup set)
+                // Step 6: Commit backup manifest locally only (do NOT create or upload any manifest files to destination)
                 progressInfo.CurrentPhase = "Finalizing";
                 progress?.Report(progressInfo);
 
-                var manifestJson = JsonConvert.SerializeObject(manifest, Formatting.Indented);
-                var localManifestFile = Path.Combine(tempDirForRun, "manifest.json");
-                File.WriteAllText(localManifestFile, manifestJson);
-
-                var remoteManifestPath = $"{jobRemoteRoot}/{backupSetName}.manifest.json";
-                await RetryHelper.ExecuteWithRetryAsync(
-                    () => destination.UploadFileAsync(localManifestFile, remoteManifestPath, null, cancellationToken),
-                    retryCount,
-                    2000,
-                    null,
-                    cancellationToken);
-
-                if (!job.Compression.Enabled)
-                {
-                    // Also save manifest inside uncompressed directory for self-containment
-                    try
-                    {
-                        var innerManifestPath = $"{setRemoteDir}/manifest.json";
-                        await destination.UploadFileAsync(localManifestFile, innerManifestPath, null, cancellationToken);
-                    }
-                    catch { }
-                }
-
-                result.ManifestPathOnDestination = remoteManifestPath;
-
-                // Step 7: Save local manifest copy for incremental change detection
+                // Save local manifest copy for incremental change detection
                 _configStore.SaveLocalManifest(manifest);
 
-                // Step 8: Apply retention
+                // Clean up any legacy manifest.json files in destination so no extra files exist
+                try
+                {
+                    var legacyRoot = $"{jobRemoteRoot}/{backupSetName}.manifest.json";
+                    if (await destination.FileExistsAsync(legacyRoot, cancellationToken))
+                        await destination.DeleteFileAsync(legacyRoot, cancellationToken);
+                    var legacyInner = $"{setRemoteDir}/manifest.json";
+                    if (await destination.FileExistsAsync(legacyInner, cancellationToken))
+                        await destination.DeleteFileAsync(legacyInner, cancellationToken);
+                }
+                catch { }
+
+                result.ManifestPathOnDestination = string.Empty;
+
+                // Step 7: Apply retention
                 progressInfo.CurrentPhase = "Applying Retention";
                 progress?.Report(progressInfo);
 
@@ -562,12 +524,20 @@ namespace FtpSysPro.Core.Engine
                 }
                 catch (Exception ex)
                 {
+                    if (RetryHelper.IsDiskFull(ex))
+                    {
+                        throw new IOException("Ổ đĩa đích đã đầy (Disk Full). Đã dừng tác vụ sao lưu.", ex);
+                    }
+
                     // Isolate single-file errors so one inaccessible/failing file doesn't stop the entire multi-GB backup job
                     Serilog.Log.Warning("[BackupEngine] [Job '{JobName}'] Cảnh báo: Lỗi sao lưu tệp '{FilePath}': {Message}. Bỏ qua tệp này và tiếp tục sao lưu.", jobName, file.RelativePath, ex.Message);
                     warnings?.Add($"Lỗi sao lưu '{file.RelativePath}': {ex.Message}");
                     manifest?.Files.RemoveAll(x => x.RelativePath == file.RelativePath);
                 }
             }
+
+            progressInfo.PercentComplete = 100.0;
+            progress?.Report(progressInfo);
         }
 
         private static string SanitizeName(string name)
