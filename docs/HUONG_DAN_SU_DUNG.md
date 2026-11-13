@@ -48,7 +48,7 @@ Hai thành phần giao tiếp an toàn qua giao thức **Named Pipe IPC (`\\.\pi
 ## 2. Cài đặt và Khởi động hệ thống
 
 ### Cài đặt qua bộ cài đặt Setup (.exe)
-1. Tải bộ cài đặt mới nhất `FTPSys_Pro_Setup_v1.2.5.exe` từ thư mục `dist/` hoặc trang [Releases của GitHub](https://github.com/0xAndyNew/FTPSys-Pro/releases).
+1. Tải bộ cài đặt mới nhất `FTPSys_Pro_Setup_v1.2.6.exe` từ thư mục `dist/` hoặc trang [Releases của GitHub](https://github.com/0xAndyNew/FTPSys-Pro/releases).
 2. Nhấp chuột phải vào file cài đặt và chọn **Run as administrator**.
 3. Thực hiện theo hướng dẫn trên màn hình. Trình cài đặt sẽ tự động:
    - Cài đặt các tệp thực thi vào thư mục hệ thống `C:\Program Files\FTPSys Pro\`.
@@ -209,21 +209,28 @@ Nhấn nút **Hoàn tất (Finish)** để lưu Job và đồng bộ tức thì 
 
 ---
 
-## 6. Quy trình Phục hồi dữ liệu (Data Restoration Wizard)
+## 6. Quy trình Phục hồi dữ liệu Đa nguồn & Chọn lọc (Data Restoration Wizard - v1.2.6)
 
-Khi xảy ra sự cố mất mát dữ liệu, lỗi phần cứng hoặc bị tấn công mã hóa:
+Khi xảy ra sự cố mất mát dữ liệu, lỗi phần cứng hoặc cần trích xuất tệp sao lưu:
 
-1. Trên giao diện chính, chọn Job sao lưu tương ứng rồi nhấn nút **Phục hồi dữ liệu (Restore)**.
-2. Cửa sổ **Restore Wizard** xuất hiện:
-   - Hệ thống tự động truy vấn danh sách toàn bộ các điểm phục hồi (Restore Points) khả dụng trên kho lưu trữ đích.
+1. Trên thanh công cụ chính, nhấn nút **Phục hồi dữ liệu (Restore)**.
+2. Cửa sổ **Restore Wizard** hỗ trợ 3 chế độ nguồn phục hồi linh hoạt:
+   - **Từ Job đã lưu (Configured Job)**: Chọn nhanh Job sao lưu có sẵn trong danh sách (tự động nhận diện cả Local, UNC, FTP, SFTP).
+   - **Từ Thư mục sao lưu trực tiếp (Local / USB / Mạng UNC)**: Cho phép trỏ thẳng vào bất kỳ thư mục nào trên máy tính, ổ cứng ngoài hoặc chia sẻ mạng UNC mà **không cần phải có Job trong danh sách** (cực kỳ hữu ích khi cài mới phần mềm trên máy khác hoặc sau khi xoá Job).
+   - **Từ Máy chủ FTP / SFTP từ xa (Remote Server)**: Nhập nhanh Host, Port, Username, Password và đường dẫn từ xa để kết nối và khôi phục trực tiếp từ server FTP/SFTP độc lập.
+3. Nhấn **Quét điểm phục hồi**:
+   - Hệ thống tự động quét nhận diện toàn bộ các điểm sao lưu (Full & Incremental).
    - Bảng danh sách hiển thị rõ ràng: *Thời điểm tạo (UTC), Chế độ (Full/Incremental), Mã điểm phục hồi, Số tệp, Dung lượng, Định dạng (ZIP / Raw)*.
-3. Chọn điểm phục hồi bạn muốn khôi phục về.
-4. Chỉ định **Thư mục đích nhận dữ liệu phục hồi (Target Directory)**: Có thể khôi phục về thư mục ban đầu hoặc một thư mục độc lập mới.
-5. Tùy chọn: Tích chọn **Ghi đè tệp nếu đã tồn tại ở thư mục đích (Overwrite existing files)**.
-6. Nếu bản sao lưu có mã hóa AES-256, nhập mật khẩu giải mã.
-7. Nhấn nút **Phục hồi dữ liệu**:
-   - Hệ thống tự động truy vết chuỗi sao lưu từ điểm Full cơ sở xuyên suốt các điểm Incremental liên tiếp đến thời điểm chọn.
-   - Trích xuất và tái tạo nguyên vẹn 100% cấu trúc thư mục và dữ liệu như tại thời điểm sao lưu.
+4. Chọn điểm phục hồi bạn muốn khôi phục về (Ví dụ: một mốc sao lưu Incremental).
+5. Chỉ định **Thư mục đích nhận dữ liệu phục hồi (Target Directory)**: Có thể khôi phục về thư mục ban đầu hoặc một thư mục độc lập mới.
+6. **Tuỳ chọn Khôi phục chọn lọc thư mục con (Selective Folder Restore)**:
+   - Tích chọn *Chỉ khôi phục thư mục con cụ thể*.
+   - Nhập tên thư mục con cần lấy (Ví dụ: `Accounting` hoặc `DuAn_A`). Hệ thống sẽ chỉ trích xuất đúng thư mục đó thay vì khôi phục toàn bộ.
+7. Tùy chọn: Tích chọn **Ghi đè tệp nếu đã tồn tại ở thư mục đích (Overwrite existing files)**.
+8. Nếu bản sao lưu có mã hóa AES-256, nhập mật khẩu giải mã.
+9. Nhấn nút **Bắt đầu phục hồi**:
+   - Hệ thống tự động truy vết chuỗi sao lưu từ điểm Full cơ sở xuyên suốt các điểm Incremental liên tiếp đến thời điểm chọn (`Full -> Incr 1 -> Incr 2 -> ... -> Điểm đã chọn`).
+   - Tải và tái tạo nguyên vẹn 100% dữ liệu gốc về thư mục đích.
 
 ---
 

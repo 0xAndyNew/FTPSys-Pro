@@ -90,13 +90,18 @@ namespace FtpSysPro.Core.Compression
             string password = null,
             bool overwriteExisting = true,
             IProgress<long> progress = null,
-            CancellationToken cancellationToken = default)
+            CancellationToken cancellationToken = default,
+            string subFolderFilter = null)
         {
             if (!File.Exists(zipPath))
                 throw new FileNotFoundException("ZIP archive not found", zipPath);
 
             if (!Directory.Exists(targetDirectory))
                 Directory.CreateDirectory(targetDirectory);
+
+            var normFilter = string.IsNullOrWhiteSpace(subFolderFilter)
+                ? null
+                : subFolderFilter.Trim().Replace('/', '\\').Trim('\\');
 
             using (var fs = new FileStream(zipPath, FileMode.Open, FileAccess.Read, FileShare.Read))
             using (var zipFile = new ZipFile(fs))
@@ -118,6 +123,18 @@ namespace FtpSysPro.Core.Compression
 
                     // Sanitize path to prevent Zip Slip vulnerability
                     var entryPath = entry.Name.Replace('/', '\\');
+
+                    // If selective subfolder filter is specified, skip entries outside this subfolder
+                    if (normFilter != null)
+                    {
+                        var normEntry = entryPath.TrimStart('\\');
+                        if (!normEntry.StartsWith(normFilter + "\\", StringComparison.OrdinalIgnoreCase) &&
+                            !normEntry.Equals(normFilter, StringComparison.OrdinalIgnoreCase))
+                        {
+                            continue;
+                        }
+                    }
+
                     var fullDestPath = Path.GetFullPath(Path.Combine(targetDirectory, entryPath));
                     var fullTargetDir = Path.GetFullPath(targetDirectory) + Path.DirectorySeparatorChar;
 

@@ -141,30 +141,64 @@ namespace FtpSysPro.Service
                     return IpcResponse.Ok(msg.MessageId, sent);
 
                 case IpcActions.ListBackupSets:
-                    var jobId = msg.PayloadJson.Trim('"', ' ');
+                    var restoreEngine = new RestoreEngine(_configStore);
+
+                    // Support either ListBackupSetsRequest (custom destination or jobId) or legacy plain jobId string
+                    ListBackupSetsRequest listReq = null;
+                    try
+                    {
+                        if (!string.IsNullOrWhiteSpace(msg.PayloadJson) && msg.PayloadJson.TrimStart().StartsWith("{"))
+                        {
+                            listReq = JsonConvert.DeserializeObject<ListBackupSetsRequest>(msg.PayloadJson);
+                        }
+                    }
+                    catch { }
+
+                    if (listReq != null && listReq.CustomDestination != null)
+                    {
+                        var customSets = await restoreEngine.ListAvailableBackupSetsFromDestinationAsync(
+                            listReq.CustomDestination, listReq.RemoteRoot ?? "");
+                        return IpcResponse.Ok(msg.MessageId, customSets);
+                    }
+
+                    var targetJobId = (listReq != null && !string.IsNullOrEmpty(listReq.JobId))
+                        ? listReq.JobId
+                        : msg.PayloadJson?.Trim('"', ' ');
+
                     var configForList = _configStore.LoadConfig();
-                    var jobForList = configForList.Jobs.FirstOrDefault(j => j.Id == jobId);
+                    var jobForList = configForList.Jobs.FirstOrDefault(j => j.Id == targetJobId);
                     if (jobForList == null)
                         return IpcResponse.Fail(msg.MessageId, "Job not found");
 
-                    var restoreEngine = new RestoreEngine(_configStore);
                     var sets = await restoreEngine.ListAvailableBackupSetsAsync(jobForList);
                     return IpcResponse.Ok(msg.MessageId, sets);
 
                 case IpcActions.Restore:
                     var restoreReq = JsonConvert.DeserializeObject<RestoreRequest>(msg.PayloadJson);
-                    var configForRestore = _configStore.LoadConfig();
-                    var jobForRestore = configForRestore.Jobs.FirstOrDefault(j => j.Id == restoreReq.JobId);
-                    if (jobForRestore == null)
-                        return IpcResponse.Fail(msg.MessageId, "Job not found");
-
                     var restoreEng = new RestoreEngine(_configStore);
                     var restoreOpts = new RestoreOptions
                     {
                         TargetDirectory = restoreReq.TargetDirectory,
                         OverwriteExisting = restoreReq.OverwriteExisting,
-                        ZipPassword = restoreReq.ZipPassword
+                        ZipPassword = restoreReq.ZipPassword,
+                        SelectedSubFolder = restoreReq.SelectedSubFolder
                     };
+
+                    if (restoreReq.CustomDestination != null)
+                    {
+                        var customRestoreResult = await restoreEng.RestoreFromDestinationToPointInTimeAsync(
+                            restoreReq.CustomDestination,
+                            restoreReq.RemoteRoot ?? "",
+                            restoreReq.BackupSetId,
+                            restoreOpts,
+                            restoreReq.ZipPassword);
+                        return IpcResponse.Ok(msg.MessageId, customRestoreResult);
+                    }
+
+                    var configForRestore = _configStore.LoadConfig();
+                    var jobForRestore = configForRestore.Jobs.FirstOrDefault(j => j.Id == restoreReq.JobId);
+                    if (jobForRestore == null)
+                        return IpcResponse.Fail(msg.MessageId, "Job not found");
 
                     var restoreResult = await restoreEng.RestoreToPointInTimeAsync(jobForRestore, restoreReq.BackupSetId, restoreOpts);
                     return IpcResponse.Ok(msg.MessageId, restoreResult);

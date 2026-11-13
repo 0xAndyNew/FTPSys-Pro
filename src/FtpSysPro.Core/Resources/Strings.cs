@@ -20,7 +20,7 @@ namespace FtpSysPro.Core.Resources
             CultureInfo.DefaultThreadCurrentUICulture = culture;
         }
 
-        public static string AppVersion => "1.2.5";
+        public static string AppVersion => "1.2.6";
         public static string AppName => IsVi ? "FTPSys Pro - Sao lưu Dữ liệu Doanh nghiệp" : "FTPSys Pro - Enterprise Backup & Recovery";
 
         // Navigation / Tabs
@@ -319,5 +319,15 @@ namespace FtpSysPro.Core.Resources
             ? "Ứng dụng FTPSys Pro Manager cần quyền Quản trị viên (Administrator) để khởi động/dừng Windows Service và truy cập đầy đủ các tệp sao lưu hệ thống.\n\nBạn có muốn khởi chạy ứng dụng với quyền Administrator không?"
             : "FTPSys Pro Manager requires Administrator privileges to manage the Windows Service and access system backup files.\n\nDo you want to run as Administrator?";
         public static string AdministratorBadge => IsVi ? " (Quản trị viên)" : " (Administrator)";
+
+        // Restore Multi-source & Selective
+        public static string RestoreSource => IsVi ? "1. Lựa chọn nguồn phục hồi dữ liệu:" : "1. Select Restoration Source:";
+        public static string RestoreFromJob => IsVi ? "Từ Job đã lưu" : "From Configured Job";
+        public static string RestoreFromFolder => IsVi ? "Từ Thư mục sao lưu (Local / USB / Mạng UNC)" : "From Backup Directory (Local / USB / UNC)";
+        public static string RestoreFromRemote => IsVi ? "Từ Máy chủ FTP / SFTP từ xa" : "From Remote FTP / SFTP Server";
+        public static string RestoreSelectiveSubFolder => IsVi ? "Chỉ khôi phục thư mục con cụ thể:" : "Restore specific subfolder only:";
+        public static string RestoreSelectivePlaceholder => IsVi ? "Ví dụ: Documents hoặc SubFolder (bỏ trống để khôi phục tất cả)" : "e.g. Documents or SubFolder (leave blank for all)";
+        public static string RestoreScan => IsVi ? "Quét điểm phục hồi" : "Scan Restore Points";
+        public static string RestoreConnectAndScan => IsVi ? "Kết nối & Quét" : "Connect & Scan";
     }
 }

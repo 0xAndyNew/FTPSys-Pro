@@ -72,12 +72,22 @@ namespace FtpSysPro.Core.Ipc
         public string Recipient { get; set; }
     }
 
+    public class ListBackupSetsRequest
+    {
+        public string JobId { get; set; } = string.Empty;
+        public DestinationConfig CustomDestination { get; set; }
+        public string RemoteRoot { get; set; } = string.Empty;
+    }
+
     public class RestoreRequest
     {
         public string JobId { get; set; } = string.Empty;
+        public DestinationConfig CustomDestination { get; set; }
+        public string RemoteRoot { get; set; } = string.Empty;
         public string BackupSetId { get; set; } = string.Empty;
         public string TargetDirectory { get; set; } = string.Empty;
         public bool OverwriteExisting { get; set; } = true;
         public string ZipPassword { get; set; } = string.Empty;
+        public string SelectedSubFolder { get; set; } = string.Empty;
     }
 }

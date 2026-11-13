@@ -62,9 +62,13 @@
 - **Đối với Job Sao lưu gia tăng (Incremental Backup)**: Hệ thống duy trì $N$ chuỗi sao lưu (Full + Incremental) gần nhất. Mỗi chuỗi gồm 1 điểm Full cơ sở và các điểm Incremental phụ thuộc; hệ thống tuyệt đối bảo toàn điểm Full cơ sở khi các điểm Incremental liên quan vẫn còn hiệu lực lưu trữ.
 - Tuỳ chọn duy trì điểm phục hồi theo thời gian ($N$ ngày) hoặc lưu giữ vĩnh viễn.
 
-### 7. Phục hồi dữ liệu tức thì (Data Restoration Wizard)
-- Trình hướng dẫn phục hồi dữ liệu chuyên dụng tích hợp sẵn trong ứng dụng.
-- Tự động nhận diện chuỗi `Full -> Incr 1 -> Incr 2 -> ... -> Điểm phục hồi đã chọn` để tái cấu trúc chính xác dữ liệu về thư mục ban đầu hoặc thư mục chỉ định mới.
+### 7. Phục hồi dữ liệu đa nguồn & Chọn lọc thư mục (Multi-source & Selective Restore - v1.2.6)
+- **Hỗ trợ 3 nguồn phục hồi linh hoạt**:
+  1. *Từ Job đã lưu (Configured Job)*: Chọn nhanh Job có sẵn (tự động xử lý cả Local, UNC, FTP, SFTP).
+  2. *Từ Thư mục sao lưu trực tiếp (Local / USB / Mạng UNC)*: Trỏ thẳng vào thư mục chứa dữ liệu sao lưu bằng nút Browse mà không cần có Job trong danh sách (giải quyết triệt để tình huống cài mới hoặc đã xoá Job).
+  3. *Từ Máy chủ FTP / SFTP từ xa*: Nhập trực tiếp thông tin kết nối FTP/SFTP để quét và phục hồi dữ liệu từ xa mà không cần tạo trước Job.
+- **Tự động tái tạo chuỗi Incremental thông minh**: Tự động nhận diện bản Full cơ sở và các bản Incremental phụ thuộc, ghép chuỗi `Full -> Incr 1 -> Incr 2 -> ... -> Điểm phục hồi đã chọn` để khôi phục toàn vẹn 100% dữ liệu.
+- **Khôi phục chọn lọc thư mục con (Selective Folder Restore)**: Cho phép chỉ định chính xác thư mục con cần trích xuất thay vì bắt buộc bung toàn bộ dữ liệu.
 - Hỗ trợ cả tệp nén `.zip` (tự động giải mã AES-256) lẫn tệp đồng bộ trực tiếp cấu trúc thư mục.
 
 ### 8. Báo cáo Email tự động (SMTP TLS)
@@ -177,11 +181,11 @@ cd D:\ftpsyspro
 Script sẽ tự động:
 1. Restore toàn bộ gói NuGet phụ thuộc (`FluentFTP`, `SSH.NET`, `SharpZipLib`, `MailKit`, `Newtonsoft.Json`, `Serilog`).
 2. Biên dịch Solution ở cấu hình `Release AnyCPU`.
-3. Chạy toàn bộ bộ kiểm thử tự động xUnit (46 tests).
-4. Tự động đóng gói bộ cài đặt `dist\FTPSys_Pro_Setup_v1.2.5.exe` bằng Inno Setup (nếu máy có Inno Setup 6).
+3. Chạy toàn bộ bộ kiểm thử tự động xUnit (50 tests).
+4. Tự động đóng gói bộ cài đặt `dist\FTPSys_Pro_Setup_v1.2.6.exe` bằng Inno Setup (nếu máy có Inno Setup 6).
 
 ### 3. Cài đặt bộ phần mềm hoàn chỉnh
-1. Chạy file cài đặt `FTPSys_Pro_Setup_v1.2.5.exe` bằng quyền Administrator.
+1. Chạy file cài đặt `FTPSys_Pro_Setup_v1.2.6.exe` bằng quyền Administrator.
 2. Trình cài đặt sẽ:
    - Cài đặt các file nhị phân vào thư mục `C:\Program Files\FTPSys Pro\`.
    - Tự động đăng ký và khởi chạy **Windows Service: `FtpSysProService`** (tự động bật cùng Windows).
