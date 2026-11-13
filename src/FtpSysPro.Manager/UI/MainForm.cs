@@ -701,6 +701,7 @@ namespace FtpSysPro.Manager.UI
             if (MessageBox.Show(this, $"{Strings.ConfirmDeleteJob}\n\nJob: {job.Name}", Strings.ConfirmDeleteTitle, MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
             {
                 _currentConfig.Jobs.RemoveAll(j => j.Id == job.Id);
+                _configStore.DeleteJobData(job.Id);
                 SaveConfigToService();
                 RefreshJobGrid();
             }
@@ -968,13 +969,15 @@ namespace FtpSysPro.Manager.UI
 
         private void RefreshJobGrid()
         {
-            if (_currentConfig?.Jobs == null)
+            if (_currentConfig?.Jobs == null || _currentConfig.Jobs.Count == 0)
             {
                 gridJobs.DataSource = new List<JobViewModel>();
+                _configStore.CleanOrphanedJobData(Enumerable.Empty<string>());
                 UpdateSelectedJobDetail();
                 return;
             }
 
+            _configStore.CleanOrphanedJobData(_currentConfig.Jobs.Select(j => j.Id));
             var list = _currentConfig.Jobs.Select(j => new JobViewModel(j)).ToList();
             gridJobs.DataSource = list;
             UpdateSelectedJobDetail();
@@ -1098,6 +1101,18 @@ namespace FtpSysPro.Manager.UI
         {
             try
             {
+                if (string.IsNullOrEmpty(jobId))
+                {
+                    gridHistory.DataSource = new List<HistoryViewModel>();
+                    lblHistSummary.Text = Strings.HistNoRuns;
+                    if (btnHistClear != null) btnHistClear.Enabled = false;
+                    if (btnHistDetails != null) btnHistDetails.Enabled = false;
+                    return;
+                }
+
+                if (btnHistClear != null) btnHistClear.Enabled = true;
+                if (btnHistDetails != null) btnHistDetails.Enabled = true;
+
                 var records = _configStore.LoadHistoryRecords(jobId, 200);
                 var viewModels = records.Select(r => new HistoryViewModel(r)).ToList();
                 gridHistory.DataSource = viewModels;

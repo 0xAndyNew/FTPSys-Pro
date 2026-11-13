@@ -255,6 +255,77 @@ namespace FtpSysPro.Core.Config
             }
         }
 
+        public void DeleteJobData(string jobId)
+        {
+            if (string.IsNullOrEmpty(jobId)) return;
+            lock (_syncLock)
+            {
+                // 1. Clear history records
+                ClearHistory(jobId);
+
+                // 2. Clear job-specific log
+                ClearJobLog(jobId);
+
+                // 3. Clear catalog manifests
+                try
+                {
+                    var catDir = Path.Combine(_catalogDirectory, Sanitize(jobId));
+                    if (Directory.Exists(catDir))
+                    {
+                        Directory.Delete(catDir, true);
+                    }
+                }
+                catch { }
+            }
+        }
+
+        public void CleanOrphanedJobData(IEnumerable<string> activeJobIds)
+        {
+            var activeSet = new HashSet<string>(activeJobIds ?? Enumerable.Empty<string>(), StringComparer.OrdinalIgnoreCase);
+            lock (_syncLock)
+            {
+                try
+                {
+                    if (Directory.Exists(_historyDirectory))
+                    {
+                        foreach (var dir in Directory.GetDirectories(_historyDirectory))
+                        {
+                            var dirName = Path.GetFileName(dir);
+                            if (!activeSet.Contains(dirName))
+                            {
+                                try { Directory.Delete(dir, true); } catch { }
+                            }
+                        }
+                    }
+
+                    if (Directory.Exists(_catalogDirectory))
+                    {
+                        foreach (var dir in Directory.GetDirectories(_catalogDirectory))
+                        {
+                            var dirName = Path.GetFileName(dir);
+                            if (!activeSet.Contains(dirName))
+                            {
+                                try { Directory.Delete(dir, true); } catch { }
+                            }
+                        }
+                    }
+
+                    if (Directory.Exists(JobLogsDirectory))
+                    {
+                        foreach (var file in Directory.GetFiles(JobLogsDirectory, "*.log"))
+                        {
+                            var fileJobId = Path.GetFileNameWithoutExtension(file);
+                            if (!activeSet.Contains(fileJobId))
+                            {
+                                try { File.Delete(file); } catch { }
+                            }
+                        }
+                    }
+                }
+                catch { }
+            }
+        }
+
         public string GetJobLogFilePath(string jobId)
         {
             if (string.IsNullOrEmpty(jobId)) return null;

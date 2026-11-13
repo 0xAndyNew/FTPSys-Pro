@@ -160,5 +160,74 @@ namespace FtpSysPro.Core.Tests
             Assert.Contains("Cảnh báo: Warning test sample", string.Join(" ", synthLines));
             Assert.Contains("Hoàn tất với trạng thái Success", string.Join(" ", synthLines));
         }
+
+        [Fact]
+        public void DeleteJobData_RemovesHistoryLogAndCatalogFiles()
+        {
+            var jobId = "job-to-delete";
+            var runRec = new BackupRunResult
+            {
+                RunId = "run-del-1",
+                JobId = jobId,
+                JobName = "DeletedJob",
+                BackupType = BackupType.Full,
+                StartTimeUtc = DateTime.UtcNow,
+                EndTimeUtc = DateTime.UtcNow,
+                Status = JobExecutionStatus.Success
+            };
+            _store.SaveHistoryRecord(runRec);
+            _store.AppendJobLog(jobId, "DeletedJob", "INF", "Test message");
+
+            var manifest = new BackupSetManifest
+            {
+                BackupSetId = "DeletedJob_20261113_FULL",
+                JobId = jobId,
+                JobName = "DeletedJob",
+                CreatedUtc = DateTime.UtcNow
+            };
+            _store.SaveLocalManifest(manifest);
+
+            var histRecords = _store.LoadHistoryRecords(jobId);
+            Assert.Single(histRecords);
+            Assert.True(File.Exists(_store.GetJobLogFilePath(jobId)));
+            Assert.NotNull(_store.LoadLatestLocalManifest(jobId));
+
+            // Execute DeleteJobData
+            _store.DeleteJobData(jobId);
+
+            // Verify everything is deleted
+            Assert.Empty(_store.LoadHistoryRecords(jobId));
+            Assert.False(File.Exists(_store.GetJobLogFilePath(jobId)));
+            Assert.Null(_store.LoadLatestLocalManifest(jobId));
+        }
+
+        [Fact]
+        public void CleanOrphanedJobData_RemovesDataForNonExistentJobs()
+        {
+            var activeJobId = "job-active";
+            var deletedJobId = "job-orphan";
+
+            _store.SaveHistoryRecord(new BackupRunResult { RunId = "r1", JobId = activeJobId, JobName = "Active", StartTimeUtc = DateTime.UtcNow });
+            _store.SaveHistoryRecord(new BackupRunResult { RunId = "r2", JobId = deletedJobId, JobName = "Orphan", StartTimeUtc = DateTime.UtcNow });
+
+            _store.AppendJobLog(activeJobId, "Active", "INF", "Active log");
+            _store.AppendJobLog(deletedJobId, "Orphan", "INF", "Orphan log");
+
+            _store.SaveLocalManifest(new BackupSetManifest { BackupSetId = "set1", JobId = activeJobId });
+            _store.SaveLocalManifest(new BackupSetManifest { BackupSetId = "set2", JobId = deletedJobId });
+
+            // Active list only contains activeJobId
+            _store.CleanOrphanedJobData(new[] { activeJobId });
+
+            // Active job data remains
+            Assert.Single(_store.LoadHistoryRecords(activeJobId));
+            Assert.True(File.Exists(_store.GetJobLogFilePath(activeJobId)));
+            Assert.NotNull(_store.LoadLatestLocalManifest(activeJobId));
+
+            // Orphaned job data is completely removed
+            Assert.Empty(_store.LoadHistoryRecords(deletedJobId));
+            Assert.False(File.Exists(_store.GetJobLogFilePath(deletedJobId)));
+            Assert.Null(_store.LoadLatestLocalManifest(deletedJobId));
+        }
     }
 }
