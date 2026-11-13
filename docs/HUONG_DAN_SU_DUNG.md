@@ -48,13 +48,13 @@ Hai thành phần giao tiếp an toàn qua giao thức **Named Pipe IPC (`\\.\pi
 ## 2. Cài đặt và Khởi động hệ thống
 
 ### Cài đặt qua bộ cài đặt Setup (.exe)
-1. Tải bộ cài đặt mới nhất `FTPSys_Pro_Setup_v1.2.0.exe` từ trang [Releases của GitHub](https://github.com/0xAndyNew/FTPSys-Pro/releases).
+1. Tải bộ cài đặt mới nhất `FTPSys_Pro_Setup_v1.2.5.exe` từ thư mục `dist/` hoặc trang [Releases của GitHub](https://github.com/0xAndyNew/FTPSys-Pro/releases).
 2. Nhấp chuột phải vào file cài đặt và chọn **Run as administrator**.
 3. Thực hiện theo hướng dẫn trên màn hình. Trình cài đặt sẽ tự động:
    - Cài đặt các tệp thực thi vào thư mục hệ thống `C:\Program Files\FTPSys Pro\`.
    - Tạo thư mục dữ liệu bảo mật tại `C:\ProgramData\FtpSysPro\`.
    - Đăng ký và kích hoạt Windows Service `FtpSysProService` ở chế độ tự động bật cùng Windows (`Automatic Startup`).
-   - Đăng ký Scheduled Task khởi động ứng dụng khay khi người dùng đăng nhập hệ thống.
+   - Đăng ký Scheduled Task khởi động ứng dụng khay khi người dùng đăng nhập hệ thống (kèm tuỳ chọn chạy với quyền Quản trị viên).
    - Tạo biểu tượng lối tắt trên Desktop và Start Menu.
 
 ### Khởi động ứng dụng quản trị
@@ -65,28 +65,33 @@ Hai thành phần giao tiếp an toàn qua giao thức **Named Pipe IPC (`\\.\pi
 
 ## 3. Giao diện điều khiển & Quản trị trung tâm
 
-Cửa sổ chính của FTPSys-Pro được thiết kế theo cấu trúc chia đôi (Split View) chuyên nghiệp:
+Cửa sổ chính của FTPSys-Pro được thiết kế theo cấu trúc chia đôi (Split View) chuyên nghiệp lấy cảm hứng từ Cobian Backup 11 Gravity:
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
 │ [Thêm Job] [Sửa] [Nhân bản] [Xoá] | [Chạy Full] [Chạy Incr] [Dừng] | [Phục hồi] [Cài đặt]
 ├───────────────────────────────────────────────────────────────┬────────────────────────┤
-│ Tên Job sao lưu │ Bật │ Dung lượng nguồn │ Chế độ sao lưu │ ... │ THÔNG TIN JOB SAO LƯU  │
+│ Tên Job sao lưu │ Bật │ Dung lượng nguồn │ Chế độ sao lưu │ ... │ [Properties][History][Log]
 ├─────────────────┼─────┼──────────────────┼────────────────┼─────┤ ────────────────────── │
-│ Backup_Database │  ✓  │ 12.4 GB (1,250)  │ Sao lưu toàn...│ ... │ Tên: Backup_Database   │
-│ Source_Code_App │  ✓  │ 450.2 MB (5,400) │ Sao lưu gia... │ ... │ Dung lượng: 12.4 GB    │
-│                 │     │                  │                │     │ Chế độ: Full Backup    │
-│                 │     │                  │                │     │ Kho đích: \\nas\backup │
-│                 │     │                  │                │     │ Nguồn: D:\Database     │
+│ Backup_Database │  ✓  │ 12.4 GB (1,250)  │ Sao lưu toàn...│ ... │ [Task Properties]      │
+│ Source_Code_App │  ✓  │ 450.2 MB (5,400) │ Sao lưu gia... │ ... │ Name: Backup_Database  │
+│                 │     │                  │                │     │ Size: 12.4 GB (1,250)  │
+│                 │     │                  │                │     │ Mode: Full Backup      │
+│                 │     │                  │                │     │ Dest: \\nas\backup     │
+│                 │     │                  │                │     │ VSS: Yes               │
 └─────────────────┴─────┴──────────────────┴────────────────┴─────┴────────────────────────┘
-│ Dịch vụ FtpSysProService: Đang hoạt động bình thường               [Tiến độ: 100%]     │
+│ Dịch vụ FtpSysProService: Đang hoạt động bình thường        [Đang sao lưu: 45%] [====] │
 └────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 - **Thanh công cụ (Toolbar)**: Cung cấp đầy đủ thao tác: *Thêm Job, Sửa Job, Nhân bản, Xoá, Thực thi Full Backup, Thực thi Incremental Backup, Dừng Job, Phục hồi dữ liệu, Xem Nhật ký vận hành, Cài đặt hệ thống*.
 - **Danh sách Job sao lưu (Bên trái)**: Hiển thị đầy đủ thông tin: *Tên Job, Trạng thái kích hoạt, Dung lượng nguồn, Chế độ sao lưu, Kho lưu trữ đích, Thực thi gần nhất, Kết quả vận hành, Lịch chạy tiếp theo*.
-- **Thẻ thông tin chi tiết (Bên phải - Info Card)**: Xem nhanh dung lượng nguồn, chế độ thực thi, kho lưu trữ đích, danh sách thư mục nguồn và lịch thực thi kế tiếp.
-- **Thanh trạng thái (Status Bar)**: Báo hiệu kết nối IPC với dịch vụ Windows Service `FtpSysProService`.
+- **Khu vực điều khiển đa thẻ bên phải (3 Thẻ chức năng chuyên sâu)**:
+  1. **Task properties**: Bảng thuộc tính chi tiết 2 cột (`Property` | `Value`) liệt kê trọn vẹn mọi thông số của Job: Tên, ID, chế độ sao lưu, thư mục nguồn, dung lượng nguồn, kho lưu trữ đích, trạng thái VSS, nén ZIP, mật khẩu mã hoá AES-256, lịch chạy tự động, chính sách lưu giữ (Retention), thông báo Email, số lần thử lại kết nối, lần chạy cuối và lịch chạy kế tiếp.
+  2. **History**: Bảng lịch sử các lần chạy sao lưu của Job được chọn: Thời gian bắt đầu, thời lượng, loại sao lưu (Full/Incremental), trạng thái (Thành công/Cảnh báo/Lỗi), dung lượng sao lưu, số tệp đã sao lưu, số cảnh báo/lỗi, thông điệp kết quả. Kèm các nút: *Làm mới, Xoá lịch sử, Xem chi tiết*.
+     - *Tính năng tự động dọn dẹp sạch (v1.2.5)*: Khi xoá một Job, toàn bộ lịch sử và log của Job đó sẽ biến mất ngay lập tức; khi không có Job nào được chọn, bảng History sẽ hoàn toàn trống và các nút tác vụ được vô hiệu hoá.
+  3. **Log**: Trình duyệt log thời gian thực chuẩn Notepad++ nhúng trực tiếp ngay tại thẻ thứ 3. Cho phép lọc theo Job, lọc theo mức độ (`INF`, `WRN`, `ERR`), tìm kiếm từ khóa, tự động làm mới mỗi 3s, tự cuộn, nút mở Notepad và mở thư mục chứa log.
+- **Thanh trạng thái (Status Bar)**: Báo hiệu kết nối IPC với dịch vụ Windows Service `FtpSysProService`, đồng thời hiển thị **% tiến độ sao lưu trực tiếp** kèm thanh tiến độ mượt mà.
 
 ---
 
@@ -175,16 +180,20 @@ Nhấn nút **Hoàn tất (Finish)** để lưu Job và đồng bộ tức thì 
 
 ## 5. Cơ chế bảo vệ dữ liệu vận hành chuẩn Enterprise
 
-### Volume Shadow Copy Service (VSS) cho tệp đang mở
+### Volume Shadow Copy Service (VSS) & Sao lưu tệp đang mở / đang khóa
 - Khi **Microsoft SQL Server**, **Hyper-V**, **VirtualBox**, hay **Microsoft Outlook** đang hoạt động, các tệp cơ sở dữ liệu (`.mdf`, `.ldf`, `.vhdx`, `.pst`) bị khóa độc quyền bởi hệ điều hành (Exclusive File Lock).
-- Nếu không có cơ chế snapshot, tiến trình sao lưu sẽ lập tức thất bại với lỗi truy cập `Sharing Violation / Access Denied`.
 - **FTPSys-Pro** tự động tương tác với Windows VSS để tạo Volume Shadow Copy tại thời điểm thực thi, ánh xạ Symbolic Link để đọc dữ liệu nhất quán tại mốc snapshot mà không làm gián đoạn bất kỳ hoạt động nào của phần mềm máy chủ.
+- Đồng thời, công cụ áp dụng cơ chế mở luồng tệp thông minh với `FileShare.ReadWrite | FileShare.Delete` cho phép sao lưu mượt mà các tệp đang được đọc/ghi trực tiếp mà không gây xung đột tiến trình.
 
-### Kiểm tra dung lượng khả dụng trước khi thực thi (Pre-flight Disk Check)
+### Kiểm tra dung lượng khả dụng & Dừng an toàn khi đầy đĩa (Disk Full Stop)
 - Trước khi bắt đầu truyền dữ liệu, hệ thống tự động tính toán tổng dung lượng cần truyền và kiểm tra dung lượng còn trống (`AvailableFreeSpace`) của:
   1. Ổ đĩa chứa thư mục tạm (Temp Directory).
   2. Kho lưu trữ đích (Local Drive hoặc UNC Network Share).
-- Nếu dung lượng trống không đảm bảo an toàn, Job sẽ dừng ngay lập tức và ghi log cảnh báo rõ ràng, tránh hoàn toàn nguy cơ sao lưu dở dang làm tràn ổ đĩa gây tê liệt hệ thống.
+- Nếu dung lượng trống không đảm bảo an toàn, Job sẽ cảnh báo ngay lập tức. Trong quá trình copy tệp, nếu ổ cứng đích bị đầy (Disk Full), hệ thống sẽ chủ động ngắt tiến trình sao lưu một cách an toàn và ghi log rõ ràng, ngăn ngừa hoàn toàn nguy cơ đóng băng hệ thống hoặc hỏng hóc phân vùng lưu trữ.
+
+### Tối ưu tốc độ sao lưu & Giữ sạch kho lưu trữ đích (Zero Destination Pollution)
+- Dữ liệu được sao lưu nguyên bản sang thư mục đích với bộ đệm luồng 1MB tối ưu hiệu năng I/O đĩa.
+- Hệ thống tuyệt đối không sinh ra bất kỳ file `manifest.json` hay file kê khai lạ nào tại kho lưu trữ đích của người dùng, đảm bảo cây thư mục đích luôn sạch sẽ và nguyên bản 100%.
 
 ### Xác minh tính toàn vẹn SHA-256 đầu cuối
 - Dữ liệu truyền qua mạng Internet hay mạng LAN đều có nguy cơ phát sinh lỗi suy hao bit (bit rot / corruption).
@@ -220,15 +229,23 @@ Khi xảy ra sự cố mất mát dữ liệu, lỗi phần cứng hoặc bị t
 
 ## 7. Tra cứu & Phân tích Nhật ký vận hành (Operation Logs Viewer)
 
-Nhấn nút **Nhật ký vận hành** trên thanh công cụ chính để mở trình duyệt log chuyên sâu:
+FTPSys-Pro cung cấp 2 phương thức theo dõi log linh hoạt:
 
-- **Phân loại mức độ rõ ràng**:
-  - `ERR (Lỗi vận hành)`: Các sự cố nghiêm trọng cần can thiệp xử lý ngay.
-  - `WRN (Cảnh báo)`: Các cảnh báo về dung lượng đĩa, tệp tin bị bỏ qua, hoặc retry mạng.
-  - `INF (Thông tin vận hành)`: Tiến trình khởi động, hoàn thành Job, số lượng tệp đã xử lý.
-- **Bộ lọc linh hoạt**: Lọc nhật ký theo từng Job sao lưu cụ thể hoặc xem toàn bộ hệ thống.
-- **Tìm kiếm thời gian thực**: Nhập từ khóa để lọc ngay các dòng log có liên quan.
-- **Nút Mở tệp log**: Mở trực tiếp tệp log thô trên đĩa để phục vụ việc trích xuất và gửi cho đội ngũ hỗ trợ kỹ thuật.
+1. **Xem trực tiếp ngay tại Thẻ Log (Thẻ thứ 3 trên giao diện chính)**:
+   - Giao diện thiết kế chuẩn phong cách Notepad++ với nền tối trực quan, phông chữ monospace rõ nét.
+   - Hỗ trợ chọn tệp log theo ngày, lọc theo từng Job cụ thể hoặc xem log chung của toàn bộ dịch vụ.
+   - Tự động làm mới mỗi 3 giây và tự động cuộn xuống dòng mới nhất khi có sự kiện sao lưu phát sinh.
+   - Tích hợp sẵn nút **Mở Notepad** và **Mở thư mục Log** để trích xuất nhanh file log gốc.
+
+2. **Cửa sổ trình duyệt log chuyên sâu (Operation Logs Dialog)**:
+   - Nhấn nút **Nhật ký vận hành** trên thanh công cụ chính để mở cửa sổ log toàn màn hình.
+   - **Phân loại mức độ rõ ràng**:
+     - `ERR (Lỗi vận hành)`: Các sự cố nghiêm trọng cần can thiệp xử lý ngay.
+     - `WRN (Cảnh báo)`: Các cảnh báo về dung lượng đĩa, tệp tin bị bỏ qua, hoặc retry mạng.
+     - `INF (Thông tin vận hành)`: Tiến trình khởi động, hoàn thành Job, số lượng tệp đã xử lý.
+   - **Bộ lọc linh hoạt**: Lọc nhật ký theo từng Job sao lưu cụ thể hoặc xem toàn bộ hệ thống.
+   - **Tìm kiếm thời gian thực**: Nhập từ khóa để lọc ngay các dòng log có liên quan.
+   - **Nút Mở tệp log**: Mở trực tiếp tệp log thô trên đĩa để phục vụ việc trích xuất và gửi cho đội ngũ hỗ trợ kỹ thuật.
 
 ---
 

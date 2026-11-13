@@ -32,17 +32,20 @@
 ### 2. Quét & Lựa chọn dữ liệu nguồn thông minh
 - **Hỗ trợ chọn toàn bộ phân vùng ổ đĩa (Root Drive Backup)**: Cho phép chọn trực tiếp toàn bộ ổ đĩa (ví dụ: `C:\`, `D:\`) hoặc từng thư mục con tùy ý. Hệ thống tự động loại trừ các thư mục bảo vệ của hệ điều hành (`System Volume Information`, `$RECYCLE.BIN`, `pagefile.sys`, `hiberfil.sys`, `swapfile.sys`).
 - **Tính toán dung lượng nguồn trực quan (Live Source Size Calculation)**: Quét và tính toán tổng dung lượng cần sao lưu ngay khi thêm thư mục nguồn trong màn hình cấu hình Job, không cần đợi thực thi mới biết dung lượng.
-- **Bảng điều khiển chi tiết (Side Info Card)**: Hiển thị tên Job sao lưu, tổng dung lượng nguồn, chế độ thực thi, kho lưu trữ đích, danh sách nguồn và lịch sử vận hành.
+- **Sao lưu an toàn mọi tệp tin đang mở (Locked & In-use Files)**: Cơ chế mở tệp với `FileShare.ReadWrite | FileShare.Delete` kết hợp công nghệ VSS Snapshot giúp sao lưu mượt mà các tệp đang được tiến trình khác đọc/ghi mà không làm ngắt quãng ứng dụng.
+- **Bảng điều khiển đa thẻ phong cách Cobian Backup (Task Properties, History, Log)**: Hệ thống 3 tab chuyên nghiệp hiển thị đầy đủ thuộc tính Job, bảng lịch sử từng lần chạy (kèm dung lượng, số tệp, cảnh báo, lỗi) và màn hình xem log theo thời gian thực chuẩn Notepad++.
 
 ### 3. Chế độ Sao lưu toàn phần & Sao lưu gia tăng chuẩn Enterprise
 - **Sao lưu toàn phần (Full Backup)**: Tạo ra một điểm phục hồi (Restore Point) hoàn chỉnh và độc lập tại kho lưu trữ đích, chứa toàn bộ dữ liệu nguồn.
 - **Sao lưu gia tăng (Incremental Backup)**: Tự động so khớp với manifest của điểm phục hồi trước đó, chỉ sao lưu các tệp mới thêm hoặc có nội dung thay đổi (dựa trên size + LastWriteUtc), đồng thời ghi nhận danh sách tệp đã bị xoá.
 
 ### 4. Bốn lớp bảo vệ độ tin cậy dữ liệu vận hành (Enterprise Data Protection)
-1. **Volume Shadow Copy (VSS) Snapshot**: Tự động chụp snapshot ổ đĩa để sao lưu trơn tru các tệp tin đang bị khóa độc quyền bởi tiến trình khác (SQL Server `.mdf`/`.ldf`, Hyper-V `.vhdx`, Outlook `.pst`/`.ost`, máy ảo đang chạy) mà không làm gián đoạn dịch vụ.
+1. **Volume Shadow Copy (VSS) Snapshot & Direct Fallback**: Tự động chụp snapshot ổ đĩa để sao lưu trơn tru các tệp tin đang bị khóa độc quyền bởi tiến trình khác (SQL Server `.mdf`/`.ldf`, Hyper-V `.vhdx`, Outlook `.pst`/`.ost`, máy ảo đang chạy) kết hợp chia sẻ luồng đọc tệp linh hoạt.
 2. **Kiểm tra tính toàn vẹn SHA-256 đầu cuối (Cryptographic Checksum Verification)**: Tính toán mã băm SHA-256 của tệp nguồn và stream kiểm tra ngược lại tệp trên máy chủ đích trước khi hoàn tất cam kết (commit).
-3. **Kiểm tra dung lượng khả dụng trước khi thực thi (Pre-flight Disk Space Check)**: Đánh giá dung lượng trống trên cả ổ tạm (Temp) lẫn kho lưu trữ đích (Local/UNC) trước khi thực hiện. So sánh chính xác 1:1, ngăn ngừa sự cố tràn đĩa gây gián đoạn hệ điều hành.
+3. **Kiểm tra & Ngăn ngừa tràn đĩa (Pre-flight Disk Space Check & Real-time Disk Full Stop)**: Đánh giá dung lượng trống trên cả ổ tạm (Temp) lẫn kho lưu trữ đích (Local/UNC) trước khi thực hiện. Đồng thời tự động dừng tác vụ và ghi nhận log an toàn ngay khi phát hiện ổ đĩa đích bị đầy trong quá trình sao lưu, ngăn chặn sự cố tê liệt hệ thống.
 4. **Tự động thử lại luỹ tiến (Exponential Backoff Auto-Retry)**: Khả năng chống chịu đứt gãy kết nối mạng chập chờn với chu kỳ thử lại thông minh (2s -> 4s -> 8s) cho FTP, SFTP và UNC share.
+5. **Dọn sạch dữ liệu khi xoá Job & Quét dọn mồ côi (Job Lifecycle & Orphan Cleanup - v1.2.5)**: Khi xoá Job, toàn bộ lịch sử chạy (`history/`), file log riêng (`logs/jobs/`) và catalog delta được dọn sạch hoàn toàn; tự động quét và xoá mọi dữ liệu còn sót lại của các Job đã xoá từ các phiên bản trước đó.
+6. **Tối ưu tốc độ sao lưu & Không sinh file rác tại đích (Zero-pollute Destination)**: Dữ liệu được sao lưu nguyên bản sang thư mục đích với buffer 1MB tối ưu tốc độ copy, không tạo file `manifest.json` hay bất kỳ tệp kê khai phụ nào làm rác thư mục lưu trữ đích.
 
 ### 5. Lập lịch thực thi tự động & Tinh gọn (Flexible Scheduling)
 - Hỗ trợ cả định dạng giờ **24h** và **12h (AM/PM)** trực quan, tiện dụng.
@@ -143,12 +146,13 @@
 
 ## 🖥 Giao diện quản trị hệ thống
 
-- **Thiết kế chuyên nghiệp, phân cấp rõ ràng**:
-  - Giao diện chính dạng chia đôi (Split View): Bảng danh sách Job sao lưu bên trái và Thẻ thông tin chi tiết (Info Card) bên phải.
-  - Hiển thị trực tiếp: Dung lượng nguồn cần sao lưu, chế độ truyền dữ liệu, kết quả lần chạy cuối, lịch chạy tiếp theo.
-  - Cập nhật tiến độ thời gian thực (Real-time Progress Bar & Percent).
-  - Khay hệ thống: Thu nhỏ ứng dụng không chiếm không gian thanh tác vụ, hiển thị thông báo Balloon khi hoàn tất sao lưu.
-  - **Trình duyệt nhật ký vận hành chuyên sâu ([LogViewerDialog.cs](src/FtpSysPro.Manager/UI/LogViewerDialog.cs))**: Xem nhanh toàn bộ nhật ký dịch vụ, phân loại rõ ràng mức độ `ERR (Lỗi vận hành)`, `WRN (Cảnh báo)`, `INF (Thông tin vận hành)`, lọc theo từng Job và tìm kiếm từ khóa.
+- **Thiết kế chuyên nghiệp, phân cấp rõ ràng theo phong cách Cobian Backup 11**:
+  - Giao diện chính dạng chia đôi (Split View): Bảng danh sách Job sao lưu bên trái và Hệ thống đa thẻ (TabControl) bên phải.
+  - **Thẻ 1: Task properties (Thuộc tính Job)**: Bảng 2 cột `Thuộc tính | Giá trị` liệt kê chi tiết: Tên Job, ID, trạng thái bật/tắt, chế độ sao lưu, danh sách nguồn, dung lượng, đích đến, VSS, nén, mã hoá, lịch chạy, chính sách lưu giữ, lần chạy cuối, lần chạy kế tiếp.
+  - **Thẻ 2: History (Lịch sử thực thi)**: Bảng lịch sử các lần chạy sao lưu của Job được chọn: Thời gian bắt đầu, thời lượng, chế độ (Full/Incr), trạng thái (Thành công/Cảnh báo/Lỗi), dung lượng sao lưu, số tệp, số cảnh báo/lỗi, thông điệp kết quả. Kèm các nút: *Làm mới, Xoá lịch sử, Xem chi tiết*.
+  - **Thẻ 3: Log (Nhật ký vận hành)**: Trình xem log thời gian thực phong cách Notepad++ nhúng trực tiếp, hỗ trợ chọn file log, lọc Job, lọc mức độ (`INF`, `WRN`, `ERR`), tìm kiếm từ khóa, tự động làm mới mỗi 3s, tự cuộn, nút mở Notepad và mở thư mục chứa log.
+  - **Tiến độ thời gian thực (Real-time Progress & Percent)**: Thanh tiến độ kèm tỷ lệ phần trăm (%) hiển thị trực quan ngay trên thanh trạng thái.
+  - **Khay hệ thống & Khởi chạy quyền Administrator**: Thu nhỏ ứng dụng vào khay hệ thống, hỗ trợ tùy chọn khởi chạy luôn với quyền Quản trị viên (Run as administrator).
 - **Hỗ trợ song ngữ**: Chuyển đổi linh hoạt giữa **Tiếng Việt** và **English**.
 
 ---
@@ -173,15 +177,15 @@ cd D:\ftpsyspro
 Script sẽ tự động:
 1. Restore toàn bộ gói NuGet phụ thuộc (`FluentFTP`, `SSH.NET`, `SharpZipLib`, `MailKit`, `Newtonsoft.Json`, `Serilog`).
 2. Biên dịch Solution ở cấu hình `Release AnyCPU`.
-3. Chạy toàn bộ bộ kiểm thử tự động xUnit (38+ tests).
-4. Tự động đóng gói bộ cài đặt `dist\FTPSys_Pro_Setup_v1.2.0.exe` bằng Inno Setup (nếu máy có Inno Setup 6).
+3. Chạy toàn bộ bộ kiểm thử tự động xUnit (46 tests).
+4. Tự động đóng gói bộ cài đặt `dist\FTPSys_Pro_Setup_v1.2.5.exe` bằng Inno Setup (nếu máy có Inno Setup 6).
 
 ### 3. Cài đặt bộ phần mềm hoàn chỉnh
-1. Chạy file cài đặt `FTPSys_Pro_Setup_v1.2.0.exe` bằng quyền Administrator.
+1. Chạy file cài đặt `FTPSys_Pro_Setup_v1.2.5.exe` bằng quyền Administrator.
 2. Trình cài đặt sẽ:
    - Cài đặt các file nhị phân vào thư mục `C:\Program Files\FTPSys Pro\`.
    - Tự động đăng ký và khởi chạy **Windows Service: `FtpSysProService`** (tự động bật cùng Windows).
-   - Đăng ký Scheduled Task khởi chạy **FTPSys Pro Manager** xuống khay hệ thống khi người dùng đăng nhập.
+   - Đăng ký Scheduled Task khởi chạy **FTPSys Pro Manager** xuống khay hệ thống khi người dùng đăng nhập (có tuỳ chọn tích hợp Run as administrator).
    - Tạo shortcut trên màn hình Desktop và Start Menu.
 
 ---

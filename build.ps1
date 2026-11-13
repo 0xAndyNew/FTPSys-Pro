@@ -75,6 +75,17 @@ if (-not $SkipInstaller) {
     if ($null -ne $iscc) {
         Write-Host "Found Inno Setup compiler: $iscc" -ForegroundColor Gray
         $issFile = Join-Path $ScriptDir "installer\FtpSysPro.iss"
+
+        # Clean older installers to keep only the active release in dist/
+        $issContent = Get-Content $issFile -Raw
+        if ($issContent -match '#define\s+MyAppVersion\s+"([^"]+)"') {
+            $currentVer = $matches[1]
+            $currentInstaller = "FTPSys_Pro_Setup_v$currentVer.exe"
+            Get-ChildItem -Path (Join-Path $ScriptDir "dist") -Filter "*.exe" -ErrorAction SilentlyContinue |
+                Where-Object { $_.Name -ne $currentInstaller } |
+                Remove-Item -Force -ErrorAction SilentlyContinue
+        }
+
         & $iscc $issFile
 
         if ($LASTEXITCODE -eq 0) {
