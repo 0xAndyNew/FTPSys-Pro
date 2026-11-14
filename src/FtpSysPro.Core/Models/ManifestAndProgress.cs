@@ -57,6 +57,7 @@ namespace FtpSysPro.Core.Models
         public bool IsCompressed { get; set; }
         public string ArchiveFileName { get; set; } = string.Empty;
         public bool IsEncrypted { get; set; }
+        public string RelativeLocation { get; set; } = string.Empty;
 
         public List<ManifestFileEntry> Files { get; set; } = new List<ManifestFileEntry>();
         public List<string> DeletedRelativePaths { get; set; } = new List<string>();

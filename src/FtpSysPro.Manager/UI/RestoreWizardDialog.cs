@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
+using System.Linq;
 using System.Windows.Forms;
 using FtpSysPro.Core.Engine;
 using FtpSysPro.Core.Ipc;
@@ -16,8 +17,10 @@ namespace FtpSysPro.Manager.UI
     {
         private readonly List<BackupJob> _jobs;
         private readonly PipeClient _pipeClient;
+        private readonly ConfigStore _configStore;
 
         // Source Mode Radios
+        private FlowLayoutPanel pnlRadios;
         private RadioButton rdoJob;
         private RadioButton rdoFolder;
         private RadioButton rdoRemote;
@@ -62,10 +65,11 @@ namespace FtpSysPro.Manager.UI
 
         private List<BackupSetManifest> _loadedSets = new List<BackupSetManifest>();
 
-        public RestoreWizardDialog(List<BackupJob> jobs, PipeClient pipeClient, string preselectedJobId = null)
+        public RestoreWizardDialog(List<BackupJob> jobs, PipeClient pipeClient, string preselectedJobId = null, ConfigStore configStore = null)
         {
             _jobs = jobs ?? new List<BackupJob>();
             _pipeClient = pipeClient;
+            _configStore = configStore ?? new ConfigStore();
 
             InitializeComponents();
             PopulateJobs(preselectedJobId);
@@ -74,7 +78,7 @@ namespace FtpSysPro.Manager.UI
         private void InitializeComponents()
         {
             Text = Strings.AppName + " - " + Strings.Restore;
-            ClientSize = new Size(745, 600);
+            ClientSize = new Size(780, 605);
             StartPosition = FormStartPosition.CenterParent;
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
@@ -92,42 +96,62 @@ namespace FtpSysPro.Manager.UI
                 Font = new Font(Font, FontStyle.Bold)
             };
 
+            pnlRadios = new FlowLayoutPanel
+            {
+                Location = new Point(20, 36),
+                Size = new Size(740, 28),
+                FlowDirection = FlowDirection.LeftToRight,
+                WrapContents = false,
+                AutoSize = false
+            };
+
             rdoJob = new RadioButton
             {
                 Text = Strings.RestoreFromJob,
-                Location = new Point(20, 36),
                 AutoSize = true,
-                Checked = true
+                Checked = true,
+                Margin = new Padding(0, 0, 20, 0)
             };
             rdoFolder = new RadioButton
             {
                 Text = Strings.RestoreFromFolder,
-                Location = new Point(175, 36),
-                AutoSize = true
+                AutoSize = true,
+                Margin = new Padding(0, 0, 20, 0)
             };
             rdoRemote = new RadioButton
             {
                 Text = Strings.RestoreFromRemote,
-                Location = new Point(485, 36),
-                AutoSize = true
+                AutoSize = true,
+                Margin = new Padding(0, 0, 0, 0)
             };
 
             rdoJob.CheckedChanged += (s, e) => UpdateSourceModeUi();
             rdoFolder.CheckedChanged += (s, e) => UpdateSourceModeUi();
             rdoRemote.CheckedChanged += (s, e) => UpdateSourceModeUi();
 
+            pnlRadios.Controls.AddRange(new Control[] { rdoJob, rdoFolder, rdoRemote });
+
             // Panel 1: Job
-            pnlJob = new Panel { Location = new Point(20, 62), Size = new Size(705, 68), Visible = true };
+            pnlJob = new Panel { Location = new Point(20, 68), Size = new Size(740, 62), Visible = true };
             var lblSelectJob = new Label { Text = Strings.IsVi ? "Chọn Job:" : "Select Job:", Location = new Point(0, 6), AutoSize = true };
-            cboJob = new ComboBox { Location = new Point(80, 3), Width = 480, DropDownStyle = ComboBoxStyle.DropDownList };
+            cboJob = new ComboBox { Location = new Point(80, 3), Width = 520, DropDownStyle = ComboBoxStyle.DropDownList };
             cboJob.SelectedIndexChanged += async (s, e) => await LoadBackupSetsForSelectedJobAsync();
             pnlJob.Controls.AddRange(new Control[] { lblSelectJob, cboJob });
 
             // Panel 2: Folder
-            pnlFolder = new Panel { Location = new Point(20, 62), Size = new Size(705, 68), Visible = false };
+            pnlFolder = new Panel { Location = new Point(20, 68), Size = new Size(740, 62), Visible = false };
             var lblFolder = new Label { Text = Strings.IsVi ? "Thư mục:" : "Directory:", Location = new Point(0, 6), AutoSize = true };
-            txtSourceFolder = new TextBox { Location = new Point(80, 3), Width = 430 };
-            btnBrowseSource = new Button { Text = Strings.Browse, Location = new Point(518, 2), Size = new Size(85, 26) };
+            txtSourceFolder = new TextBox { Location = new Point(80, 3), Width = 450 };
+            txtSourceFolder.KeyDown += (s, e) =>
+            {
+                if (e.KeyCode == Keys.Enter)
+                {
+                    e.SuppressKeyPress = true;
+                    btnScanFolder.PerformClick();
+                }
+            };
+
+            btnBrowseSource = new Button { Text = Strings.Browse, Location = new Point(538, 2), Size = new Size(85, 26) };
             btnBrowseSource.Click += async (s, e) =>
             {
                 var folder = FolderBrowserEx.SelectFolder(this, txtSourceFolder.Text, Strings.IsVi ? "Chọn thư mục chứa các bản sao lưu" : "Select folder containing backup sets");
@@ -137,7 +161,7 @@ namespace FtpSysPro.Manager.UI
                     await LoadBackupSetsForFolderAsync();
                 }
             };
-            btnScanFolder = new Button { Text = Strings.RestoreScan, Location = new Point(608, 2), Size = new Size(95, 26) };
+            btnScanFolder = new Button { Text = Strings.RestoreScan, Location = new Point(628, 2), Size = new Size(110, 26), AutoSize = true, AutoSizeMode = AutoSizeMode.GrowOnly };
             btnScanFolder.Click += async (s, e) => await LoadBackupSetsForFolderAsync();
             var lblFolderHint = new Label
             {
@@ -149,7 +173,7 @@ namespace FtpSysPro.Manager.UI
             pnlFolder.Controls.AddRange(new Control[] { lblFolder, txtSourceFolder, btnBrowseSource, btnScanFolder, lblFolderHint });
 
             // Panel 3: Remote FTP/SFTP
-            pnlRemote = new Panel { Location = new Point(20, 62), Size = new Size(705, 68), Visible = false };
+            pnlRemote = new Panel { Location = new Point(20, 68), Size = new Size(740, 62), Visible = false };
             var lblProto = new Label { Text = Strings.IsVi ? "Giao thức:" : "Proto:", Location = new Point(0, 6), AutoSize = true };
             cboRemoteProto = new ComboBox { Location = new Point(65, 3), Width = 85, DropDownStyle = ComboBoxStyle.DropDownList };
             cboRemoteProto.Items.AddRange(new object[] { "FTP / FTPS", "SFTP" });
@@ -160,21 +184,21 @@ namespace FtpSysPro.Manager.UI
             };
 
             var lblHost = new Label { Text = "Host:", Location = new Point(155, 6), AutoSize = true };
-            txtRemoteHost = new TextBox { Location = new Point(190, 3), Width = 145 };
+            txtRemoteHost = new TextBox { Location = new Point(190, 3), Width = 150 };
 
-            var lblPort = new Label { Text = "Port:", Location = new Point(340, 6), AutoSize = true };
-            numRemotePort = new NumericUpDown { Location = new Point(375, 3), Width = 50, Minimum = 1, Maximum = 65535, Value = 21 };
+            var lblPort = new Label { Text = "Port:", Location = new Point(345, 6), AutoSize = true };
+            numRemotePort = new NumericUpDown { Location = new Point(380, 3), Width = 55, Minimum = 1, Maximum = 65535, Value = 21 };
 
-            var lblUser = new Label { Text = "User:", Location = new Point(430, 6), AutoSize = true };
-            txtRemoteUser = new TextBox { Location = new Point(468, 3), Width = 95 };
+            var lblUser = new Label { Text = "User:", Location = new Point(440, 6), AutoSize = true };
+            txtRemoteUser = new TextBox { Location = new Point(478, 3), Width = 100 };
 
-            var lblPass = new Label { Text = "Pass:", Location = new Point(568, 6), AutoSize = true };
-            txtRemotePass = new TextBox { Location = new Point(605, 3), Width = 98, UseSystemPasswordChar = true };
+            var lblPass = new Label { Text = "Pass:", Location = new Point(585, 6), AutoSize = true };
+            txtRemotePass = new TextBox { Location = new Point(625, 3), Width = 110, UseSystemPasswordChar = true };
 
-            var lblRemotePath = new Label { Text = Strings.IsVi ? "Đường dẫn từ xa:" : "Remote Path:", Location = new Point(0, 36), AutoSize = true };
-            txtRemotePath = new TextBox { Location = new Point(105, 33), Width = 230, Text = "/" };
+            var lblRemotePath = new Label { Text = Strings.IsVi ? "Đường dẫn từ xa:" : "Remote Path:", Location = new Point(0, 35), AutoSize = true };
+            txtRemotePath = new TextBox { Location = new Point(105, 32), Width = 235, Text = "/" };
 
-            btnRemoteScan = new Button { Text = "🔌 " + Strings.RestoreConnectAndScan, Location = new Point(345, 31), Size = new Size(130, 27) };
+            btnRemoteScan = new Button { Text = "🔌 " + Strings.RestoreConnectAndScan, Location = new Point(350, 30), Size = new Size(135, 27) };
             btnRemoteScan.Click += async (s, e) => await LoadBackupSetsForRemoteAsync();
 
             pnlRemote.Controls.AddRange(new Control[] {
@@ -200,17 +224,37 @@ namespace FtpSysPro.Manager.UI
             lvBackupSets = new ListView
             {
                 Location = new Point(20, 160),
-                Size = new Size(705, 175),
+                Size = new Size(740, 175),
                 View = View.Details,
                 FullRowSelect = true,
-                MultiSelect = false
+                MultiSelect = false,
+                HideSelection = false
             };
             lvBackupSets.Columns.Add(Strings.IsVi ? "Thời điểm tạo (UTC)" : "Created (UTC)", 140);
             lvBackupSets.Columns.Add(Strings.IsVi ? "Chế độ" : "Mode", 85);
-            lvBackupSets.Columns.Add(Strings.IsVi ? "Mã điểm phục hồi" : "Restore Point ID", 215);
+            lvBackupSets.Columns.Add(Strings.IsVi ? "Mã điểm phục hồi" : "Restore Point ID", 225);
             lvBackupSets.Columns.Add(Strings.IsVi ? "Số tệp" : "Files", 65);
             lvBackupSets.Columns.Add(Strings.IsVi ? "Dung lượng" : "Size", 90);
-            lvBackupSets.Columns.Add(Strings.IsVi ? "Định dạng" : "Format", 90);
+            lvBackupSets.Columns.Add(Strings.IsVi ? "Định dạng" : "Format", 100);
+
+            lvBackupSets.SelectedIndexChanged += (s, e) =>
+            {
+                btnRestore.Enabled = lvBackupSets.SelectedItems.Count > 0;
+                if (lvBackupSets.SelectedItems.Count > 0 && string.IsNullOrWhiteSpace(txtTargetFolder.Text))
+                {
+                    var set = lvBackupSets.SelectedItems[0].Tag as BackupSetManifest;
+                    var name = !string.IsNullOrEmpty(set?.JobName) ? set.JobName : "Restored";
+                    txtTargetFolder.Text = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Restored_" + name);
+                }
+            };
+
+            lvBackupSets.DoubleClick += async (s, e) =>
+            {
+                if (btnRestore.Enabled)
+                {
+                    await ExecuteRestoreAsync();
+                }
+            };
 
             // ==========================================
             // Step 3: Cấu hình phục hồi & Thư mục đích
@@ -224,8 +268,8 @@ namespace FtpSysPro.Manager.UI
             };
 
             var lblTargetDir = new Label { Text = Strings.IsVi ? "Thư mục đích (*):" : "Target Folder (*):", Location = new Point(20, 373), AutoSize = true };
-            txtTargetFolder = new TextBox { Location = new Point(130, 370), Width = 485 };
-            btnBrowseTarget = new Button { Text = Strings.Browse, Location = new Point(625, 368), Size = new Size(100, 27) };
+            txtTargetFolder = new TextBox { Location = new Point(130, 370), Width = 515 };
+            btnBrowseTarget = new Button { Text = Strings.Browse, Location = new Point(655, 368), Size = new Size(105, 27) };
             btnBrowseTarget.Click += (s, e) =>
             {
                 var folder = FolderBrowserEx.SelectFolder(this, txtTargetFolder.Text, Strings.IsVi ? "Chọn thư mục đích tiếp nhận dữ liệu phục hồi" : "Select target directory for data restoration");
@@ -272,30 +316,48 @@ namespace FtpSysPro.Manager.UI
                 Location = new Point(340, 438),
                 AutoSize = true
             };
-            txtPassword = new TextBox { Location = new Point(515, 435), Width = 210, UseSystemPasswordChar = true };
+            txtPassword = new TextBox { Location = new Point(530, 435), Width = 230, UseSystemPasswordChar = true };
 
             // ==========================================
             // Step 4: Tiến độ & Nút thực thi
             // ==========================================
-            progressBar = new ProgressBar { Location = new Point(20, 475), Size = new Size(705, 18), Style = ProgressBarStyle.Marquee, MarqueeAnimationSpeed = 0, Visible = false };
-            lblStatus = new Label { Location = new Point(20, 498), Size = new Size(705, 30), AutoSize = false, Text = "" };
+            progressBar = new ProgressBar { Location = new Point(20, 475), Size = new Size(740, 18), Style = ProgressBarStyle.Marquee, MarqueeAnimationSpeed = 0, Visible = false };
+            lblStatus = new Label { Location = new Point(20, 498), Size = new Size(740, 30), AutoSize = false, Text = "" };
 
             btnRestore = new Button
             {
                 Text = "🔄 " + Strings.Restore,
-                Location = new Point(455, 545),
-                Size = new Size(165, 34),
-                BackColor = Color.FromArgb(0, 120, 215),
-                ForeColor = Color.White,
+                Location = new Point(480, 545),
+                Size = new Size(175, 36),
+                BackColor = SystemColors.ControlLight,
+                ForeColor = SystemColors.GrayText,
                 FlatStyle = FlatStyle.Flat,
-                Font = new Font(Font, FontStyle.Bold)
+                Font = new Font(Font, FontStyle.Bold),
+                Enabled = false
             };
-            btnCancel = new Button { Text = Strings.Close, DialogResult = DialogResult.Cancel, Location = new Point(630, 545), Size = new Size(95, 34) };
+            btnRestore.FlatAppearance.BorderSize = 1;
+            btnRestore.FlatAppearance.BorderColor = Color.FromArgb(0, 120, 215);
+
+            btnRestore.EnabledChanged += (s, e) =>
+            {
+                if (btnRestore.Enabled)
+                {
+                    btnRestore.BackColor = Color.FromArgb(0, 120, 215);
+                    btnRestore.ForeColor = Color.White;
+                }
+                else
+                {
+                    btnRestore.BackColor = SystemColors.ControlLight;
+                    btnRestore.ForeColor = SystemColors.GrayText;
+                }
+            };
+
+            btnCancel = new Button { Text = Strings.Close, DialogResult = DialogResult.Cancel, Location = new Point(665, 545), Size = new Size(95, 36) };
 
             btnRestore.Click += async (s, e) => await ExecuteRestoreAsync();
 
             Controls.AddRange(new Control[] {
-                lblSource, rdoJob, rdoFolder, rdoRemote,
+                lblSource, pnlRadios,
                 pnlJob, pnlFolder, pnlRemote,
                 lblSets, lvBackupSets,
                 lblTarget, lblTargetDir, txtTargetFolder, btnBrowseTarget,
@@ -315,6 +377,7 @@ namespace FtpSysPro.Manager.UI
             lvBackupSets.Items.Clear();
             _loadedSets.Clear();
             lblStatus.Text = "";
+            btnRestore.Enabled = false;
 
             if (rdoJob.Checked && cboJob.Items.Count > 0 && cboJob.SelectedIndex >= 0)
             {
@@ -431,6 +494,38 @@ namespace FtpSysPro.Manager.UI
                 : $"Connecting to {(isSftp ? "SFTP" : "FTP")} server and scanning backup sets...");
         }
 
+        private void PopulateBackupSetsListView()
+        {
+            lvBackupSets.Items.Clear();
+            foreach (var s in _loadedSets)
+            {
+                var item = new ListViewItem(s.CreatedUtc.ToString("yyyy-MM-dd HH:mm:ss"));
+                item.SubItems.Add(s.BackupType == BackupType.Full ? (Strings.IsVi ? "Toàn phần" : "Full") : (Strings.IsVi ? "Gia tăng" : "Incremental"));
+                item.SubItems.Add(s.BackupSetId);
+                item.SubItems.Add(s.FileCount.ToString("N0"));
+                item.SubItems.Add(FormatBytes(s.TotalSizeBytes));
+                item.SubItems.Add((s.IsCompressed ? "ZIP" : "Raw") + (s.IsEncrypted ? " [AES-256]" : ""));
+                item.Tag = s;
+                lvBackupSets.Items.Add(item);
+            }
+
+            lblStatus.Text = Strings.IsVi
+                ? $"Đã tìm thấy {_loadedSets.Count} điểm phục hồi khả dụng (Full & Incremental)."
+                : $"Found {_loadedSets.Count} available restore points (Full & Incremental).";
+
+            if (lvBackupSets.Items.Count > 0)
+            {
+                lvBackupSets.Items[0].Selected = true;
+                lvBackupSets.Items[0].Focused = true;
+                lvBackupSets.Focus();
+                btnRestore.Enabled = true;
+            }
+            else
+            {
+                btnRestore.Enabled = false;
+            }
+        }
+
         private async System.Threading.Tasks.Task QueryBackupSetsAsync(ListBackupSetsRequest req, string statusText)
         {
             lvBackupSets.Items.Clear();
@@ -438,48 +533,56 @@ namespace FtpSysPro.Manager.UI
             lblStatus.Text = statusText;
             btnRestore.Enabled = false;
 
-            try
+            bool fetchedViaIpc = false;
+            if (_pipeClient != null)
             {
-                var resp = await _pipeClient.SendAsync(new IpcMessage
+                try
                 {
-                    Action = IpcActions.ListBackupSets,
-                    PayloadJson = JsonConvert.SerializeObject(req)
-                });
-
-                if (resp != null && resp.Success)
-                {
-                    _loadedSets = JsonConvert.DeserializeObject<List<BackupSetManifest>>(resp.PayloadJson) ?? new List<BackupSetManifest>();
-                    foreach (var s in _loadedSets)
+                    var resp = await _pipeClient.SendAsync(new IpcMessage
                     {
-                        var item = new ListViewItem(s.CreatedUtc.ToString("yyyy-MM-dd HH:mm:ss"));
-                        item.SubItems.Add(s.BackupType == BackupType.Full ? (Strings.IsVi ? "Toàn phần" : "Full") : (Strings.IsVi ? "Gia tăng" : "Incremental"));
-                        item.SubItems.Add(s.BackupSetId);
-                        item.SubItems.Add(s.FileCount.ToString("N0"));
-                        item.SubItems.Add(FormatBytes(s.TotalSizeBytes));
-                        item.SubItems.Add((s.IsCompressed ? "ZIP" : "Raw") + (s.IsEncrypted ? " [AES-256]" : ""));
-                        item.Tag = s;
-                        lvBackupSets.Items.Add(item);
-                    }
+                        Action = IpcActions.ListBackupSets,
+                        PayloadJson = JsonConvert.SerializeObject(req)
+                    }, 5000);
 
-                    lblStatus.Text = Strings.IsVi
-                        ? $"Đã tìm thấy {_loadedSets.Count} điểm phục hồi khả dụng (Full & Incremental)."
-                        : $"Found {_loadedSets.Count} available restore points (Full & Incremental).";
-
-                    if (lvBackupSets.Items.Count > 0)
+                    if (resp != null && resp.Success)
                     {
-                        lvBackupSets.Items[0].Selected = true;
-                        btnRestore.Enabled = true;
+                        _loadedSets = JsonConvert.DeserializeObject<List<BackupSetManifest>>(resp.PayloadJson) ?? new List<BackupSetManifest>();
+                        fetchedViaIpc = true;
                     }
                 }
-                else
+                catch
                 {
-                    lblStatus.Text = (Strings.IsVi ? "Không thể đọc danh sách điểm phục hồi: " : "Failed to load restore points: ") + resp?.ErrorMessage;
+                    // IPC unavailable or timed out, will fallback to direct engine below
                 }
             }
-            catch (Exception ex)
+
+            if (!fetchedViaIpc)
             {
-                lblStatus.Text = (Strings.IsVi ? "Lỗi kết nối IPC đến dịch vụ: " : "IPC connection error: ") + ex.Message;
+                try
+                {
+                    var restoreEngine = new RestoreEngine(_configStore);
+                    if (req.CustomDestination != null)
+                    {
+                        _loadedSets = await restoreEngine.ListAvailableBackupSetsFromDestinationAsync(
+                            req.CustomDestination, req.RemoteRoot ?? "");
+                    }
+                    else if (!string.IsNullOrEmpty(req.JobId))
+                    {
+                        var job = _jobs.FirstOrDefault(j => j.Id == req.JobId);
+                        if (job != null)
+                        {
+                            _loadedSets = await restoreEngine.ListAvailableBackupSetsAsync(job);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    lblStatus.Text = (Strings.IsVi ? "Lỗi đọc điểm phục hồi: " : "Failed to load restore points: ") + ex.Message;
+                    return;
+                }
             }
+
+            PopulateBackupSetsListView();
         }
 
         private async System.Threading.Tasks.Task ExecuteRestoreAsync()
@@ -572,33 +675,86 @@ namespace FtpSysPro.Manager.UI
                     req.RemoteRoot = isSftp ? req.CustomDestination.SftpRemotePath : req.CustomDestination.FtpRemotePath;
                 }
 
-                var resp = await _pipeClient.SendAsync(new IpcMessage
-                {
-                    Action = IpcActions.Restore,
-                    PayloadJson = JsonConvert.SerializeObject(req)
-                }, 300000); // 5 min timeout
+                RestoreResult result = null;
 
-                if (resp != null && resp.Success)
+                // 1. Try IPC via Service if available
+                if (_pipeClient != null)
                 {
-                    var result = JsonConvert.DeserializeObject<RestoreResult>(resp.PayloadJson);
-                    if (result != null && result.Success)
+                    try
                     {
-                        MessageBox.Show(this, result.Message, Strings.IsVi ? "Phục hồi dữ liệu thành công" : "Restoration Succeeded", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        Close();
+                        var resp = await _pipeClient.SendAsync(new IpcMessage
+                        {
+                            Action = IpcActions.Restore,
+                            PayloadJson = JsonConvert.SerializeObject(req)
+                        }, 300000);
+
+                        if (resp != null && resp.Success)
+                        {
+                            result = JsonConvert.DeserializeObject<RestoreResult>(resp.PayloadJson);
+                        }
+                    }
+                    catch
+                    {
+                        // IPC disconnected/failed, fallback to in-process restore
+                    }
+                }
+
+                // 2. Direct in-process restore fallback
+                if (result == null)
+                {
+                    var restoreEngine = new RestoreEngine(_configStore);
+                    var restoreOpts = new RestoreOptions
+                    {
+                        TargetDirectory = req.TargetDirectory,
+                        OverwriteExisting = req.OverwriteExisting,
+                        ZipPassword = req.ZipPassword,
+                        SelectedSubFolder = req.SelectedSubFolder
+                    };
+
+                    if (req.CustomDestination != null)
+                    {
+                        result = await restoreEngine.RestoreFromDestinationToPointInTimeAsync(
+                            req.CustomDestination,
+                            req.RemoteRoot ?? "",
+                            req.BackupSetId,
+                            restoreOpts,
+                            req.ZipPassword);
                     }
                     else
                     {
-                        MessageBox.Show(this,
-                            (Strings.IsVi ? "Phục hồi dữ liệu thất bại: " : "Restoration failed: ") + result?.Message,
-                            Strings.IsVi ? "Lỗi thực thi" : "Execution Error",
-                            MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        var job = _jobs.FirstOrDefault(j => j.Id == req.JobId);
+                        if (job != null)
+                        {
+                            result = await restoreEngine.RestoreToPointInTimeAsync(
+                                job,
+                                req.BackupSetId,
+                                restoreOpts);
+                        }
+                        else
+                        {
+                            result = new RestoreResult
+                            {
+                                Success = false,
+                                Message = Strings.IsVi ? "Không tìm thấy cấu hình Job tương ứng." : "Configured Job not found."
+                            };
+                        }
                     }
+                }
+
+                if (result != null && result.Success)
+                {
+                    MessageBox.Show(this, result.Message, Strings.IsVi ? "Phục hồi dữ liệu thành công" : "Restoration Succeeded", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    Close();
                 }
                 else
                 {
+                    var errMsg = result?.Message;
+                    if (string.IsNullOrWhiteSpace(errMsg) && result?.Errors?.Count > 0)
+                        errMsg = string.Join("; ", result.Errors);
+
                     MessageBox.Show(this,
-                        (Strings.IsVi ? "Lỗi từ dịch vụ hệ thống: " : "Service error: ") + resp?.ErrorMessage,
-                        Strings.IsVi ? "Lỗi" : "Error",
+                        (Strings.IsVi ? "Phục hồi dữ liệu thất bại: " : "Restoration failed: ") + errMsg,
+                        Strings.IsVi ? "Lỗi thực thi" : "Execution Error",
                         MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             }
@@ -611,7 +767,7 @@ namespace FtpSysPro.Manager.UI
             }
             finally
             {
-                btnRestore.Enabled = true;
+                btnRestore.Enabled = lvBackupSets.SelectedItems.Count > 0;
                 btnCancel.Enabled = true;
                 progressBar.Visible = false;
                 lblStatus.Text = "";

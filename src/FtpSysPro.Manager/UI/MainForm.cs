@@ -758,7 +758,7 @@ namespace FtpSysPro.Manager.UI
         private void OpenRestoreWizard()
         {
             var selectedJob = GetSelectedJob();
-            using (var dlg = new RestoreWizardDialog(_currentConfig.Jobs, _pipeClient, selectedJob?.Id))
+            using (var dlg = new RestoreWizardDialog(_currentConfig.Jobs, _pipeClient, selectedJob?.Id, _configStore))
             {
                 dlg.ShowDialog(this);
             }

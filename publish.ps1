@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
     Script tự động biên dịch, khởi tạo Git, commit và đẩy mã nguồn lên GitHub:
     https://github.com/0xAndyNew/FTPSys-Pro.git
@@ -9,7 +9,7 @@ param(
     [string]$RemoteUrl = "https://github.com/0xAndyNew/FTPSys-Pro.git",
     [string]$AuthorName = "0xAndyNew",
     [string]$AuthorEmail = "179321164+0xAndyNew@users.noreply.github.com",
-    [string]$Version = "v1.2.6"
+    [string]$Version = "v1.2.7"
 )
 
 $ErrorActionPreference = "Stop"

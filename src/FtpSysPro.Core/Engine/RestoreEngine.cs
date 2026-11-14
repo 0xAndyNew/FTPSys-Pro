@@ -114,7 +114,12 @@ namespace FtpSysPro.Core.Engine
                             var json = await reader.ReadToEndAsync();
                             var m = JsonConvert.DeserializeObject<BackupSetManifest>(json);
                             if (m != null && !list.Any(x => x.BackupSetId == m.BackupSetId))
+                            {
+                                m.RelativeLocation = remotePath ?? string.Empty;
+                                if (string.IsNullOrEmpty(m.ArchiveFileName) && m.IsCompressed)
+                                    m.ArchiveFileName = $"{m.BackupSetId}.zip";
                                 list.Add(m);
+                            }
                         }
                     }
                     catch { }
@@ -137,6 +142,7 @@ namespace FtpSysPro.Core.Engine
                                 var m = JsonConvert.DeserializeObject<BackupSetManifest>(json);
                                 if (m != null && !list.Any(x => x.BackupSetId == m.BackupSetId))
                                 {
+                                    m.RelativeLocation = remotePath ?? string.Empty;
                                     list.Add(m);
                                     loaded = true;
                                 }
@@ -162,7 +168,8 @@ namespace FtpSysPro.Core.Engine
                                     CreatedUtc = dt.ToUniversalTime(),
                                     BackupType = typeStr == "FULL" ? BackupType.Full : BackupType.Incremental,
                                     BaseFullBackupSetId = typeStr == "FULL" ? item.Name : string.Empty,
-                                    IsCompressed = false
+                                    IsCompressed = false,
+                                    RelativeLocation = remotePath ?? string.Empty
                                 });
                             }
                         }
@@ -190,7 +197,8 @@ namespace FtpSysPro.Core.Engine
                                     BaseFullBackupSetId = typeStr == "FULL" ? setId : string.Empty,
                                     IsCompressed = true,
                                     ArchiveFileName = item.Name,
-                                    TotalSizeBytes = item.SizeBytes
+                                    TotalSizeBytes = item.SizeBytes,
+                                    RelativeLocation = remotePath ?? string.Empty
                                 });
                             }
                         }
@@ -198,10 +206,10 @@ namespace FtpSysPro.Core.Engine
                 }
             }
 
-            // If no sets were found at the root and this is the root directory, check one level down of subdirectories
-            if (list.Count == 0 && string.IsNullOrEmpty(remotePath))
+            // Also check one level of subdirectories if this is the root directory
+            if (string.IsNullOrEmpty(remotePath))
             {
-                foreach (var dir in items.Where(i => i.IsDirectory))
+                foreach (var dir in items.Where(i => i.IsDirectory && !Regex.IsMatch(i.Name, @"(?:_|^)(\d{8}_\d{6})_(FULL|INCR)$", RegexOptions.IgnoreCase)))
                 {
                     cancellationToken.ThrowIfCancellationRequested();
                     await ScanDestinationForBackupSetsAsync(destination, dir.Name, job, list, cancellationToken);
@@ -276,7 +284,9 @@ namespace FtpSysPro.Core.Engine
 
             if (string.IsNullOrWhiteSpace(options.TargetDirectory))
             {
-                result.Errors.Add("Target restore directory must be specified");
+                result.Success = false;
+                result.Message = "Target restore directory must be specified";
+                result.Errors.Add(result.Message);
                 return result;
             }
 
@@ -296,7 +306,9 @@ namespace FtpSysPro.Core.Engine
                 var targetSet = allSets.FirstOrDefault(s => s.BackupSetId == targetBackupSetId);
                 if (targetSet == null)
                 {
-                    result.Errors.Add($"Backup set '{targetBackupSetId}' not found");
+                    result.Success = false;
+                    result.Message = $"Backup set '{targetBackupSetId}' not found";
+                    result.Errors.Add(result.Message);
                     return result;
                 }
 
@@ -353,17 +365,31 @@ namespace FtpSysPro.Core.Engine
 
                     if (set.IsCompressed)
                     {
-                        var remoteZip = string.IsNullOrEmpty(remoteRoot) ? set.ArchiveFileName : $"{remoteRoot}/{set.ArchiveFileName}";
-                        var localZip = Path.Combine(tempDir, set.ArchiveFileName);
-
-                        // If remoteZip does not exist directly under remoteRoot, check if it exists at root
-                        if (!await destination.FileExistsAsync(remoteZip, cancellationToken))
+                        var candidatePaths = new List<string>();
+                        if (!string.IsNullOrEmpty(set.RelativeLocation))
                         {
-                            if (await destination.FileExistsAsync(set.ArchiveFileName, cancellationToken))
+                            candidatePaths.Add(string.IsNullOrEmpty(remoteRoot) 
+                                ? $"{set.RelativeLocation}/{set.ArchiveFileName}" 
+                                : $"{remoteRoot}/{set.RelativeLocation}/{set.ArchiveFileName}");
+                        }
+                        if (!string.IsNullOrEmpty(remoteRoot))
+                        {
+                            candidatePaths.Add($"{remoteRoot}/{set.ArchiveFileName}");
+                        }
+                        candidatePaths.Add(set.ArchiveFileName);
+
+                        string remoteZip = null;
+                        foreach (var path in candidatePaths)
+                        {
+                            if (await destination.FileExistsAsync(path, cancellationToken))
                             {
-                                remoteZip = set.ArchiveFileName;
+                                remoteZip = path;
+                                break;
                             }
                         }
+                        if (remoteZip == null) remoteZip = candidatePaths[0];
+
+                        var localZip = Path.Combine(tempDir, Path.GetFileName(set.ArchiveFileName));
 
                         await destination.DownloadFileAsync(remoteZip, localZip, null, cancellationToken);
 
@@ -381,14 +407,29 @@ namespace FtpSysPro.Core.Engine
                     else
                     {
                         // Download uncompressed files
-                        var remoteDir = string.IsNullOrEmpty(remoteRoot) ? set.BackupSetId : $"{remoteRoot}/{set.BackupSetId}";
-                        if (!await destination.DirectoryExistsAsync(remoteDir, cancellationToken))
+                        var candidateDirs = new List<string>();
+                        if (!string.IsNullOrEmpty(set.RelativeLocation))
                         {
-                            if (await destination.DirectoryExistsAsync(set.BackupSetId, cancellationToken))
+                            candidateDirs.Add(string.IsNullOrEmpty(remoteRoot)
+                                ? $"{set.RelativeLocation}/{set.BackupSetId}"
+                                : $"{remoteRoot}/{set.RelativeLocation}/{set.BackupSetId}");
+                        }
+                        if (!string.IsNullOrEmpty(remoteRoot))
+                        {
+                            candidateDirs.Add($"{remoteRoot}/{set.BackupSetId}");
+                        }
+                        candidateDirs.Add(set.BackupSetId);
+
+                        string remoteDir = null;
+                        foreach (var dir in candidateDirs)
+                        {
+                            if (await destination.DirectoryExistsAsync(dir, cancellationToken))
                             {
-                                remoteDir = set.BackupSetId;
+                                remoteDir = dir;
+                                break;
                             }
                         }
+                        if (remoteDir == null) remoteDir = candidateDirs[0];
 
                         if (set.Files != null && set.Files.Count > 0)
                         {

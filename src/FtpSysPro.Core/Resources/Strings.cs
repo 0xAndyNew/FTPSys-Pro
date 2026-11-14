@@ -20,7 +20,7 @@ namespace FtpSysPro.Core.Resources
             CultureInfo.DefaultThreadCurrentUICulture = culture;
         }
 
-        public static string AppVersion => "1.2.6";
+        public static string AppVersion => "1.2.7";
         public static string AppName => IsVi ? "FTPSys Pro - Sao lưu Dữ liệu Doanh nghiệp" : "FTPSys Pro - Enterprise Backup & Recovery";
 
         // Navigation / Tabs

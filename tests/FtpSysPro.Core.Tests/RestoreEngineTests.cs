@@ -202,5 +202,52 @@ namespace FtpSysPro.Core.Tests
             Assert.True(File.Exists(Path.Combine(outDir, "Docs", "readme.txt")));
             Assert.False(File.Exists(Path.Combine(outDir, "Images", "photo.jpg")));
         }
+
+        [Fact]
+        public async Task ListAvailableBackupSetsFromDestination_DiscoversSetsInJobSubfolder_AndRestoresSuccessfully()
+        {
+            // Arrange: create root backup folder containing a job subfolder with zip archives
+            var repoRoot = Path.Combine(_tempDir, "AllBackups");
+            var jobSubfolder = Path.Combine(repoRoot, "FinancialJob");
+            Directory.CreateDirectory(jobSubfolder);
+
+            var fileContent = "Secret financial records 2026";
+            var srcDir = Path.Combine(_tempDir, "FinSrc");
+            Directory.CreateDirectory(srcDir);
+            var finFile = Path.Combine(srcDir, "ledger.csv");
+            File.WriteAllText(finFile, fileContent);
+
+            var zipPath = Path.Combine(jobSubfolder, "FinancialJob_20261114_120000_FULL.zip");
+            var files = new List<ScannedFile>
+            {
+                new ScannedFile { FullPath = finFile, RelativePath = "ledger.csv", SizeBytes = fileContent.Length, LastWriteTimeUtc = DateTime.UtcNow }
+            };
+            ZipArchiveHelper.CreateZipArchive(zipPath, files, 5);
+
+            var restoreEngine = new RestoreEngine(_configStore);
+            var destConfig = new DestinationConfig { Type = DestinationType.LocalOrUnc, LocalPath = repoRoot };
+
+            // Act: Discover sets starting from the root folder (not pointing directly to jobSubfolder)
+            var sets = await restoreEngine.ListAvailableBackupSetsFromDestinationAsync(destConfig);
+
+            // Assert: Set should be discovered even though it's inside subfolder
+            Assert.NotEmpty(sets);
+            var foundSet = sets[0];
+            Assert.Equal("FinancialJob_20261114_120000_FULL", foundSet.BackupSetId);
+            Assert.Equal("FinancialJob", foundSet.RelativeLocation);
+
+            // Act: Restore the discovered set
+            var restoreTarget = Path.Combine(_tempDir, "RestoredFin");
+            var restoreResult = await restoreEngine.RestoreFromDestinationToPointInTimeAsync(
+                destConfig,
+                "",
+                foundSet.BackupSetId,
+                new RestoreOptions { TargetDirectory = restoreTarget, OverwriteExisting = true });
+
+            // Assert: Restore should succeed and extract file to target
+            Assert.True(restoreResult.Success);
+            Assert.True(File.Exists(Path.Combine(restoreTarget, "ledger.csv")));
+            Assert.Equal(fileContent, File.ReadAllText(Path.Combine(restoreTarget, "ledger.csv")));
+        }
     }
 }
