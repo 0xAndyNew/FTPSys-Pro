@@ -184,24 +184,44 @@ namespace FtpSysPro.Service
                         SelectedSubFolder = restoreReq.SelectedSubFolder
                     };
 
+                    string subFolderLog = string.IsNullOrEmpty(restoreReq.SelectedSubFolder) ? "Toàn bộ" : restoreReq.SelectedSubFolder;
+                    _configStore.AppendRestoreLog("INF", $"[Service] Bắt đầu phục hồi bản sao lưu '{restoreReq.BackupSetId}' đến '{restoreReq.TargetDirectory}' (Mục: {subFolderLog})", restoreReq.JobId, null, restoreReq.BackupSetId, restoreReq.TargetDirectory);
+
+                    RestoreResult res;
+                    string resJobName = null;
                     if (restoreReq.CustomDestination != null)
                     {
-                        var customRestoreResult = await restoreEng.RestoreFromDestinationToPointInTimeAsync(
+                        res = await restoreEng.RestoreFromDestinationToPointInTimeAsync(
                             restoreReq.CustomDestination,
                             restoreReq.RemoteRoot ?? "",
                             restoreReq.BackupSetId,
                             restoreOpts,
                             restoreReq.ZipPassword);
-                        return IpcResponse.Ok(msg.MessageId, customRestoreResult);
+                    }
+                    else
+                    {
+                        var configForRestore = _configStore.LoadConfig();
+                        var jobForRestore = configForRestore.Jobs.FirstOrDefault(j => j.Id == restoreReq.JobId);
+                        if (jobForRestore == null)
+                        {
+                            _configStore.AppendRestoreLog("ERR", $"[Service] Không tìm thấy Job ID '{restoreReq.JobId}' để phục hồi", restoreReq.JobId, null, restoreReq.BackupSetId, restoreReq.TargetDirectory);
+                            return IpcResponse.Fail(msg.MessageId, "Job not found");
+                        }
+                        resJobName = jobForRestore.Name;
+                        res = await restoreEng.RestoreToPointInTimeAsync(jobForRestore, restoreReq.BackupSetId, restoreOpts);
                     }
 
-                    var configForRestore = _configStore.LoadConfig();
-                    var jobForRestore = configForRestore.Jobs.FirstOrDefault(j => j.Id == restoreReq.JobId);
-                    if (jobForRestore == null)
-                        return IpcResponse.Fail(msg.MessageId, "Job not found");
+                    if (res != null && res.Success)
+                    {
+                        _configStore.AppendRestoreLog("INF", $"[Service] Phục hồi THÀNH CÔNG: {res.RestoredFiles:N0} tệp ({res.RestoredBytes:N0} bytes). {res.Message}", restoreReq.JobId, resJobName, restoreReq.BackupSetId, restoreReq.TargetDirectory);
+                    }
+                    else
+                    {
+                        var err = res?.Message ?? (res?.Errors != null ? string.Join("; ", res.Errors) : "Unknown error");
+                        _configStore.AppendRestoreLog("ERR", $"[Service] Phục hồi THẤT BÀI: {err}", restoreReq.JobId, resJobName, restoreReq.BackupSetId, restoreReq.TargetDirectory);
+                    }
 
-                    var restoreResult = await restoreEng.RestoreToPointInTimeAsync(jobForRestore, restoreReq.BackupSetId, restoreOpts);
-                    return IpcResponse.Ok(msg.MessageId, restoreResult);
+                    return IpcResponse.Ok(msg.MessageId, res);
 
                 case IpcActions.GetRunningJobs:
                     var running = _runner.GetRunningJobIds();

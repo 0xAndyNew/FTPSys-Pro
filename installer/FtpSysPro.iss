@@ -2,7 +2,7 @@
 ; Requires Inno Setup 6 (free from jrsoftware.org)
 
 #define MyAppName "FTPSys Pro"
-#define MyAppVersion "1.2.7"
+#define MyAppVersion "1.2.8"
 #define MyAppPublisher "0xAndyNew"
 #define MyAppURL "https://github.com/0xAndyNew/FTPSys-Pro"
 #define MyAppExeName "FtpSysPro.Manager.exe"

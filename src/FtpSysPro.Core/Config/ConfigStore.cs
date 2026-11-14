@@ -355,6 +355,56 @@ namespace FtpSysPro.Core.Config
             }
         }
 
+        public string RestoreLogFilePath => Path.Combine(LogsDirectory, "restore.log");
+
+        public void AppendRestoreLog(string level, string message, string jobId = null, string jobName = null, string backupSetId = null, string targetDir = null, DateTime? timestampUtc = null)
+        {
+            try
+            {
+                EnsureDirectories();
+                var ts = (timestampUtc ?? DateTime.UtcNow).ToLocalTime();
+                string tag = string.IsNullOrEmpty(level) ? "INF" : level.Trim().ToUpperInvariant();
+                if (tag.Length > 3) tag = tag.Substring(0, 3);
+
+                var details = new List<string>();
+                if (!string.IsNullOrEmpty(jobName)) details.Add($"Job '{jobName}'");
+                if (!string.IsNullOrEmpty(backupSetId)) details.Add($"Set: {backupSetId}");
+                if (!string.IsNullOrEmpty(targetDir)) details.Add($"Target: {targetDir}");
+
+                string context = details.Count > 0 ? " [" + string.Join(", ", details) + "]" : "";
+                string line = $"{ts:yyyy-MM-dd HH:mm:ss.fff zzz} [{tag}] [RESTORE]{context} {message}";
+
+                lock (_syncLock)
+                {
+                    File.AppendAllText(RestoreLogFilePath, line + Environment.NewLine, System.Text.Encoding.UTF8);
+                }
+
+                if (!string.IsNullOrEmpty(jobId))
+                {
+                    AppendJobLog(jobId, jobName ?? jobId, tag, $"[RESTORE] {message}", ts);
+                }
+            }
+            catch { }
+        }
+
+        public string ReadRestoreLog(int maxLines = 1000)
+        {
+            try
+            {
+                lock (_syncLock)
+                {
+                    if (!File.Exists(RestoreLogFilePath)) return string.Empty;
+                    var lines = File.ReadAllLines(RestoreLogFilePath, System.Text.Encoding.UTF8);
+                    if (lines.Length <= maxLines) return string.Join(Environment.NewLine, lines);
+                    return string.Join(Environment.NewLine, lines.Skip(lines.Length - maxLines));
+                }
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
+
         public void ClearJobLog(string jobId)
         {
             if (string.IsNullOrEmpty(jobId)) return;

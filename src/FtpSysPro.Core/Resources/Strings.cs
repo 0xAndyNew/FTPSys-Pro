@@ -20,7 +20,7 @@ namespace FtpSysPro.Core.Resources
             CultureInfo.DefaultThreadCurrentUICulture = culture;
         }
 
-        public static string AppVersion => "1.2.7";
+        public static string AppVersion => "1.2.8";
         public static string AppName => IsVi ? "FTPSys Pro - Sao lưu Dữ liệu Doanh nghiệp" : "FTPSys Pro - Enterprise Backup & Recovery";
 
         // Navigation / Tabs
@@ -329,5 +329,12 @@ namespace FtpSysPro.Core.Resources
         public static string RestoreSelectivePlaceholder => IsVi ? "Ví dụ: Documents hoặc SubFolder (bỏ trống để khôi phục tất cả)" : "e.g. Documents or SubFolder (leave blank for all)";
         public static string RestoreScan => IsVi ? "Quét điểm phục hồi" : "Scan Restore Points";
         public static string RestoreConnectAndScan => IsVi ? "Kết nối & Quét" : "Connect & Scan";
+        public static string SelectSubFolderTitle => IsVi ? "Chọn thư mục con cần phục hồi" : "Select Subfolder to Restore";
+        public static string SelectSubFolderBrowse => IsVi ? "📁 Chọn mục..." : "📁 Browse...";
+        public static string ViewRestoreLogs => IsVi ? "📋 Nhật ký phục hồi" : "📋 Restore Logs";
+        public static string RestoreLogFileName => IsVi ? "Nhật ký phục hồi dữ liệu" : "Data Restoration Logs";
+        public static string RootFolderAllData => IsVi ? "(Toàn bộ dữ liệu)" : "(All data / Root)";
+        public static string RequireRestorePointFirst => IsVi ? "Vui lòng chọn một điểm phục hồi ở Bước 2 trước." : "Please select a restore point in Step 2 first.";
+        public static string NoSubFoldersFound => IsVi ? "Bản sao lưu này không chứa thư mục con (chỉ có các tệp ở thư mục gốc)." : "This backup set contains no subfolders (files at root only).";
     }
 }

@@ -18,6 +18,7 @@ namespace FtpSysPro.Manager.UI
         private readonly ConfigStore _configStore;
         private readonly AppConfig _config;
         private readonly string _initialJobFilter;
+        private readonly string _initialLogFile;
 
         private ComboBox cboLogFiles;
         private ComboBox cboJobFilter;
@@ -70,11 +71,12 @@ namespace FtpSysPro.Manager.UI
             }
         }
 
-        public LogViewerDialog(ConfigStore configStore, AppConfig config, string initialJobFilter = null)
+        public LogViewerDialog(ConfigStore configStore, AppConfig config, string initialJobFilter = null, string initialLogFile = null)
         {
             _configStore = configStore ?? new ConfigStore();
             _config = config ?? _configStore.LoadConfig();
             _initialJobFilter = initialJobFilter;
+            _initialLogFile = initialLogFile;
 
             InitializeComponents();
             LoadJobFilterItems();
@@ -438,6 +440,12 @@ namespace FtpSysPro.Manager.UI
                                .OrderByDescending(f => f.LastWriteTimeUtc)
                                .ToList();
 
+                var restoreLogPath = Path.Combine(logsDir, "restore.log");
+                if (File.Exists(restoreLogPath))
+                {
+                    files.Insert(0, new FileInfo(restoreLogPath));
+                }
+
                 var currentSelection = (cboLogFiles.SelectedItem as LogFileItem)?.FullPath;
 
                 cboLogFiles.Items.Clear();
@@ -453,16 +461,23 @@ namespace FtpSysPro.Manager.UI
                 for (int i = 0; i < files.Count; i++)
                 {
                     var f = files[i];
+                    var isRestoreLog = f.Name.Equals("restore.log", StringComparison.OrdinalIgnoreCase);
                     var item = new LogFileItem
                     {
                         FullPath = f.FullName,
-                        FileName = f.Name,
+                        FileName = isRestoreLog
+                            ? "restore.log (" + Strings.RestoreLogFileName + ")"
+                            : f.Name,
                         Length = f.Length,
                         LastWriteTime = f.LastWriteTime
                     };
                     cboLogFiles.Items.Add(item);
 
-                    if (currentSelection != null && string.Equals(f.FullName, currentSelection, StringComparison.OrdinalIgnoreCase))
+                    if (!string.IsNullOrEmpty(_initialLogFile) && f.Name.IndexOf(_initialLogFile, StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        selectIdx = i;
+                    }
+                    else if (currentSelection != null && string.Equals(f.FullName, currentSelection, StringComparison.OrdinalIgnoreCase))
                     {
                         selectIdx = i;
                     }

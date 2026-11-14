@@ -229,5 +229,28 @@ namespace FtpSysPro.Core.Tests
             Assert.False(File.Exists(_store.GetJobLogFilePath(deletedJobId)));
             Assert.Null(_store.LoadLatestLocalManifest(deletedJobId));
         }
+
+        [Fact]
+        public void RestoreLog_AppendsAndReadsEntriesCorrectly()
+        {
+            var jobId = "job-restore-test";
+            var jobName = "FinanceRestore";
+            var setId = "Finance_20261114_FULL";
+            var target = @"C:\RestoreTarget";
+
+            _store.AppendRestoreLog("INF", "Bắt đầu phục hồi bản sao lưu", jobId, jobName, setId, target);
+            _store.AppendRestoreLog("INF", "Phục hồi thành công 25 tệp", jobId, jobName, setId, target);
+
+            var logContent = _store.ReadRestoreLog();
+            Assert.Contains("[RESTORE]", logContent);
+            Assert.Contains(setId, logContent);
+            Assert.Contains(target, logContent);
+            Assert.Contains("Phục hồi thành công 25 tệp", logContent);
+
+            // Verify it also appends to the Job's log file
+            var jobLog = File.ReadAllText(_store.GetJobLogFilePath(jobId));
+            Assert.Contains("[RESTORE]", jobLog);
+            Assert.Contains("Phục hồi thành công 25 tệp", jobLog);
+        }
     }
 }

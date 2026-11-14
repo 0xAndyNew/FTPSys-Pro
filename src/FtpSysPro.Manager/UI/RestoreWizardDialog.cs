@@ -53,6 +53,7 @@ namespace FtpSysPro.Manager.UI
         private Button btnBrowseTarget;
         private CheckBox chkSelectiveFolder;
         private TextBox txtSelectiveFolder;
+        private Button btnBrowseSubFolder;
         private CheckBox chkOverwrite;
         private TextBox txtPassword;
         private Label lblPassword;
@@ -62,6 +63,7 @@ namespace FtpSysPro.Manager.UI
         private Label lblStatus;
         private Button btnRestore;
         private Button btnCancel;
+        private Button btnViewLogs;
 
         private List<BackupSetManifest> _loadedSets = new List<BackupSetManifest>();
 
@@ -288,18 +290,32 @@ namespace FtpSysPro.Manager.UI
                 Width = 240,
                 Enabled = false
             };
-            chkSelectiveFolder.CheckedChanged += (s, e) =>
+
+            btnBrowseSubFolder = new Button
+            {
+                Text = Strings.SelectSubFolderBrowse,
+                Location = new Point(475, 403),
+                Size = new Size(115, 27),
+                Enabled = false,
+                FlatStyle = FlatStyle.System
+            };
+            btnBrowseSubFolder.Click += async (s, e) => await OpenSubFolderPickerAsync();
+
+            chkSelectiveFolder.CheckedChanged += async (s, e) =>
             {
                 txtSelectiveFolder.Enabled = chkSelectiveFolder.Checked;
-                if (chkSelectiveFolder.Checked) txtSelectiveFolder.Focus();
-            };
-
-            var lblSelectiveHint = new Label
-            {
-                Text = Strings.RestoreSelectivePlaceholder,
-                Location = new Point(475, 408),
-                AutoSize = true,
-                ForeColor = Color.DimGray
+                btnBrowseSubFolder.Enabled = chkSelectiveFolder.Checked;
+                if (chkSelectiveFolder.Checked)
+                {
+                    if (string.IsNullOrWhiteSpace(txtSelectiveFolder.Text) && lvBackupSets.SelectedItems.Count > 0)
+                    {
+                        await OpenSubFolderPickerAsync();
+                    }
+                    else
+                    {
+                        txtSelectiveFolder.Focus();
+                    }
+                }
             };
 
             chkOverwrite = new CheckBox
@@ -323,6 +339,21 @@ namespace FtpSysPro.Manager.UI
             // ==========================================
             progressBar = new ProgressBar { Location = new Point(20, 475), Size = new Size(740, 18), Style = ProgressBarStyle.Marquee, MarqueeAnimationSpeed = 0, Visible = false };
             lblStatus = new Label { Location = new Point(20, 498), Size = new Size(740, 30), AutoSize = false, Text = "" };
+
+            btnViewLogs = new Button
+            {
+                Text = Strings.ViewRestoreLogs,
+                Location = new Point(20, 545),
+                Size = new Size(165, 36),
+                FlatStyle = FlatStyle.System
+            };
+            btnViewLogs.Click += (s, e) =>
+            {
+                using (var dlg = new LogViewerDialog(_configStore, null, null, "restore.log"))
+                {
+                    dlg.ShowDialog(this);
+                }
+            };
 
             btnRestore = new Button
             {
@@ -361,11 +392,167 @@ namespace FtpSysPro.Manager.UI
                 pnlJob, pnlFolder, pnlRemote,
                 lblSets, lvBackupSets,
                 lblTarget, lblTargetDir, txtTargetFolder, btnBrowseTarget,
-                chkSelectiveFolder, txtSelectiveFolder, lblSelectiveHint,
+                chkSelectiveFolder, txtSelectiveFolder, btnBrowseSubFolder,
                 chkOverwrite, lblPassword, txtPassword,
                 progressBar, lblStatus,
-                btnRestore, btnCancel
+                btnViewLogs, btnRestore, btnCancel
             });
+        }
+
+        private async System.Threading.Tasks.Task OpenSubFolderPickerAsync()
+        {
+            if (lvBackupSets.SelectedItems.Count == 0)
+            {
+                MessageBox.Show(this,
+                    Strings.RequireRestorePointFirst,
+                    Strings.IsVi ? "Thông báo" : "Notice",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            var selectedSet = lvBackupSets.SelectedItems[0].Tag as BackupSetManifest;
+            if (selectedSet == null) return;
+
+            lblStatus.Text = Strings.IsVi ? "Đang đọc cấu trúc thư mục của bản sao lưu..." : "Loading backup set folder structure...";
+            progressBar.Visible = true;
+            progressBar.MarqueeAnimationSpeed = 30;
+
+            try
+            {
+                var folders = await GetAvailableSubFoldersAsync(selectedSet);
+                progressBar.Visible = false;
+                lblStatus.Text = "";
+
+                if (folders.Count == 0)
+                {
+                    MessageBox.Show(this,
+                        Strings.NoSubFoldersFound,
+                        Strings.IsVi ? "Thông báo" : "Notice",
+                        MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+
+                using (var dlg = new SubFolderPickerDialog(selectedSet.BackupSetId, folders, txtSelectiveFolder.Text))
+                {
+                    if (dlg.ShowDialog(this) == DialogResult.OK)
+                    {
+                        txtSelectiveFolder.Text = dlg.SelectedSubFolder;
+                        chkSelectiveFolder.Checked = !string.IsNullOrEmpty(dlg.SelectedSubFolder);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                progressBar.Visible = false;
+                lblStatus.Text = (Strings.IsVi ? "Lỗi: " : "Error: ") + ex.Message;
+                MessageBox.Show(this,
+                    (Strings.IsVi ? "Không thể đọc danh sách thư mục: " : "Could not load folder list: ") + ex.Message,
+                    Strings.IsVi ? "Lỗi" : "Error",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private async System.Threading.Tasks.Task<List<string>> GetAvailableSubFoldersAsync(BackupSetManifest manifest)
+        {
+            var folderSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            // 1. From manifest.Files if available
+            if (manifest.Files != null && manifest.Files.Count > 0)
+            {
+                foreach (var f in manifest.Files)
+                {
+                    var rel = f.RelativePath.Replace('/', '\\').Trim('\\');
+                    var dir = Path.GetDirectoryName(rel);
+                    while (!string.IsNullOrEmpty(dir))
+                    {
+                        folderSet.Add(dir);
+                        dir = Path.GetDirectoryName(dir);
+                    }
+                }
+                return folderSet.OrderBy(x => x).ToList();
+            }
+
+            // 2. If local folder mode or local destination
+            string localSearchPath = null;
+            if (rdoFolder.Checked && !string.IsNullOrWhiteSpace(txtSourceFolder.Text))
+            {
+                localSearchPath = txtSourceFolder.Text.Trim();
+            }
+            else if (rdoJob.Checked && cboJob.SelectedIndex >= 0)
+            {
+                var job = _jobs[cboJob.SelectedIndex];
+                if (job.Destination?.Type == DestinationType.LocalOrUnc)
+                {
+                    localSearchPath = job.Destination.LocalPath;
+                }
+            }
+
+            if (!string.IsNullOrEmpty(localSearchPath) && Directory.Exists(localSearchPath))
+            {
+                // Check if zip archive exists locally
+                var zipCandidates = new List<string>
+                {
+                    Path.Combine(localSearchPath, manifest.RelativeLocation ?? "", manifest.ArchiveFileName ?? (manifest.BackupSetId + ".zip")),
+                    Path.Combine(localSearchPath, manifest.ArchiveFileName ?? (manifest.BackupSetId + ".zip")),
+                    Path.Combine(localSearchPath, manifest.BackupSetId + ".zip")
+                };
+
+                foreach (var zipFile in zipCandidates)
+                {
+                    if (File.Exists(zipFile))
+                    {
+                        await System.Threading.Tasks.Task.Run(() =>
+                        {
+                            using (var fs = new FileStream(zipFile, FileMode.Open, FileAccess.Read, FileShare.Read))
+                            using (var zip = new ICSharpCode.SharpZipLib.Zip.ZipFile(fs))
+                            {
+                                if (!string.IsNullOrEmpty(txtPassword.Text))
+                                {
+                                    zip.Password = txtPassword.Text;
+                                }
+
+                                foreach (ICSharpCode.SharpZipLib.Zip.ZipEntry entry in zip)
+                                {
+                                    var cleanName = entry.Name.Replace('/', '\\').Trim('\\');
+                                    var dir = entry.IsDirectory ? cleanName : Path.GetDirectoryName(cleanName);
+                                    while (!string.IsNullOrEmpty(dir))
+                                    {
+                                        folderSet.Add(dir);
+                                        dir = Path.GetDirectoryName(dir);
+                                    }
+                                }
+                            }
+                        });
+                        return folderSet.OrderBy(x => x).ToList();
+                    }
+                }
+
+                // Check if directory backup exists locally
+                var dirCandidates = new List<string>
+                {
+                    Path.Combine(localSearchPath, manifest.RelativeLocation ?? "", manifest.BackupSetId),
+                    Path.Combine(localSearchPath, manifest.BackupSetId)
+                };
+
+                foreach (var dir in dirCandidates)
+                {
+                    if (Directory.Exists(dir))
+                    {
+                        await System.Threading.Tasks.Task.Run(() =>
+                        {
+                            var subDirs = Directory.GetDirectories(dir, "*", SearchOption.AllDirectories);
+                            foreach (var sd in subDirs)
+                            {
+                                var rel = sd.Substring(dir.Length).TrimStart('\\');
+                                folderSet.Add(rel);
+                            }
+                        });
+                        return folderSet.OrderBy(x => x).ToList();
+                    }
+                }
+            }
+
+            return folderSet.OrderBy(x => x).ToList();
         }
 
         private void UpdateSourceModeUi()
@@ -623,6 +810,19 @@ namespace FtpSysPro.Manager.UI
             if (MessageBox.Show(this, confirmMsg, Strings.IsVi ? "Xác nhận phục hồi dữ liệu" : "Confirm Data Restoration", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
                 return;
 
+            string selectedJobId = null;
+            string selectedJobName = selectedSet.JobName;
+            if (rdoJob.Checked && cboJob.SelectedIndex >= 0)
+            {
+                selectedJobId = _jobs[cboJob.SelectedIndex].Id;
+                selectedJobName = _jobs[cboJob.SelectedIndex].Name;
+            }
+
+            // Ghi nhật ký bắt đầu phục hồi
+            _configStore.AppendRestoreLog("INF",
+                $"Bắt đầu phục hồi dữ liệu: Bản sao lưu '{selectedSet.BackupSetId}', Phạm vi: {subFolderDesc}, Thư mục đích: '{txtTargetFolder.Text}'",
+                selectedJobId, selectedJobName, selectedSet.BackupSetId, txtTargetFolder.Text);
+
             btnRestore.Enabled = false;
             btnCancel.Enabled = false;
             progressBar.Visible = true;
@@ -644,7 +844,7 @@ namespace FtpSysPro.Manager.UI
 
                 if (rdoJob.Checked && cboJob.SelectedIndex >= 0)
                 {
-                    req.JobId = _jobs[cboJob.SelectedIndex].Id;
+                    req.JobId = selectedJobId;
                 }
                 else if (rdoFolder.Checked)
                 {
@@ -743,6 +943,10 @@ namespace FtpSysPro.Manager.UI
 
                 if (result != null && result.Success)
                 {
+                    _configStore.AppendRestoreLog("INF",
+                        $"Phục hồi THÀNH CÔNG: Đã khôi phục {result.RestoredFiles:N0} tệp ({FormatBytes(result.RestoredBytes)}). {result.Message}",
+                        selectedJobId, selectedJobName, selectedSet.BackupSetId, txtTargetFolder.Text);
+
                     MessageBox.Show(this, result.Message, Strings.IsVi ? "Phục hồi dữ liệu thành công" : "Restoration Succeeded", MessageBoxButtons.OK, MessageBoxIcon.Information);
                     Close();
                 }
@@ -752,6 +956,10 @@ namespace FtpSysPro.Manager.UI
                     if (string.IsNullOrWhiteSpace(errMsg) && result?.Errors?.Count > 0)
                         errMsg = string.Join("; ", result.Errors);
 
+                    _configStore.AppendRestoreLog("ERR",
+                        $"Phục hồi THẤT BÀI: {errMsg}",
+                        selectedJobId, selectedJobName, selectedSet.BackupSetId, txtTargetFolder.Text);
+
                     MessageBox.Show(this,
                         (Strings.IsVi ? "Phục hồi dữ liệu thất bại: " : "Restoration failed: ") + errMsg,
                         Strings.IsVi ? "Lỗi thực thi" : "Execution Error",
@@ -760,6 +968,10 @@ namespace FtpSysPro.Manager.UI
             }
             catch (Exception ex)
             {
+                _configStore.AppendRestoreLog("ERR",
+                    $"Lỗi ngoại lệ khi phục hồi: {ex.Message}",
+                    selectedJobId, selectedJobName, selectedSet.BackupSetId, txtTargetFolder.Text);
+
                 MessageBox.Show(this,
                     (Strings.IsVi ? "Lỗi: " : "Error: ") + ex.Message,
                     Strings.IsVi ? "Lỗi" : "Error",
