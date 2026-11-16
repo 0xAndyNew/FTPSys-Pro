@@ -52,8 +52,10 @@ namespace FtpSysPro.Manager.UI
         private TextBox txtTargetFolder;
         private Button btnBrowseTarget;
         private CheckBox chkSelectiveFolder;
+        private Label lblSelectedSubFoldersCount;
         private TextBox txtSelectiveFolder;
         private Button btnBrowseSubFolder;
+        private Button btnClearSubFolder;
         private CheckBox chkOverwrite;
         private TextBox txtPassword;
         private Label lblPassword;
@@ -80,7 +82,7 @@ namespace FtpSysPro.Manager.UI
         private void InitializeComponents()
         {
             Text = Strings.AppName + " - " + Strings.Restore;
-            ClientSize = new Size(780, 605);
+            ClientSize = new Size(780, 665);
             StartPosition = FormStartPosition.CenterParent;
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
@@ -226,7 +228,7 @@ namespace FtpSysPro.Manager.UI
             lvBackupSets = new ListView
             {
                 Location = new Point(20, 160),
-                Size = new Size(740, 175),
+                Size = new Size(740, 155),
                 View = View.Details,
                 FullRowSelect = true,
                 MultiSelect = false,
@@ -264,14 +266,14 @@ namespace FtpSysPro.Manager.UI
             var lblTarget = new Label
             {
                 Text = Strings.IsVi ? "3. Cấu hình phục hồi dữ liệu:" : "3. Restoration Configuration:",
-                Location = new Point(20, 345),
+                Location = new Point(20, 325),
                 AutoSize = true,
                 Font = new Font(Font, FontStyle.Bold)
             };
 
-            var lblTargetDir = new Label { Text = Strings.IsVi ? "Thư mục đích (*):" : "Target Folder (*):", Location = new Point(20, 373), AutoSize = true };
-            txtTargetFolder = new TextBox { Location = new Point(130, 370), Width = 515 };
-            btnBrowseTarget = new Button { Text = Strings.Browse, Location = new Point(655, 368), Size = new Size(105, 27) };
+            var lblTargetDir = new Label { Text = Strings.IsVi ? "Thư mục đích (*):" : "Target Folder (*):", Location = new Point(20, 353), AutoSize = true };
+            txtTargetFolder = new TextBox { Location = new Point(135, 350), Width = 510 };
+            btnBrowseTarget = new Button { Text = Strings.Browse, Location = new Point(655, 348), Size = new Size(105, 27) };
             btnBrowseTarget.Click += (s, e) =>
             {
                 var folder = FolderBrowserEx.SelectFolder(this, txtTargetFolder.Text, Strings.IsVi ? "Chọn thư mục đích tiếp nhận dữ liệu phục hồi" : "Select target directory for data restoration");
@@ -281,40 +283,124 @@ namespace FtpSysPro.Manager.UI
             chkSelectiveFolder = new CheckBox
             {
                 Text = Strings.RestoreSelectiveSubFolder,
-                Location = new Point(20, 407),
+                Location = new Point(20, 386),
                 AutoSize = true
             };
-            txtSelectiveFolder = new TextBox
+
+            lblSelectedSubFoldersCount = new Label
             {
-                Location = new Point(255, 404),
-                Width = 380,
-                Enabled = false
+                Text = "",
+                Location = new Point(240, 388),
+                AutoSize = true,
+                Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(10, 80, 180)
             };
 
             btnBrowseSubFolder = new Button
             {
                 Text = Strings.SelectSubFolderBrowse,
-                Location = new Point(645, 402),
+                Location = new Point(545, 382),
                 Size = new Size(115, 28),
                 Enabled = false,
                 FlatStyle = FlatStyle.System
             };
             btnBrowseSubFolder.Click += async (s, e) => await OpenSubFolderPickerAsync();
 
+            btnClearSubFolder = new Button
+            {
+                Text = Strings.ClearAllSelection,
+                Location = new Point(665, 382),
+                Size = new Size(95, 28),
+                Enabled = false,
+                FlatStyle = FlatStyle.System
+            };
+            btnClearSubFolder.Click += (s, e) =>
+            {
+                txtSelectiveFolder.Text = string.Empty;
+                UpdateFolderCountLabel();
+            };
+
+            txtSelectiveFolder = new TextBox
+            {
+                Location = new Point(20, 415),
+                Size = new Size(740, 82),
+                Multiline = true,
+                ScrollBars = ScrollBars.Both,
+                WordWrap = false,
+                Enabled = false,
+                Font = new Font("Segoe UI", 9.25F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(10, 80, 180),
+                BackColor = SystemColors.ControlLightLight,
+                BorderStyle = BorderStyle.FixedSingle
+            };
+            txtSelectiveFolder.DoubleClick += async (s, e) =>
+            {
+                if (btnBrowseSubFolder.Enabled)
+                {
+                    await OpenSubFolderPickerAsync();
+                }
+            };
+            txtSelectiveFolder.TextChanged += (s, e) => UpdateFolderCountLabel();
+
+            void UpdateFolderCountLabel()
+            {
+                if (!chkSelectiveFolder.Checked)
+                {
+                    lblSelectedSubFoldersCount.Text = "";
+                    return;
+                }
+
+                var lines = txtSelectiveFolder.Lines
+                    .Select(l => l.Trim())
+                    .Where(l => !string.IsNullOrEmpty(l))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+
+                if (lines.Count == 0)
+                {
+                    lblSelectedSubFoldersCount.Text = Strings.IsVi
+                        ? "(Chưa chọn - Bấm '📁 Chọn mục...' để chọn)"
+                        : "(None selected - Click '📁 Browse...')";
+                    lblSelectedSubFoldersCount.ForeColor = Color.FromArgb(120, 120, 120);
+                }
+                else if (lines.Count == 1)
+                {
+                    lblSelectedSubFoldersCount.Text = Strings.IsVi
+                        ? "● Đã chọn 1 thư mục con"
+                        : "● 1 subfolder selected";
+                    lblSelectedSubFoldersCount.ForeColor = Color.FromArgb(10, 80, 180);
+                }
+                else
+                {
+                    lblSelectedSubFoldersCount.Text = Strings.IsVi
+                        ? $"● Đã chọn {lines.Count} thư mục con"
+                        : $"● {lines.Count} subfolders selected";
+                    lblSelectedSubFoldersCount.ForeColor = Color.FromArgb(10, 80, 180);
+                }
+            }
+
             chkSelectiveFolder.CheckedChanged += (s, e) =>
             {
                 txtSelectiveFolder.Enabled = chkSelectiveFolder.Checked;
                 btnBrowseSubFolder.Enabled = chkSelectiveFolder.Checked;
+                btnClearSubFolder.Enabled = chkSelectiveFolder.Checked;
                 if (chkSelectiveFolder.Checked)
                 {
+                    txtSelectiveFolder.BackColor = Color.White;
+                    UpdateFolderCountLabel();
                     txtSelectiveFolder.Focus();
+                }
+                else
+                {
+                    txtSelectiveFolder.BackColor = SystemColors.Control;
+                    lblSelectedSubFoldersCount.Text = "";
                 }
             };
 
             chkOverwrite = new CheckBox
             {
                 Text = Strings.IsVi ? "Ghi đè tệp nếu đã tồn tại ở thư mục đích" : "Overwrite existing files in target directory",
-                Location = new Point(20, 437),
+                Location = new Point(20, 508),
                 AutoSize = true,
                 Checked = true
             };
@@ -322,21 +408,21 @@ namespace FtpSysPro.Manager.UI
             lblPassword = new Label
             {
                 Text = Strings.IsVi ? "Mật khẩu giải mã (AES-256):" : "Decryption Password:",
-                Location = new Point(340, 438),
+                Location = new Point(340, 509),
                 AutoSize = true
             };
-            txtPassword = new TextBox { Location = new Point(530, 435), Width = 230, UseSystemPasswordChar = true };
+            txtPassword = new TextBox { Location = new Point(530, 506), Width = 230, UseSystemPasswordChar = true };
 
             // ==========================================
             // Step 4: Tiến độ & Nút thực thi
             // ==========================================
-            progressBar = new ProgressBar { Location = new Point(20, 475), Size = new Size(740, 18), Style = ProgressBarStyle.Marquee, MarqueeAnimationSpeed = 0, Visible = false };
-            lblStatus = new Label { Location = new Point(20, 498), Size = new Size(740, 30), AutoSize = false, Text = "" };
+            progressBar = new ProgressBar { Location = new Point(20, 540), Size = new Size(740, 18), Style = ProgressBarStyle.Marquee, MarqueeAnimationSpeed = 0, Visible = false };
+            lblStatus = new Label { Location = new Point(20, 563), Size = new Size(740, 30), AutoSize = false, Text = "" };
 
             btnViewLogs = new Button
             {
                 Text = Strings.ViewRestoreLogs,
-                Location = new Point(20, 545),
+                Location = new Point(20, 608),
                 Size = new Size(165, 36),
                 FlatStyle = FlatStyle.System
             };
@@ -351,7 +437,7 @@ namespace FtpSysPro.Manager.UI
             btnRestore = new Button
             {
                 Text = "🔄 " + Strings.Restore,
-                Location = new Point(480, 545),
+                Location = new Point(480, 608),
                 Size = new Size(175, 36),
                 BackColor = SystemColors.ControlLight,
                 ForeColor = SystemColors.GrayText,
@@ -376,7 +462,7 @@ namespace FtpSysPro.Manager.UI
                 }
             };
 
-            btnCancel = new Button { Text = Strings.Close, DialogResult = DialogResult.Cancel, Location = new Point(665, 545), Size = new Size(95, 36) };
+            btnCancel = new Button { Text = Strings.Close, DialogResult = DialogResult.Cancel, Location = new Point(665, 608), Size = new Size(95, 36) };
 
             btnRestore.Click += async (s, e) => await ExecuteRestoreAsync();
 
@@ -385,7 +471,7 @@ namespace FtpSysPro.Manager.UI
                 pnlJob, pnlFolder, pnlRemote,
                 lblSets, lvBackupSets,
                 lblTarget, lblTargetDir, txtTargetFolder, btnBrowseTarget,
-                chkSelectiveFolder, txtSelectiveFolder, btnBrowseSubFolder,
+                chkSelectiveFolder, lblSelectedSubFoldersCount, btnBrowseSubFolder, btnClearSubFolder, txtSelectiveFolder,
                 chkOverwrite, lblPassword, txtPassword,
                 progressBar, lblStatus,
                 btnViewLogs, btnRestore, btnCancel
@@ -437,17 +523,20 @@ namespace FtpSysPro.Manager.UI
                     {
                         if (dlg.SelectedSubFolders != null && dlg.SelectedSubFolders.Count > 0)
                         {
-                            txtSelectiveFolder.Text = string.Join("; ", dlg.SelectedSubFolders);
+                            txtSelectiveFolder.Lines = dlg.SelectedSubFolders.ToArray();
                             chkSelectiveFolder.Checked = true;
                             txtSelectiveFolder.Enabled = true;
                             btnBrowseSubFolder.Enabled = true;
+                            btnClearSubFolder.Enabled = true;
                         }
                         else if (!string.IsNullOrWhiteSpace(dlg.SelectedSubFolder))
                         {
-                            txtSelectiveFolder.Text = dlg.SelectedSubFolder;
+                            var parts = dlg.SelectedSubFolder.Split(new[] { '\r', '\n', ';', '|' }, StringSplitOptions.RemoveEmptyEntries);
+                            txtSelectiveFolder.Lines = parts;
                             chkSelectiveFolder.Checked = true;
                             txtSelectiveFolder.Enabled = true;
                             btnBrowseSubFolder.Enabled = true;
+                            btnClearSubFolder.Enabled = true;
                         }
                         else
                         {
@@ -456,6 +545,7 @@ namespace FtpSysPro.Manager.UI
                             chkSelectiveFolder.Checked = false;
                             txtSelectiveFolder.Enabled = false;
                             btnBrowseSubFolder.Enabled = false;
+                            btnClearSubFolder.Enabled = false;
                         }
                     }
                 }
@@ -854,7 +944,7 @@ namespace FtpSysPro.Manager.UI
 
             var selectiveFolders = string.IsNullOrWhiteSpace(rawSelectiveText)
                 ? new List<string>()
-                : rawSelectiveText.Split(new[] { ';', '|' }, StringSplitOptions.RemoveEmptyEntries)
+                : rawSelectiveText.Split(new[] { '\r', '\n', ';', '|' }, StringSplitOptions.RemoveEmptyEntries)
                     .Select(s => s.Trim())
                     .Where(s => !string.IsNullOrEmpty(s))
                     .Distinct(StringComparer.OrdinalIgnoreCase)
@@ -863,19 +953,23 @@ namespace FtpSysPro.Manager.UI
             var selectiveSubFolder = selectiveFolders.Count > 0 ? string.Join("; ", selectiveFolders) : string.Empty;
 
             string subFolderDesc;
+            string subFolderLogDesc;
             if (selectiveFolders.Count == 0)
             {
                 subFolderDesc = Strings.IsVi ? "Toàn bộ dữ liệu" : "All data";
+                subFolderLogDesc = subFolderDesc;
             }
             else if (selectiveFolders.Count == 1)
             {
                 subFolderDesc = Strings.IsVi ? $"Chỉ thư mục con '{selectiveFolders[0]}'" : $"Subfolder '{selectiveFolders[0]}' only";
+                subFolderLogDesc = subFolderDesc;
             }
             else
             {
                 subFolderDesc = Strings.IsVi
-                    ? $"{selectiveFolders.Count} thư mục con ('{string.Join("', '", selectiveFolders)}')"
-                    : $"{selectiveFolders.Count} subfolders ('{string.Join("', '", selectiveFolders)}')";
+                    ? $"{selectiveFolders.Count} thư mục con:\n  • " + string.Join("\n  • ", selectiveFolders)
+                    : $"{selectiveFolders.Count} subfolders:\n  • " + string.Join("\n  • ", selectiveFolders);
+                subFolderLogDesc = $"{selectiveFolders.Count} thư mục con: '{string.Join("; ", selectiveFolders)}'";
             }
 
             var confirmMsg = Strings.IsVi
@@ -895,7 +989,7 @@ namespace FtpSysPro.Manager.UI
 
             // Ghi nhật ký bắt đầu phục hồi
             _configStore.AppendRestoreLog("INF",
-                $"Bắt đầu phục hồi dữ liệu: Bản sao lưu '{selectedSet.BackupSetId}', Phạm vi: {subFolderDesc}, Thư mục đích: '{txtTargetFolder.Text}'",
+                $"Bắt đầu phục hồi dữ liệu: Bản sao lưu '{selectedSet.BackupSetId}', Phạm vi: {subFolderLogDesc}, Thư mục đích: '{txtTargetFolder.Text}'",
                 selectedJobId, selectedJobName, selectedSet.BackupSetId, txtTargetFolder.Text);
 
             btnRestore.Enabled = false;

@@ -22,7 +22,7 @@ namespace FtpSysPro.Manager.UI
         private bool _isUpdatingChecks = false;
 
         public List<string> SelectedSubFolders { get; private set; } = new List<string>();
-        public string SelectedSubFolder => SelectedSubFolders.Count > 0 ? string.Join("; ", SelectedSubFolders) : string.Empty;
+        public string SelectedSubFolder => SelectedSubFolders.Count > 0 ? string.Join(Environment.NewLine, SelectedSubFolders) : string.Empty;
 
         public SubFolderPickerDialog(string backupSetId, List<string> folders, string currentSelected = null)
         {
@@ -31,7 +31,7 @@ namespace FtpSysPro.Manager.UI
 
             if (!string.IsNullOrWhiteSpace(currentSelected))
             {
-                var parts = currentSelected.Split(new[] { ';', '|' }, StringSplitOptions.RemoveEmptyEntries);
+                var parts = currentSelected.Split(new[] { '\r', '\n', ';', '|' }, StringSplitOptions.RemoveEmptyEntries);
                 SelectedSubFolders = parts.Select(p => p.Trim()).Where(p => !string.IsNullOrEmpty(p)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
             }
 
@@ -432,8 +432,8 @@ namespace FtpSysPro.Manager.UI
             else
             {
                 lblSelected.Text = Strings.IsVi
-                    ? $"Đang chọn ({paths.Count} thư mục): 📁 {string.Join("; ", paths)}"
-                    : $"Selected ({paths.Count} folders): 📁 {string.Join("; ", paths)}";
+                    ? $"Đang chọn: {paths.Count} thư mục con (bấm OK để xác nhận)"
+                    : $"Selected: {paths.Count} subfolders (click OK to confirm)";
             }
         }
 

@@ -327,7 +327,7 @@ namespace FtpSysPro.Core.Resources
         public static string RestoreFromFolder => IsVi ? "Từ Thư mục sao lưu (Local / USB / Mạng UNC)" : "From Backup Directory (Local / USB / UNC)";
         public static string RestoreFromRemote => IsVi ? "Từ Máy chủ FTP / SFTP từ xa" : "From Remote FTP / SFTP Server";
         public static string RestoreSelectiveSubFolder => IsVi ? "Chỉ khôi phục các thư mục con:" : "Restore specific subfolders only:";
-        public static string RestoreSelectivePlaceholder => IsVi ? "Chọn một hoặc nhiều thư mục (cách nhau bởi dấu chấm phẩy ;)" : "Select one or more subfolders (separated by semicolon ;)";
+        public static string RestoreSelectivePlaceholder => IsVi ? "Danh sách thư mục con cần phục hồi (mỗi thư mục trên một dòng):" : "Subfolders to restore (one folder per line):";
         public static string RestoreScan => IsVi ? "Quét điểm phục hồi" : "Scan Restore Points";
         public static string RestoreConnectAndScan => IsVi ? "Kết nối & Quét" : "Connect & Scan";
         public static string SelectSubFolderTitle => IsVi ? "Chọn các thư mục con cần phục hồi" : "Select Subfolders to Restore";

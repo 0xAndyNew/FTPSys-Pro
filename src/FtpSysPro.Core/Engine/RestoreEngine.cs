@@ -30,7 +30,7 @@ namespace FtpSysPro.Core.Engine
             }
             if (!string.IsNullOrWhiteSpace(SelectedSubFolder))
             {
-                var parts = SelectedSubFolder.Split(new[] { ';', '|' }, StringSplitOptions.RemoveEmptyEntries);
+                var parts = SelectedSubFolder.Split(new[] { '\r', '\n', ';', '|' }, StringSplitOptions.RemoveEmptyEntries);
                 list.AddRange(parts.Where(x => !string.IsNullOrWhiteSpace(x)));
             }
             return list.Select(x => x.Trim()).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
@@ -557,7 +557,7 @@ namespace FtpSysPro.Core.Engine
             if (string.IsNullOrWhiteSpace(subFolderFilter))
                 return true;
 
-            var parts = subFolderFilter.Split(new[] { ';', '|' }, StringSplitOptions.RemoveEmptyEntries);
+            var parts = subFolderFilter.Split(new[] { '\r', '\n', ';', '|' }, StringSplitOptions.RemoveEmptyEntries);
             return MatchesAnySubFolder(relativePath, parts.Select(p => p.Trim()).ToList());
         }
 

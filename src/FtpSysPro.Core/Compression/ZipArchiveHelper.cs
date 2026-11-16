@@ -108,7 +108,7 @@ namespace FtpSysPro.Core.Compression
             }
             if (!string.IsNullOrWhiteSpace(subFolderFilter))
             {
-                var parts = subFolderFilter.Split(new[] { ';', '|' }, StringSplitOptions.RemoveEmptyEntries);
+                var parts = subFolderFilter.Split(new[] { '\r', '\n', ';', '|' }, StringSplitOptions.RemoveEmptyEntries);
                 filterList.AddRange(parts.Where(x => !string.IsNullOrWhiteSpace(x)));
             }
 
