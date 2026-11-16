@@ -175,7 +175,7 @@ namespace FtpSysPro.Manager.UI
             btnClearAll = new Button
             {
                 Text = Strings.ClearAllSelection,
-                Size = new Size(95, 34),
+                Size = new Size(130, 34),
                 FlatStyle = FlatStyle.System,
                 Cursor = Cursors.Hand
             };
@@ -316,6 +316,105 @@ namespace FtpSysPro.Manager.UI
                 }
             };
 
+            treeFolders.KeyDown += (s, e) =>
+            {
+                if (e.KeyCode == Keys.Delete && treeFolders.SelectedNode != null)
+                {
+                    _isUpdatingChecks = true;
+                    try
+                    {
+                        treeFolders.SelectedNode.Checked = false;
+                        CheckChildNodes(treeFolders.SelectedNode, false);
+                        UpdateParentNodes(treeFolders.SelectedNode);
+                    }
+                    finally
+                    {
+                        _isUpdatingChecks = false;
+                    }
+                    UpdateSelectionDisplay();
+                    e.Handled = true;
+                }
+            };
+
+            var treeMenu = new ContextMenuStrip();
+            var mnuCheck = new ToolStripMenuItem(Strings.IsVi ? "☑ Chọn mục này" : "☑ Select this item");
+            var mnuUncheck = new ToolStripMenuItem(Strings.IsVi ? "☐ Bỏ chọn mục này" : "☐ Deselect this item");
+            var mnuCheckAllChildren = new ToolStripMenuItem(Strings.IsVi ? "☑ Chọn tất cả mục con" : "☑ Select all sub-items");
+            var mnuUncheckAllChildren = new ToolStripMenuItem(Strings.IsVi ? "☐ Bỏ chọn tất cả mục con" : "☐ Deselect all sub-items");
+
+            mnuCheck.Click += (s, e) =>
+            {
+                if (treeFolders.SelectedNode != null)
+                {
+                    _isUpdatingChecks = true;
+                    try
+                    {
+                        treeFolders.SelectedNode.Checked = true;
+                        CheckChildNodes(treeFolders.SelectedNode, true);
+                        UpdateParentNodes(treeFolders.SelectedNode);
+                    }
+                    finally { _isUpdatingChecks = false; }
+                    UpdateSelectionDisplay();
+                }
+            };
+
+            mnuUncheck.Click += (s, e) =>
+            {
+                if (treeFolders.SelectedNode != null)
+                {
+                    _isUpdatingChecks = true;
+                    try
+                    {
+                        treeFolders.SelectedNode.Checked = false;
+                        CheckChildNodes(treeFolders.SelectedNode, false);
+                        UpdateParentNodes(treeFolders.SelectedNode);
+                    }
+                    finally { _isUpdatingChecks = false; }
+                    UpdateSelectionDisplay();
+                }
+            };
+
+            mnuCheckAllChildren.Click += (s, e) =>
+            {
+                if (treeFolders.SelectedNode != null)
+                {
+                    _isUpdatingChecks = true;
+                    try
+                    {
+                        treeFolders.SelectedNode.Checked = true;
+                        CheckChildNodes(treeFolders.SelectedNode, true);
+                        UpdateParentNodes(treeFolders.SelectedNode);
+                    }
+                    finally { _isUpdatingChecks = false; }
+                    UpdateSelectionDisplay();
+                }
+            };
+
+            mnuUncheckAllChildren.Click += (s, e) =>
+            {
+                if (treeFolders.SelectedNode != null)
+                {
+                    _isUpdatingChecks = true;
+                    try
+                    {
+                        CheckChildNodes(treeFolders.SelectedNode, false);
+                        UpdateParentNodes(treeFolders.SelectedNode);
+                    }
+                    finally { _isUpdatingChecks = false; }
+                    UpdateSelectionDisplay();
+                }
+            };
+
+            treeMenu.Items.AddRange(new ToolStripItem[] { mnuCheck, mnuUncheck, new ToolStripSeparator(), mnuCheckAllChildren, mnuUncheckAllChildren });
+            treeFolders.ContextMenuStrip = treeMenu;
+            treeFolders.NodeMouseClick += (s, e) =>
+            {
+                if (e.Button == MouseButtons.Right)
+                {
+                    treeFolders.SelectedNode = e.Node;
+                }
+            };
+
             pnlCenter.Controls.Add(treeFolders);
 
             Controls.Add(pnlCenter);
@@ -380,11 +479,6 @@ namespace FtpSysPro.Manager.UI
             if (treeFolders.Nodes.Count == 0) return list;
 
             var root = treeFolders.Nodes[0];
-            if (root.Checked)
-            {
-                // Root is checked: means all data / whole set
-                return list;
-            }
 
             void CollectCheckedRoots(TreeNode node)
             {
@@ -406,7 +500,21 @@ namespace FtpSysPro.Manager.UI
             }
 
             CollectCheckedRoots(root);
-            return list;
+
+            if (list.Count == 0 && root.Checked)
+            {
+                // If root was checked, collect all immediate top-level folders
+                foreach (TreeNode child in root.Nodes)
+                {
+                    var tag = child.Tag as string;
+                    if (!string.IsNullOrEmpty(tag))
+                    {
+                        list.Add(tag);
+                    }
+                }
+            }
+
+            return list.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
         }
 
         private void UpdateSelectionDisplay()

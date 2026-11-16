@@ -55,6 +55,7 @@ namespace FtpSysPro.Manager.UI
         private Label lblSelectedSubFoldersCount;
         private ListView lvSelectiveFolders;
         private Button btnBrowseSubFolder;
+        private Button btnRemoveSubFolder;
         private Button btnClearSubFolder;
         private List<string> _selectedSubFolders = new List<string>();
         private Dictionary<string, SubFolderStats> _folderStats = new Dictionary<string, SubFolderStats>(StringComparer.OrdinalIgnoreCase);
@@ -305,26 +306,32 @@ namespace FtpSysPro.Manager.UI
             btnBrowseSubFolder = new Button
             {
                 Text = Strings.SelectSubFolderBrowse,
-                Location = new Point(545, 382),
-                Size = new Size(115, 28),
+                Location = new Point(480, 382),
+                Size = new Size(95, 28),
                 Enabled = false,
                 FlatStyle = FlatStyle.System
             };
             btnBrowseSubFolder.Click += async (s, e) => await OpenSubFolderPickerAsync();
 
-            btnClearSubFolder = new Button
+            btnRemoveSubFolder = new Button
             {
-                Text = Strings.ClearAllSelection,
-                Location = new Point(665, 382),
-                Size = new Size(95, 28),
+                Text = Strings.DeselectSelectedFolder,
+                Location = new Point(580, 382),
+                Size = new Size(92, 28),
                 Enabled = false,
                 FlatStyle = FlatStyle.System
             };
-            btnClearSubFolder.Click += (s, e) =>
+            btnRemoveSubFolder.Click += (s, e) => RemoveSelectedSubFolder();
+
+            btnClearSubFolder = new Button
             {
-                _selectedSubFolders.Clear();
-                UpdateFolderSelectionDisplay();
+                Text = Strings.ClearAllSelectedFolders,
+                Location = new Point(677, 382),
+                Size = new Size(83, 28),
+                Enabled = false,
+                FlatStyle = FlatStyle.System
             };
+            btnClearSubFolder.Click += (s, e) => ClearAllSubFolders();
 
             lvSelectiveFolders = new ListView
             {
@@ -333,7 +340,7 @@ namespace FtpSysPro.Manager.UI
                 View = View.Details,
                 FullRowSelect = true,
                 GridLines = true,
-                MultiSelect = false,
+                MultiSelect = true,
                 HeaderStyle = ColumnHeaderStyle.Nonclickable,
                 Font = new Font("Segoe UI", 9F),
                 BorderStyle = BorderStyle.FixedSingle,
@@ -349,6 +356,21 @@ namespace FtpSysPro.Manager.UI
                     await OpenSubFolderPickerAsync();
                 }
             };
+
+            lvSelectiveFolders.KeyDown += (s, e) =>
+            {
+                if (e.KeyCode == Keys.Delete || e.KeyCode == Keys.Back)
+                {
+                    RemoveSelectedSubFolder();
+                    e.Handled = true;
+                }
+            };
+
+            var lvMenu = new ContextMenuStrip();
+            var mnuRemoveItem = new ToolStripMenuItem(Strings.IsVi ? "🗑 Bỏ chọn thư mục này" : "🗑 Remove selected folder", null, (s, e) => RemoveSelectedSubFolder());
+            var mnuClearAllItems = new ToolStripMenuItem(Strings.IsVi ? "❌ Xóa tất cả danh sách" : "❌ Clear all", null, (s, e) => ClearAllSubFolders());
+            lvMenu.Items.AddRange(new ToolStripItem[] { mnuRemoveItem, new ToolStripSeparator(), mnuClearAllItems });
+            lvSelectiveFolders.ContextMenuStrip = lvMenu;
 
             chkSelectiveFolder.CheckedChanged += async (s, e) =>
             {
@@ -441,11 +463,65 @@ namespace FtpSysPro.Manager.UI
                 pnlJob, pnlFolder, pnlRemote,
                 lblSets, lvBackupSets,
                 lblTarget, lblTargetDir, txtTargetFolder, btnBrowseTarget,
-                chkSelectiveFolder, lblSelectedSubFoldersCount, btnBrowseSubFolder, btnClearSubFolder, lvSelectiveFolders,
+                chkSelectiveFolder, lblSelectedSubFoldersCount, btnBrowseSubFolder, btnRemoveSubFolder, btnClearSubFolder, lvSelectiveFolders,
                 chkOverwrite, lblPassword, txtPassword,
                 progressBar, lblStatus,
                 btnViewLogs, btnRestore, btnCancel
             });
+        }
+
+        private void RemoveSelectedSubFolder()
+        {
+            if (lvSelectiveFolders.SelectedItems.Count > 0)
+            {
+                var toRemove = new List<string>();
+                foreach (ListViewItem item in lvSelectiveFolders.SelectedItems)
+                {
+                    toRemove.Add(item.Text);
+                }
+
+                foreach (var p in toRemove)
+                {
+                    _selectedSubFolders.RemoveAll(x => string.Equals(x, p, StringComparison.OrdinalIgnoreCase));
+                }
+
+                UpdateFolderSelectionDisplay();
+            }
+            else if (_selectedSubFolders.Count == 1)
+            {
+                _selectedSubFolders.Clear();
+                UpdateFolderSelectionDisplay();
+            }
+            else if (_selectedSubFolders.Count > 1)
+            {
+                MessageBox.Show(this,
+                    Strings.IsVi
+                        ? "Vui lòng nhấp chọn dòng thư mục cần bỏ chọn trong danh sách bên dưới."
+                        : "Please select a folder item from the list below to deselect.",
+                    Strings.IsVi ? "Thông báo" : "Notice",
+                    MessageBoxButtons.OK, MessageBoxIcon.Information);
+            }
+        }
+
+        private void ClearAllSubFolders()
+        {
+            if (_selectedSubFolders.Count == 0) return;
+
+            if (_selectedSubFolders.Count > 1)
+            {
+                if (MessageBox.Show(this,
+                    Strings.IsVi
+                        ? "Bạn có chắc chắn muốn bỏ chọn toàn bộ danh sách thư mục phục hồi không?"
+                        : "Are you sure you want to clear all selected restore folders?",
+                    Strings.IsVi ? "Xác nhận" : "Confirm",
+                    MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
+                {
+                    return;
+                }
+            }
+
+            _selectedSubFolders.Clear();
+            UpdateFolderSelectionDisplay();
         }
 
         private void UpdateFolderSelectionDisplay()
@@ -457,13 +533,15 @@ namespace FtpSysPro.Manager.UI
                 lblSelectedSubFoldersCount.Text = "";
                 lvSelectiveFolders.Enabled = false;
                 btnBrowseSubFolder.Enabled = false;
+                btnRemoveSubFolder.Enabled = false;
                 btnClearSubFolder.Enabled = false;
                 return;
             }
 
             lvSelectiveFolders.Enabled = true;
             btnBrowseSubFolder.Enabled = true;
-            btnClearSubFolder.Enabled = true;
+            btnRemoveSubFolder.Enabled = _selectedSubFolders.Count > 0;
+            btnClearSubFolder.Enabled = _selectedSubFolders.Count > 0;
 
             long totalBytes = 0;
             int totalFiles = 0;
@@ -494,6 +572,8 @@ namespace FtpSysPro.Manager.UI
                     ? "(Chưa chọn - Bấm '📁 Chọn mục...' để chọn)"
                     : "(None selected - Click '📁 Browse...')";
                 lblSelectedSubFoldersCount.ForeColor = Color.FromArgb(120, 120, 120);
+                btnRemoveSubFolder.Enabled = false;
+                btnClearSubFolder.Enabled = false;
             }
             else
             {
@@ -504,6 +584,8 @@ namespace FtpSysPro.Manager.UI
                     ? $"● Đã chọn {_selectedSubFolders.Count} thư mục con{summaryStr}"
                     : $"● {_selectedSubFolders.Count} subfolders selected{summaryStr}";
                 lblSelectedSubFoldersCount.ForeColor = Color.FromArgb(10, 80, 180);
+                btnRemoveSubFolder.Enabled = true;
+                btnClearSubFolder.Enabled = true;
             }
         }
 

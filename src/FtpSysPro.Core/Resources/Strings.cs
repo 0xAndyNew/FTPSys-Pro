@@ -333,7 +333,9 @@ namespace FtpSysPro.Core.Resources
         public static string SelectSubFolderTitle => IsVi ? "Chọn các thư mục con cần phục hồi" : "Select Subfolders to Restore";
         public static string SelectSubFolderBrowse => IsVi ? "📁 Chọn mục..." : "📁 Browse...";
         public static string SelectAllFolders => IsVi ? "📦 Chọn tất cả" : "📦 Select All";
-        public static string ClearAllSelection => IsVi ? "✕ Bỏ chọn" : "✕ Clear";
+        public static string ClearAllSelection => IsVi ? "✕ Bỏ chọn tất cả" : "✕ Clear All";
+        public static string DeselectSelectedFolder => IsVi ? "🗑 Bỏ chọn" : "🗑 Remove";
+        public static string ClearAllSelectedFolders => IsVi ? "❌ Xóa hết" : "❌ Clear All";
         public static string ViewRestoreLogs => IsVi ? "📋 Nhật ký phục hồi" : "📋 Restore Logs";
         public static string RestoreLogFileName => IsVi ? "Nhật ký phục hồi dữ liệu" : "Data Restoration Logs";
         public static string RootFolderAllData => IsVi ? "(Toàn bộ dữ liệu)" : "(All data / Root)";
