@@ -112,29 +112,27 @@ namespace FtpSysPro.Manager.UI
             var pnlBottom = new Panel
             {
                 Dock = DockStyle.Bottom,
-                Height = 80,
+                Height = 85,
                 Padding = new Padding(15, 8, 15, 12),
                 BackColor = Color.White
             };
 
             lblSelected = new Label
             {
-                Text = Strings.IsVi ? "Đang chọn: (Toàn bộ dữ liệu)" : "Selected: (All data / Root)",
-                Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
+                Text = Strings.IsVi ? "Đang chọn: 📦 Thư mục gốc (Toàn bộ dữ liệu)" : "Selected: 📦 (All data / Root)",
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
                 ForeColor = Color.FromArgb(30, 41, 59),
                 Location = new Point(15, 10),
-                Width = 490,
-                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
+                Height = 22,
                 AutoEllipsis = true
             };
 
             btnSelectAll = new Button
             {
                 Text = Strings.IsVi ? "📦 Chọn thư mục gốc (Toàn bộ)" : "📦 Select Root (All)",
-                Location = new Point(15, 38),
-                Size = new Size(205, 32),
-                Anchor = AnchorStyles.Bottom | AnchorStyles.Left,
-                FlatStyle = FlatStyle.System
+                Size = new Size(205, 34),
+                FlatStyle = FlatStyle.System,
+                Cursor = Cursors.Hand
             };
             btnSelectAll.Click += (s, e) =>
             {
@@ -148,15 +146,15 @@ namespace FtpSysPro.Manager.UI
 
             btnOk = new Button
             {
-                Text = Strings.IsVi ? "Đồng ý" : "Select",
-                Location = new Point(310, 38),
-                Size = new Size(95, 32),
-                Anchor = AnchorStyles.Bottom | AnchorStyles.Right,
+                Text = "✓ OK",
+                Size = new Size(100, 34),
                 BackColor = Color.FromArgb(0, 120, 215),
                 ForeColor = Color.White,
                 FlatStyle = FlatStyle.Flat,
-                Font = new Font(Font, FontStyle.Bold)
+                Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+                Cursor = Cursors.Hand
             };
+            btnOk.FlatAppearance.BorderSize = 0;
             btnOk.Click += (s, e) =>
             {
                 if (treeFolders.SelectedNode != null)
@@ -187,13 +185,30 @@ namespace FtpSysPro.Manager.UI
             {
                 Text = Strings.IsVi ? "Hủy" : "Cancel",
                 DialogResult = DialogResult.Cancel,
-                Location = new Point(415, 38),
-                Size = new Size(90, 32),
-                Anchor = AnchorStyles.Bottom | AnchorStyles.Right,
-                FlatStyle = FlatStyle.System
+                Size = new Size(90, 34),
+                FlatStyle = FlatStyle.System,
+                Cursor = Cursors.Hand
             };
 
+            void RepositionBottomControls()
+            {
+                int w = pnlBottom.ClientSize.Width;
+                if (w <= 0) return;
+                lblSelected.Width = Math.Max(100, w - 30);
+                int rightPad = 15;
+                btnCancel.Location = new Point(w - btnCancel.Width - rightPad, 38);
+                btnOk.Location = new Point(btnCancel.Left - btnOk.Width - 10, 38);
+                btnSelectAll.Location = new Point(15, 38);
+            }
+
+            pnlBottom.Resize += (s, e) => RepositionBottomControls();
+            pnlBottom.Layout += (s, e) => RepositionBottomControls();
+            Shown += (s, e) => RepositionBottomControls();
+
             pnlBottom.Controls.AddRange(new Control[] { lblSelected, btnSelectAll, btnOk, btnCancel });
+
+            AcceptButton = btnOk;
+            CancelButton = btnCancel;
 
             // Center TreeView
             var pnlCenter = new Panel
@@ -225,11 +240,15 @@ namespace FtpSysPro.Manager.UI
 
             treeFolders.NodeMouseDoubleClick += (s, e) =>
             {
-                if (e.Node != null && e.Node.Nodes.Count == 0 && e.Node != treeFolders.Nodes[0])
+                if (e.Node != null)
                 {
-                    SelectedSubFolder = e.Node.Tag as string ?? string.Empty;
-                    DialogResult = DialogResult.OK;
-                    Close();
+                    var tag = e.Node.Tag as string ?? string.Empty;
+                    if (!string.IsNullOrEmpty(tag))
+                    {
+                        SelectedSubFolder = tag;
+                        DialogResult = DialogResult.OK;
+                        Close();
+                    }
                 }
             };
 
