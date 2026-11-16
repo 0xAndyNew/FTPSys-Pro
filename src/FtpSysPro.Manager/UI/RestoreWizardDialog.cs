@@ -53,9 +53,11 @@ namespace FtpSysPro.Manager.UI
         private Button btnBrowseTarget;
         private CheckBox chkSelectiveFolder;
         private Label lblSelectedSubFoldersCount;
-        private TextBox txtSelectiveFolder;
+        private ListView lvSelectiveFolders;
         private Button btnBrowseSubFolder;
         private Button btnClearSubFolder;
+        private List<string> _selectedSubFolders = new List<string>();
+        private Dictionary<string, SubFolderStats> _folderStats = new Dictionary<string, SubFolderStats>(StringComparer.OrdinalIgnoreCase);
         private CheckBox chkOverwrite;
         private TextBox txtPassword;
         private Label lblPassword;
@@ -244,6 +246,10 @@ namespace FtpSysPro.Manager.UI
             lvBackupSets.SelectedIndexChanged += (s, e) =>
             {
                 btnRestore.Enabled = lvBackupSets.SelectedItems.Count > 0;
+                _selectedSubFolders.Clear();
+                _folderStats.Clear();
+                UpdateFolderSelectionDisplay();
+
                 if (lvBackupSets.SelectedItems.Count > 0 && string.IsNullOrWhiteSpace(txtTargetFolder.Text))
                 {
                     var set = lvBackupSets.SelectedItems[0].Tag as BackupSetManifest;
@@ -316,84 +322,48 @@ namespace FtpSysPro.Manager.UI
             };
             btnClearSubFolder.Click += (s, e) =>
             {
-                txtSelectiveFolder.Text = string.Empty;
-                UpdateFolderCountLabel();
+                _selectedSubFolders.Clear();
+                UpdateFolderSelectionDisplay();
             };
 
-            txtSelectiveFolder = new TextBox
+            lvSelectiveFolders = new ListView
             {
                 Location = new Point(20, 415),
-                Size = new Size(740, 82),
-                Multiline = true,
-                ScrollBars = ScrollBars.Both,
-                WordWrap = false,
-                Enabled = false,
-                Font = new Font("Segoe UI", 9.25F, FontStyle.Bold),
-                ForeColor = Color.FromArgb(10, 80, 180),
-                BackColor = SystemColors.ControlLightLight,
-                BorderStyle = BorderStyle.FixedSingle
+                Size = new Size(740, 85),
+                View = View.Details,
+                FullRowSelect = true,
+                GridLines = true,
+                MultiSelect = false,
+                HeaderStyle = ColumnHeaderStyle.Nonclickable,
+                Font = new Font("Segoe UI", 9F),
+                BorderStyle = BorderStyle.FixedSingle,
+                Enabled = false
             };
-            txtSelectiveFolder.DoubleClick += async (s, e) =>
+            lvSelectiveFolders.Columns.Add(Strings.IsVi ? "Đường dẫn nguồn" : "Source Path", 515);
+            lvSelectiveFolders.Columns.Add(Strings.IsVi ? "Dung lượng" : "Size", 200);
+
+            lvSelectiveFolders.DoubleClick += async (s, e) =>
             {
                 if (btnBrowseSubFolder.Enabled)
                 {
                     await OpenSubFolderPickerAsync();
                 }
             };
-            txtSelectiveFolder.TextChanged += (s, e) => UpdateFolderCountLabel();
 
-            void UpdateFolderCountLabel()
+            chkSelectiveFolder.CheckedChanged += async (s, e) =>
             {
-                if (!chkSelectiveFolder.Checked)
-                {
-                    lblSelectedSubFoldersCount.Text = "";
-                    return;
-                }
-
-                var lines = txtSelectiveFolder.Lines
-                    .Select(l => l.Trim())
-                    .Where(l => !string.IsNullOrEmpty(l))
-                    .Distinct(StringComparer.OrdinalIgnoreCase)
-                    .ToList();
-
-                if (lines.Count == 0)
-                {
-                    lblSelectedSubFoldersCount.Text = Strings.IsVi
-                        ? "(Chưa chọn - Bấm '📁 Chọn mục...' để chọn)"
-                        : "(None selected - Click '📁 Browse...')";
-                    lblSelectedSubFoldersCount.ForeColor = Color.FromArgb(120, 120, 120);
-                }
-                else if (lines.Count == 1)
-                {
-                    lblSelectedSubFoldersCount.Text = Strings.IsVi
-                        ? "● Đã chọn 1 thư mục con"
-                        : "● 1 subfolder selected";
-                    lblSelectedSubFoldersCount.ForeColor = Color.FromArgb(10, 80, 180);
-                }
-                else
-                {
-                    lblSelectedSubFoldersCount.Text = Strings.IsVi
-                        ? $"● Đã chọn {lines.Count} thư mục con"
-                        : $"● {lines.Count} subfolders selected";
-                    lblSelectedSubFoldersCount.ForeColor = Color.FromArgb(10, 80, 180);
-                }
-            }
-
-            chkSelectiveFolder.CheckedChanged += (s, e) =>
-            {
-                txtSelectiveFolder.Enabled = chkSelectiveFolder.Checked;
-                btnBrowseSubFolder.Enabled = chkSelectiveFolder.Checked;
-                btnClearSubFolder.Enabled = chkSelectiveFolder.Checked;
                 if (chkSelectiveFolder.Checked)
                 {
-                    txtSelectiveFolder.BackColor = Color.White;
-                    UpdateFolderCountLabel();
-                    txtSelectiveFolder.Focus();
+                    UpdateFolderSelectionDisplay();
+                    if (_selectedSubFolders.Count == 0 && lvBackupSets.SelectedItems.Count > 0)
+                    {
+                        await OpenSubFolderPickerAsync();
+                    }
                 }
                 else
                 {
-                    txtSelectiveFolder.BackColor = SystemColors.Control;
-                    lblSelectedSubFoldersCount.Text = "";
+                    _selectedSubFolders.Clear();
+                    UpdateFolderSelectionDisplay();
                 }
             };
 
@@ -471,11 +441,70 @@ namespace FtpSysPro.Manager.UI
                 pnlJob, pnlFolder, pnlRemote,
                 lblSets, lvBackupSets,
                 lblTarget, lblTargetDir, txtTargetFolder, btnBrowseTarget,
-                chkSelectiveFolder, lblSelectedSubFoldersCount, btnBrowseSubFolder, btnClearSubFolder, txtSelectiveFolder,
+                chkSelectiveFolder, lblSelectedSubFoldersCount, btnBrowseSubFolder, btnClearSubFolder, lvSelectiveFolders,
                 chkOverwrite, lblPassword, txtPassword,
                 progressBar, lblStatus,
                 btnViewLogs, btnRestore, btnCancel
             });
+        }
+
+        private void UpdateFolderSelectionDisplay()
+        {
+            lvSelectiveFolders.Items.Clear();
+
+            if (!chkSelectiveFolder.Checked)
+            {
+                lblSelectedSubFoldersCount.Text = "";
+                lvSelectiveFolders.Enabled = false;
+                btnBrowseSubFolder.Enabled = false;
+                btnClearSubFolder.Enabled = false;
+                return;
+            }
+
+            lvSelectiveFolders.Enabled = true;
+            btnBrowseSubFolder.Enabled = true;
+            btnClearSubFolder.Enabled = true;
+
+            long totalBytes = 0;
+            int totalFiles = 0;
+
+            foreach (var folder in _selectedSubFolders)
+            {
+                var item = new ListViewItem(folder);
+                item.ForeColor = Color.FromArgb(10, 80, 180);
+                item.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+
+                if (_folderStats.TryGetValue(folder, out var st) && (st.SizeBytes > 0 || st.FileCount > 0))
+                {
+                    totalBytes += st.SizeBytes;
+                    totalFiles += st.FileCount;
+                    item.SubItems.Add(st.GetSizeDisplay(Strings.IsVi));
+                }
+                else
+                {
+                    item.SubItems.Add("-");
+                }
+
+                lvSelectiveFolders.Items.Add(item);
+            }
+
+            if (_selectedSubFolders.Count == 0)
+            {
+                lblSelectedSubFoldersCount.Text = Strings.IsVi
+                    ? "(Chưa chọn - Bấm '📁 Chọn mục...' để chọn)"
+                    : "(None selected - Click '📁 Browse...')";
+                lblSelectedSubFoldersCount.ForeColor = Color.FromArgb(120, 120, 120);
+            }
+            else
+            {
+                string summaryStr = (totalBytes > 0 || totalFiles > 0)
+                    ? $" ({FormatBytes(totalBytes)}, {totalFiles:N0} {(Strings.IsVi ? "tệp" : "files")})"
+                    : "";
+                lblSelectedSubFoldersCount.Text = Strings.IsVi
+                    ? $"● Đã chọn {_selectedSubFolders.Count} thư mục con{summaryStr}"
+                    : $"● {_selectedSubFolders.Count} subfolders selected{summaryStr}";
+                lblSelectedSubFoldersCount.ForeColor = Color.FromArgb(10, 80, 180);
+            }
         }
 
         private async System.Threading.Tasks.Task OpenSubFolderPickerAsync()
@@ -506,47 +535,20 @@ namespace FtpSysPro.Manager.UI
                 {
                     MessageBox.Show(this,
                         Strings.IsVi
-                            ? "Bản sao lưu này không chứa thư mục con nào (các tệp nằm tại thư mục gốc).\nBạn có thể tự nhập tên thư mục vào ô văn bản nếu muốn chỉ định."
+                            ? "Bản sao lưu này không chứa thư mục con nào (các tệp nằm tại thư mục gốc)."
                             : Strings.NoSubFoldersFound,
                         Strings.IsVi ? "Thông báo" : "Notice",
                         MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    txtSelectiveFolder.Enabled = true;
-                    btnBrowseSubFolder.Enabled = true;
-                    chkSelectiveFolder.Checked = true;
-                    txtSelectiveFolder.Focus();
                     return;
                 }
 
-                using (var dlg = new SubFolderPickerDialog(selectedSet.BackupSetId, folders, txtSelectiveFolder.Text))
+                using (var dlg = new SubFolderPickerDialog(selectedSet.BackupSetId, folders, string.Join(";", _selectedSubFolders), _folderStats))
                 {
                     if (dlg.ShowDialog(this) == DialogResult.OK)
                     {
-                        if (dlg.SelectedSubFolders != null && dlg.SelectedSubFolders.Count > 0)
-                        {
-                            txtSelectiveFolder.Lines = dlg.SelectedSubFolders.ToArray();
-                            chkSelectiveFolder.Checked = true;
-                            txtSelectiveFolder.Enabled = true;
-                            btnBrowseSubFolder.Enabled = true;
-                            btnClearSubFolder.Enabled = true;
-                        }
-                        else if (!string.IsNullOrWhiteSpace(dlg.SelectedSubFolder))
-                        {
-                            var parts = dlg.SelectedSubFolder.Split(new[] { '\r', '\n', ';', '|' }, StringSplitOptions.RemoveEmptyEntries);
-                            txtSelectiveFolder.Lines = parts;
-                            chkSelectiveFolder.Checked = true;
-                            txtSelectiveFolder.Enabled = true;
-                            btnBrowseSubFolder.Enabled = true;
-                            btnClearSubFolder.Enabled = true;
-                        }
-                        else
-                        {
-                            // User explicitly confirmed Root / All data
-                            txtSelectiveFolder.Text = string.Empty;
-                            chkSelectiveFolder.Checked = false;
-                            txtSelectiveFolder.Enabled = false;
-                            btnBrowseSubFolder.Enabled = false;
-                            btnClearSubFolder.Enabled = false;
-                        }
+                        _selectedSubFolders = dlg.SelectedSubFolders ?? new List<string>();
+                        chkSelectiveFolder.Checked = _selectedSubFolders.Count > 0;
+                        UpdateFolderSelectionDisplay();
                     }
                 }
             }
@@ -564,6 +566,7 @@ namespace FtpSysPro.Manager.UI
         private async System.Threading.Tasks.Task<List<string>> GetAvailableSubFoldersAsync(BackupSetManifest manifest)
         {
             var folderSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            _folderStats.Clear();
 
             // 0. If files list is empty, try loading local catalog manifest if jobId is available
             if ((manifest.Files == null || manifest.Files.Count == 0) && !string.IsNullOrEmpty(manifest.JobId))
@@ -580,16 +583,30 @@ namespace FtpSysPro.Manager.UI
                 catch { }
             }
 
+            var rootStats = new SubFolderStats { RelativePath = string.Empty };
+            _folderStats[string.Empty] = rootStats;
+
             // 1. From manifest.Files if available
             if (manifest.Files != null && manifest.Files.Count > 0)
             {
                 foreach (var f in manifest.Files)
                 {
+                    rootStats.SizeBytes += f.SizeBytes;
+                    rootStats.FileCount++;
+
                     var rel = f.RelativePath.Replace('/', '\\').Trim('\\');
                     var dir = Path.GetDirectoryName(rel);
                     while (!string.IsNullOrEmpty(dir))
                     {
                         folderSet.Add(dir);
+                        if (!_folderStats.TryGetValue(dir, out var st))
+                        {
+                            st = new SubFolderStats { RelativePath = dir };
+                            _folderStats[dir] = st;
+                        }
+                        st.SizeBytes += f.SizeBytes;
+                        st.FileCount++;
+
                         dir = Path.GetDirectoryName(dir);
                     }
                 }
@@ -650,11 +667,33 @@ namespace FtpSysPro.Manager.UI
 
                             foreach (ICSharpCode.SharpZipLib.Zip.ZipEntry entry in zip)
                             {
+                                if (entry.IsDirectory)
+                                {
+                                    var cleanDir = entry.Name.Replace('/', '\\').Trim('\\');
+                                    while (!string.IsNullOrEmpty(cleanDir))
+                                    {
+                                        folderSet.Add(cleanDir);
+                                        cleanDir = Path.GetDirectoryName(cleanDir);
+                                    }
+                                    continue;
+                                }
+
                                 var cleanName = entry.Name.Replace('/', '\\').Trim('\\');
-                                var dir = entry.IsDirectory ? cleanName : Path.GetDirectoryName(cleanName);
+                                var size = entry.Size > 0 ? entry.Size : 0;
+                                rootStats.SizeBytes += size;
+                                rootStats.FileCount++;
+
+                                var dir = Path.GetDirectoryName(cleanName);
                                 while (!string.IsNullOrEmpty(dir))
                                 {
                                     folderSet.Add(dir);
+                                    if (!_folderStats.TryGetValue(dir, out var st))
+                                    {
+                                        st = new SubFolderStats { RelativePath = dir };
+                                        _folderStats[dir] = st;
+                                    }
+                                    st.SizeBytes += size;
+                                    st.FileCount++;
                                     dir = Path.GetDirectoryName(dir);
                                 }
                             }
@@ -684,11 +723,29 @@ namespace FtpSysPro.Manager.UI
                 {
                     await System.Threading.Tasks.Task.Run(() =>
                     {
-                        var subDirs = Directory.GetDirectories(foundDir, "*", SearchOption.AllDirectories);
-                        foreach (var sd in subDirs)
+                        var allFiles = Directory.GetFiles(foundDir, "*", SearchOption.AllDirectories);
+                        foreach (var filePath in allFiles)
                         {
-                            var rel = sd.Substring(foundDir.Length).TrimStart('\\');
-                            folderSet.Add(rel);
+                            var rel = filePath.Substring(foundDir.Length).TrimStart('\\');
+                            long size = 0;
+                            try { size = new FileInfo(filePath).Length; } catch { }
+
+                            rootStats.SizeBytes += size;
+                            rootStats.FileCount++;
+
+                            var dir = Path.GetDirectoryName(rel);
+                            while (!string.IsNullOrEmpty(dir))
+                            {
+                                folderSet.Add(dir);
+                                if (!_folderStats.TryGetValue(dir, out var st))
+                                {
+                                    st = new SubFolderStats { RelativePath = dir };
+                                    _folderStats[dir] = st;
+                                }
+                                st.SizeBytes += size;
+                                st.FileCount++;
+                                dir = Path.GetDirectoryName(dir);
+                            }
                         }
                     });
                     return folderSet.OrderBy(x => x).ToList();
@@ -938,18 +995,7 @@ namespace FtpSysPro.Manager.UI
 
             var selectedSet = (BackupSetManifest)lvBackupSets.SelectedItems[0].Tag;
 
-            var rawSelectiveText = (chkSelectiveFolder.Checked && !string.IsNullOrWhiteSpace(txtSelectiveFolder.Text))
-                ? txtSelectiveFolder.Text.Trim()
-                : string.Empty;
-
-            var selectiveFolders = string.IsNullOrWhiteSpace(rawSelectiveText)
-                ? new List<string>()
-                : rawSelectiveText.Split(new[] { '\r', '\n', ';', '|' }, StringSplitOptions.RemoveEmptyEntries)
-                    .Select(s => s.Trim())
-                    .Where(s => !string.IsNullOrEmpty(s))
-                    .Distinct(StringComparer.OrdinalIgnoreCase)
-                    .ToList();
-
+            var selectiveFolders = chkSelectiveFolder.Checked ? _selectedSubFolders : new List<string>();
             var selectiveSubFolder = selectiveFolders.Count > 0 ? string.Join("; ", selectiveFolders) : string.Empty;
 
             string subFolderDesc;
@@ -961,14 +1007,32 @@ namespace FtpSysPro.Manager.UI
             }
             else if (selectiveFolders.Count == 1)
             {
-                subFolderDesc = Strings.IsVi ? $"Chỉ thư mục con '{selectiveFolders[0]}'" : $"Subfolder '{selectiveFolders[0]}' only";
-                subFolderLogDesc = subFolderDesc;
+                string sizeInfo = _folderStats.TryGetValue(selectiveFolders[0], out var st) && (st.SizeBytes > 0 || st.FileCount > 0)
+                    ? $" ({st.GetSizeDisplay(Strings.IsVi)})"
+                    : "";
+                subFolderDesc = Strings.IsVi ? $"Chỉ thư mục con '{selectiveFolders[0]}'{sizeInfo}" : $"Subfolder '{selectiveFolders[0]}'{sizeInfo} only";
+                subFolderLogDesc = $"{selectiveFolders[0]}{sizeInfo}";
             }
             else
             {
+                var folderLines = new List<string>();
+                long totalBytes = 0;
+                int totalFiles = 0;
+                foreach (var folder in selectiveFolders)
+                {
+                    string sizeInfo = "";
+                    if (_folderStats.TryGetValue(folder, out var st) && (st.SizeBytes > 0 || st.FileCount > 0))
+                    {
+                        totalBytes += st.SizeBytes;
+                        totalFiles += st.FileCount;
+                        sizeInfo = $" - {st.GetSizeDisplay(Strings.IsVi)}";
+                    }
+                    folderLines.Add($"• {folder}{sizeInfo}");
+                }
+                string sumStr = (totalBytes > 0 || totalFiles > 0) ? $" [{FormatBytes(totalBytes)}, {totalFiles:N0} {(Strings.IsVi ? "tệp" : "files")}]" : "";
                 subFolderDesc = Strings.IsVi
-                    ? $"{selectiveFolders.Count} thư mục con:\n  • " + string.Join("\n  • ", selectiveFolders)
-                    : $"{selectiveFolders.Count} subfolders:\n  • " + string.Join("\n  • ", selectiveFolders);
+                    ? $"{selectiveFolders.Count} thư mục con{sumStr}:\n  " + string.Join("\n  ", folderLines)
+                    : $"{selectiveFolders.Count} subfolders{sumStr}:\n  " + string.Join("\n  ", folderLines);
                 subFolderLogDesc = $"{selectiveFolders.Count} thư mục con: '{string.Join("; ", selectiveFolders)}'";
             }
 

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
+using FtpSysPro.Core.Models;
 using FtpSysPro.Core.Resources;
 
 namespace FtpSysPro.Manager.UI
@@ -11,6 +12,7 @@ namespace FtpSysPro.Manager.UI
     {
         private readonly string _backupSetId;
         private readonly List<string> _allFolders;
+        private readonly Dictionary<string, SubFolderStats> _folderStats;
         private TreeView treeFolders;
         private TextBox txtSearch;
         private Label lblSelected;
@@ -24,10 +26,11 @@ namespace FtpSysPro.Manager.UI
         public List<string> SelectedSubFolders { get; private set; } = new List<string>();
         public string SelectedSubFolder => SelectedSubFolders.Count > 0 ? string.Join(Environment.NewLine, SelectedSubFolders) : string.Empty;
 
-        public SubFolderPickerDialog(string backupSetId, List<string> folders, string currentSelected = null)
+        public SubFolderPickerDialog(string backupSetId, List<string> folders, string currentSelected = null, Dictionary<string, SubFolderStats> folderStats = null)
         {
             _backupSetId = backupSetId ?? string.Empty;
             _allFolders = folders ?? new List<string>();
+            _folderStats = folderStats ?? new Dictionary<string, SubFolderStats>(StringComparer.OrdinalIgnoreCase);
 
             if (!string.IsNullOrWhiteSpace(currentSelected))
             {
@@ -425,16 +428,50 @@ namespace FtpSysPro.Manager.UI
             }
             else if (paths.Count == 1)
             {
+                string sizeStr = (_folderStats != null && _folderStats.TryGetValue(paths[0], out var st) && (st.SizeBytes > 0 || st.FileCount > 0))
+                    ? $" - {st.GetSizeDisplay(Strings.IsVi)}"
+                    : "";
                 lblSelected.Text = Strings.IsVi
-                    ? $"Đang chọn (1 thư mục): 📁 {paths[0]}"
-                    : $"Selected (1 folder): 📁 {paths[0]}";
+                    ? $"Đang chọn (1 thư mục): 📁 {paths[0]}{sizeStr}"
+                    : $"Selected (1 folder): 📁 {paths[0]}{sizeStr}";
             }
             else
             {
+                long totalSize = 0;
+                int totalFiles = 0;
+                if (_folderStats != null)
+                {
+                    foreach (var p in paths)
+                    {
+                        if (_folderStats.TryGetValue(p, out var st))
+                        {
+                            totalSize += st.SizeBytes;
+                            totalFiles += st.FileCount;
+                        }
+                    }
+                }
+
+                string sizeSummary = (totalSize > 0 || totalFiles > 0)
+                    ? $" [{FormatSize(totalSize)} ({totalFiles:N0} {(Strings.IsVi ? "tệp" : "files")})]"
+                    : "";
+
                 lblSelected.Text = Strings.IsVi
-                    ? $"Đang chọn: {paths.Count} thư mục con (bấm OK để xác nhận)"
-                    : $"Selected: {paths.Count} subfolders (click OK to confirm)";
+                    ? $"Đang chọn: {paths.Count} thư mục con{sizeSummary} (bấm OK để xác nhận)"
+                    : $"Selected: {paths.Count} subfolders{sizeSummary} (click OK to confirm)";
             }
+        }
+
+        private static string FormatSize(long bytes)
+        {
+            string[] suffixes = { "B", "KB", "MB", "GB", "TB" };
+            int i = 0;
+            double dbl = bytes;
+            while (dbl >= 1024 && i < suffixes.Length - 1)
+            {
+                dbl /= 1024;
+                i++;
+            }
+            return $"{dbl:0.##} {suffixes[i]}";
         }
 
         private void BuildTree(string filter)
@@ -442,7 +479,13 @@ namespace FtpSysPro.Manager.UI
             treeFolders.BeginUpdate();
             treeFolders.Nodes.Clear();
 
-            var rootNode = new TreeNode(Strings.IsVi ? "📦 (Toàn bộ dữ liệu / Thư mục gốc)" : "📦 (All data / Root)")
+            string rootLabel = Strings.IsVi ? "📦 (Toàn bộ dữ liệu / Thư mục gốc)" : "📦 (All data / Root)";
+            if (_folderStats != null && _folderStats.TryGetValue(string.Empty, out var rootSt) && (rootSt.SizeBytes > 0 || rootSt.FileCount > 0))
+            {
+                rootLabel += $"  [{rootSt.GetSizeDisplay(Strings.IsVi)}]";
+            }
+
+            var rootNode = new TreeNode(rootLabel)
             {
                 Tag = string.Empty,
                 NodeFont = new Font(treeFolders.Font, FontStyle.Bold)
@@ -469,7 +512,13 @@ namespace FtpSysPro.Manager.UI
                     currentPath = (i == 0) ? parts[0] : currentPath + "\\" + parts[i];
                     if (!nodeMap.TryGetValue(currentPath, out var node))
                     {
-                        node = new TreeNode("📁 " + parts[i])
+                        string label = "📁 " + parts[i];
+                        if (_folderStats != null && _folderStats.TryGetValue(currentPath, out var st) && (st.SizeBytes > 0 || st.FileCount > 0))
+                        {
+                            label += $"  [{st.GetSizeDisplay(Strings.IsVi)}]";
+                        }
+
+                        node = new TreeNode(label)
                         {
                             Tag = currentPath
                         };

@@ -76,6 +76,32 @@ namespace FtpSysPro.Core.Models
         public string Sha256 { get; set; } = string.Empty;
     }
 
+    public class SubFolderStats
+    {
+        public string RelativePath { get; set; } = string.Empty;
+        public long SizeBytes { get; set; }
+        public int FileCount { get; set; }
+
+        public string FormatBytes()
+        {
+            string[] suffixes = { "B", "KB", "MB", "GB", "TB" };
+            int i = 0;
+            double dbl = SizeBytes;
+            while (dbl >= 1024 && i < suffixes.Length - 1)
+            {
+                dbl /= 1024;
+                i++;
+            }
+            return $"{dbl:0.##} {suffixes[i]}";
+        }
+
+        public string GetSizeDisplay(bool isVi = true)
+        {
+            if (SizeBytes <= 0 && FileCount <= 0) return "-";
+            return $"{FormatBytes()} ({FileCount:N0} {(isVi ? "tệp" : "files")})";
+        }
+    }
+
     public class JobProgressInfo
     {
         public string JobId { get; set; } = string.Empty;
