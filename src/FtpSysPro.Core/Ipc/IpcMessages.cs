@@ -89,5 +89,6 @@ namespace FtpSysPro.Core.Ipc
         public bool OverwriteExisting { get; set; } = true;
         public string ZipPassword { get; set; } = string.Empty;
         public string SelectedSubFolder { get; set; } = string.Empty;
+        public List<string> SelectedSubFolders { get; set; } = new List<string>();
     }
 }

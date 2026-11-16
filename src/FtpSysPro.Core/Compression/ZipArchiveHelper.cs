@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using ICSharpCode.SharpZipLib.Core;
 using ICSharpCode.SharpZipLib.Zip;
@@ -91,7 +92,8 @@ namespace FtpSysPro.Core.Compression
             bool overwriteExisting = true,
             IProgress<long> progress = null,
             CancellationToken cancellationToken = default,
-            string subFolderFilter = null)
+            string subFolderFilter = null,
+            IEnumerable<string> subFolderFilters = null)
         {
             if (!File.Exists(zipPath))
                 throw new FileNotFoundException("ZIP archive not found", zipPath);
@@ -99,9 +101,22 @@ namespace FtpSysPro.Core.Compression
             if (!Directory.Exists(targetDirectory))
                 Directory.CreateDirectory(targetDirectory);
 
-            var normFilter = string.IsNullOrWhiteSpace(subFolderFilter)
-                ? null
-                : subFolderFilter.Trim().Replace('/', '\\').Trim('\\');
+            var filterList = new List<string>();
+            if (subFolderFilters != null)
+            {
+                filterList.AddRange(subFolderFilters.Where(x => !string.IsNullOrWhiteSpace(x)));
+            }
+            if (!string.IsNullOrWhiteSpace(subFolderFilter))
+            {
+                var parts = subFolderFilter.Split(new[] { ';', '|' }, StringSplitOptions.RemoveEmptyEntries);
+                filterList.AddRange(parts.Where(x => !string.IsNullOrWhiteSpace(x)));
+            }
+
+            var normFilters = filterList
+                .Select(f => f.Trim().Replace('/', '\\').Trim('\\'))
+                .Where(f => !string.IsNullOrEmpty(f))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
 
             using (var fs = new FileStream(zipPath, FileMode.Open, FileAccess.Read, FileShare.Read))
             using (var zipFile = new ZipFile(fs))
@@ -124,12 +139,21 @@ namespace FtpSysPro.Core.Compression
                     // Sanitize path to prevent Zip Slip vulnerability
                     var entryPath = entry.Name.Replace('/', '\\');
 
-                    // If selective subfolder filter is specified, skip entries outside this subfolder
-                    if (normFilter != null)
+                    // If selective subfolder filters are specified, skip entries outside these subfolders
+                    if (normFilters.Count > 0)
                     {
                         var normEntry = entryPath.TrimStart('\\');
-                        if (!normEntry.StartsWith(normFilter + "\\", StringComparison.OrdinalIgnoreCase) &&
-                            !normEntry.Equals(normFilter, StringComparison.OrdinalIgnoreCase))
+                        bool matched = false;
+                        foreach (var filter in normFilters)
+                        {
+                            if (normEntry.StartsWith(filter + "\\", StringComparison.OrdinalIgnoreCase) ||
+                                normEntry.Equals(filter, StringComparison.OrdinalIgnoreCase))
+                            {
+                                matched = true;
+                                break;
+                            }
+                        }
+                        if (!matched)
                         {
                             continue;
                         }

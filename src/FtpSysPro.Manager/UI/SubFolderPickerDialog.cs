@@ -17,29 +17,42 @@ namespace FtpSysPro.Manager.UI
         private Button btnOk;
         private Button btnCancel;
         private Button btnSelectAll;
+        private Button btnClearAll;
 
-        public string SelectedSubFolder { get; private set; } = string.Empty;
+        private bool _isUpdatingChecks = false;
+
+        public List<string> SelectedSubFolders { get; private set; } = new List<string>();
+        public string SelectedSubFolder => SelectedSubFolders.Count > 0 ? string.Join("; ", SelectedSubFolders) : string.Empty;
 
         public SubFolderPickerDialog(string backupSetId, List<string> folders, string currentSelected = null)
         {
             _backupSetId = backupSetId ?? string.Empty;
             _allFolders = folders ?? new List<string>();
-            SelectedSubFolder = currentSelected ?? string.Empty;
+
+            if (!string.IsNullOrWhiteSpace(currentSelected))
+            {
+                var parts = currentSelected.Split(new[] { ';', '|' }, StringSplitOptions.RemoveEmptyEntries);
+                SelectedSubFolders = parts.Select(p => p.Trim()).Where(p => !string.IsNullOrEmpty(p)).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+            }
 
             InitializeComponents();
             BuildTree(string.Empty);
 
-            if (!string.IsNullOrEmpty(currentSelected))
+            if (SelectedSubFolders.Count > 0)
             {
-                SelectNodeByPath(currentSelected);
+                CheckNodesByPaths(SelectedSubFolders);
+            }
+            else
+            {
+                UpdateSelectionDisplay();
             }
         }
 
         private void InitializeComponents()
         {
             Text = Strings.SelectSubFolderTitle;
-            ClientSize = new Size(520, 560);
-            MinimumSize = new Size(420, 400);
+            ClientSize = new Size(540, 570);
+            MinimumSize = new Size(460, 420);
             StartPosition = FormStartPosition.CenterParent;
             FormBorderStyle = FormBorderStyle.Sizable;
             MaximizeBox = false;
@@ -58,7 +71,7 @@ namespace FtpSysPro.Manager.UI
 
             var lblHeader = new Label
             {
-                Text = Strings.IsVi ? "Chọn thư mục con cần phục hồi:" : "Select specific subfolder to restore:",
+                Text = Strings.IsVi ? "Chọn một hoặc nhiều thư mục con cần phục hồi (Tích chọn ☑):" : "Select one or more subfolders to restore (Check ☑):",
                 Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
                 ForeColor = Color.FromArgb(15, 23, 42),
                 Location = new Point(15, 10),
@@ -77,7 +90,7 @@ namespace FtpSysPro.Manager.UI
             txtSearch = new TextBox
             {
                 Location = new Point(15, 54),
-                Width = 490,
+                Width = 510,
                 Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
                 ForeColor = Color.Gray,
                 Text = Strings.IsVi ? "🔍 Tìm kiếm thư mục..." : "🔍 Search folder..."
@@ -103,6 +116,10 @@ namespace FtpSysPro.Manager.UI
                 if (!txtSearch.Text.StartsWith("🔍"))
                 {
                     BuildTree(txtSearch.Text.Trim());
+                    if (SelectedSubFolders.Count > 0)
+                    {
+                        CheckNodesByPaths(SelectedSubFolders);
+                    }
                 }
             };
 
@@ -119,7 +136,7 @@ namespace FtpSysPro.Manager.UI
 
             lblSelected = new Label
             {
-                Text = Strings.IsVi ? "Đang chọn: 📦 Thư mục gốc (Toàn bộ dữ liệu)" : "Selected: 📦 (All data / Root)",
+                Text = Strings.IsVi ? "Đang chọn: 📦 (Toàn bộ dữ liệu / Thư mục gốc)" : "Selected: 📦 (All data / Root)",
                 Font = new Font("Segoe UI", 9F, FontStyle.Bold),
                 ForeColor = Color.FromArgb(30, 41, 59),
                 Location = new Point(15, 10),
@@ -129,8 +146,8 @@ namespace FtpSysPro.Manager.UI
 
             btnSelectAll = new Button
             {
-                Text = Strings.IsVi ? "📦 Chọn thư mục gốc (Toàn bộ)" : "📦 Select Root (All)",
-                Size = new Size(205, 34),
+                Text = Strings.SelectAllFolders,
+                Size = new Size(115, 34),
                 FlatStyle = FlatStyle.System,
                 Cursor = Cursors.Hand
             };
@@ -138,9 +155,42 @@ namespace FtpSysPro.Manager.UI
             {
                 if (treeFolders.Nodes.Count > 0)
                 {
-                    treeFolders.SelectedNode = treeFolders.Nodes[0];
-                    SelectedSubFolder = string.Empty;
-                    lblSelected.Text = Strings.IsVi ? "Đang chọn: 📦 Thư mục gốc (Toàn bộ dữ liệu)" : "Selected: 📦 (All data / Root)";
+                    _isUpdatingChecks = true;
+                    try
+                    {
+                        treeFolders.Nodes[0].Checked = true;
+                        CheckChildNodes(treeFolders.Nodes[0], true);
+                    }
+                    finally
+                    {
+                        _isUpdatingChecks = false;
+                    }
+                    UpdateSelectionDisplay();
+                }
+            };
+
+            btnClearAll = new Button
+            {
+                Text = Strings.ClearAllSelection,
+                Size = new Size(95, 34),
+                FlatStyle = FlatStyle.System,
+                Cursor = Cursors.Hand
+            };
+            btnClearAll.Click += (s, e) =>
+            {
+                if (treeFolders.Nodes.Count > 0)
+                {
+                    _isUpdatingChecks = true;
+                    try
+                    {
+                        treeFolders.Nodes[0].Checked = false;
+                        CheckChildNodes(treeFolders.Nodes[0], false);
+                    }
+                    finally
+                    {
+                        _isUpdatingChecks = false;
+                    }
+                    UpdateSelectionDisplay();
                 }
             };
 
@@ -157,16 +207,27 @@ namespace FtpSysPro.Manager.UI
             btnOk.FlatAppearance.BorderSize = 0;
             btnOk.Click += (s, e) =>
             {
-                if (treeFolders.SelectedNode != null)
+                SelectedSubFolders = GetSelectedFolderPaths();
+
+                // If no checkboxes are ticked, fallback to highlighted node if one is selected
+                if (SelectedSubFolders.Count == 0 && (treeFolders.Nodes.Count == 0 || !treeFolders.Nodes[0].Checked))
                 {
-                    SelectedSubFolder = treeFolders.SelectedNode.Tag as string ?? string.Empty;
+                    if (treeFolders.SelectedNode != null && treeFolders.SelectedNode != treeFolders.Nodes[0])
+                    {
+                        var tag = treeFolders.SelectedNode.Tag as string;
+                        if (!string.IsNullOrEmpty(tag))
+                        {
+                            SelectedSubFolders.Add(tag);
+                        }
+                    }
                 }
-                if (string.IsNullOrEmpty(SelectedSubFolder))
+
+                if (SelectedSubFolders.Count == 0)
                 {
                     var confirmRoot = MessageBox.Show(this,
                         Strings.IsVi
-                            ? "Bạn đang chọn thư mục gốc (Toàn bộ dữ liệu của bản sao lưu).\n\nNếu muốn khôi phục toàn bộ, nhấn 'Có' (Yes).\nNếu muốn khôi phục một thư mục con cụ thể, nhấn 'Không' (No) để quay lại chọn thư mục con."
-                            : "You have selected the root folder (All backup data).\n\nIf you want to restore all data, click 'Yes'.\nIf you want a specific subfolder, click 'No' to pick a subfolder.",
+                            ? "Bạn chưa tích chọn thư mục con cụ thể nào. Hệ thống sẽ khôi phục toàn bộ bản sao lưu.\n\nNhấn 'Có' (Yes) để khôi phục toàn bộ dữ liệu.\nNhấn 'Không' (No) để quay lại tích chọn các thư mục con."
+                            : "No specific subfolders are selected. System will restore the entire backup set.\n\nClick 'Yes' to restore all data.\nClick 'No' to go back and select subfolders.",
                         Strings.IsVi ? "Xác nhận phạm vi phục hồi" : "Confirm Restore Scope",
                         MessageBoxButtons.YesNo,
                         MessageBoxIcon.Question);
@@ -199,13 +260,14 @@ namespace FtpSysPro.Manager.UI
                 btnCancel.Location = new Point(w - btnCancel.Width - rightPad, 38);
                 btnOk.Location = new Point(btnCancel.Left - btnOk.Width - 10, 38);
                 btnSelectAll.Location = new Point(15, 38);
+                btnClearAll.Location = new Point(btnSelectAll.Right + 8, 38);
             }
 
             pnlBottom.Resize += (s, e) => RepositionBottomControls();
             pnlBottom.Layout += (s, e) => RepositionBottomControls();
             Shown += (s, e) => RepositionBottomControls();
 
-            pnlBottom.Controls.AddRange(new Control[] { lblSelected, btnSelectAll, btnOk, btnCancel });
+            pnlBottom.Controls.AddRange(new Control[] { lblSelected, btnSelectAll, btnClearAll, btnOk, btnCancel });
 
             AcceptButton = btnOk;
             CancelButton = btnCancel;
@@ -222,6 +284,7 @@ namespace FtpSysPro.Manager.UI
                 Dock = DockStyle.Fill,
                 BorderStyle = BorderStyle.FixedSingle,
                 Font = new Font("Segoe UI", 9.25F),
+                CheckBoxes = true,
                 FullRowSelect = true,
                 HideSelection = false,
                 ShowLines = true,
@@ -229,26 +292,24 @@ namespace FtpSysPro.Manager.UI
                 ShowRootLines = true
             };
 
+            treeFolders.AfterCheck += TreeFolders_AfterCheck;
+
             treeFolders.AfterSelect += (s, e) =>
             {
-                var path = e.Node?.Tag as string ?? string.Empty;
-                SelectedSubFolder = path;
-                lblSelected.Text = string.IsNullOrEmpty(path)
-                    ? (Strings.IsVi ? "Đang chọn: 📦 Thư mục gốc (Toàn bộ dữ liệu)" : "Selected: 📦 (All data / Root)")
-                    : (Strings.IsVi ? $"Đang chọn: 📁 {path}" : $"Selected: 📁 {path}");
+                if (SelectedSubFolders.Count == 0 && !treeFolders.Nodes[0].Checked)
+                {
+                    var path = e.Node?.Tag as string ?? string.Empty;
+                    lblSelected.Text = string.IsNullOrEmpty(path)
+                        ? (Strings.IsVi ? "Đang chọn: 📦 (Toàn bộ dữ liệu / Thư mục gốc)" : "Selected: 📦 (All data / Root)")
+                        : (Strings.IsVi ? $"Đang chọn: 📁 {path}" : $"Selected: 📁 {path}");
+                }
             };
 
             treeFolders.NodeMouseDoubleClick += (s, e) =>
             {
-                if (e.Node != null)
+                if (e.Node != null && e.Node != treeFolders.Nodes[0])
                 {
-                    var tag = e.Node.Tag as string ?? string.Empty;
-                    if (!string.IsNullOrEmpty(tag))
-                    {
-                        SelectedSubFolder = tag;
-                        DialogResult = DialogResult.OK;
-                        Close();
-                    }
+                    e.Node.Checked = !e.Node.Checked;
                 }
             };
 
@@ -257,6 +318,123 @@ namespace FtpSysPro.Manager.UI
             Controls.Add(pnlCenter);
             Controls.Add(pnlTop);
             Controls.Add(pnlBottom);
+        }
+
+        private void TreeFolders_AfterCheck(object sender, TreeViewEventArgs e)
+        {
+            if (_isUpdatingChecks) return;
+            _isUpdatingChecks = true;
+            try
+            {
+                // Cascade check state down to all child nodes
+                CheckChildNodes(e.Node, e.Node.Checked);
+
+                // Cascade check state up to parent nodes
+                UpdateParentNodes(e.Node);
+            }
+            finally
+            {
+                _isUpdatingChecks = false;
+            }
+
+            UpdateSelectionDisplay();
+        }
+
+        private void CheckChildNodes(TreeNode node, bool isChecked)
+        {
+            foreach (TreeNode child in node.Nodes)
+            {
+                child.Checked = isChecked;
+                CheckChildNodes(child, isChecked);
+            }
+        }
+
+        private void UpdateParentNodes(TreeNode node)
+        {
+            var parent = node.Parent;
+            if (parent == null) return;
+
+            bool allChecked = true;
+            foreach (TreeNode sibling in parent.Nodes)
+            {
+                if (!sibling.Checked)
+                {
+                    allChecked = false;
+                    break;
+                }
+            }
+
+            if (parent.Checked != allChecked)
+            {
+                parent.Checked = allChecked;
+                UpdateParentNodes(parent);
+            }
+        }
+
+        public List<string> GetSelectedFolderPaths()
+        {
+            var list = new List<string>();
+            if (treeFolders.Nodes.Count == 0) return list;
+
+            var root = treeFolders.Nodes[0];
+            if (root.Checked)
+            {
+                // Root is checked: means all data / whole set
+                return list;
+            }
+
+            void CollectCheckedRoots(TreeNode node)
+            {
+                foreach (TreeNode child in node.Nodes)
+                {
+                    if (child.Checked)
+                    {
+                        var tag = child.Tag as string;
+                        if (!string.IsNullOrEmpty(tag))
+                        {
+                            list.Add(tag);
+                        }
+                    }
+                    else
+                    {
+                        CollectCheckedRoots(child);
+                    }
+                }
+            }
+
+            CollectCheckedRoots(root);
+            return list;
+        }
+
+        private void UpdateSelectionDisplay()
+        {
+            var paths = GetSelectedFolderPaths();
+            SelectedSubFolders = paths;
+
+            if (treeFolders.Nodes.Count > 0 && treeFolders.Nodes[0].Checked)
+            {
+                lblSelected.Text = Strings.IsVi
+                    ? "Đang chọn: 📦 (Toàn bộ dữ liệu / Thư mục gốc)"
+                    : "Selected: 📦 (All data / Root)";
+            }
+            else if (paths.Count == 0)
+            {
+                lblSelected.Text = Strings.IsVi
+                    ? "Đang chọn: 📦 (Toàn bộ dữ liệu / Thư mục gốc)"
+                    : "Selected: 📦 (All data / Root)";
+            }
+            else if (paths.Count == 1)
+            {
+                lblSelected.Text = Strings.IsVi
+                    ? $"Đang chọn (1 thư mục): 📁 {paths[0]}"
+                    : $"Selected (1 folder): 📁 {paths[0]}";
+            }
+            else
+            {
+                lblSelected.Text = Strings.IsVi
+                    ? $"Đang chọn ({paths.Count} thư mục): 📁 {string.Join("; ", paths)}"
+                    : $"Selected ({paths.Count} folders): 📁 {string.Join("; ", paths)}";
+            }
         }
 
         private void BuildTree(string filter)
@@ -316,34 +494,44 @@ namespace FtpSysPro.Manager.UI
             treeFolders.EndUpdate();
         }
 
-        private void SelectNodeByPath(string path)
+        private void CheckNodesByPaths(IEnumerable<string> paths)
         {
-            if (string.IsNullOrEmpty(path)) return;
-            var norm = path.Replace('/', '\\').Trim('\\');
+            if (paths == null) return;
+            var set = new HashSet<string>(paths.Select(p => p.Replace('/', '\\').Trim('\\')), StringComparer.OrdinalIgnoreCase);
+            if (set.Count == 0) return;
 
-            TreeNode FindNode(TreeNode parent)
+            _isUpdatingChecks = true;
+            try
             {
-                if (string.Equals(parent.Tag as string, norm, StringComparison.OrdinalIgnoreCase))
-                    return parent;
-
-                foreach (TreeNode child in parent.Nodes)
+                void CheckRecursive(TreeNode parent)
                 {
-                    var found = FindNode(child);
-                    if (found != null) return found;
+                    foreach (TreeNode node in parent.Nodes)
+                    {
+                        var tag = node.Tag as string;
+                        if (!string.IsNullOrEmpty(tag) && set.Contains(tag.Trim('\\')))
+                        {
+                            node.Checked = true;
+                            node.EnsureVisible();
+                            CheckChildNodes(node, true);
+                        }
+                        else
+                        {
+                            CheckRecursive(node);
+                        }
+                    }
                 }
-                return null;
+
+                foreach (TreeNode root in treeFolders.Nodes)
+                {
+                    CheckRecursive(root);
+                }
+            }
+            finally
+            {
+                _isUpdatingChecks = false;
             }
 
-            foreach (TreeNode root in treeFolders.Nodes)
-            {
-                var target = FindNode(root);
-                if (target != null)
-                {
-                    treeFolders.SelectedNode = target;
-                    target.EnsureVisible();
-                    break;
-                }
-            }
+            UpdateSelectionDisplay();
         }
     }
 }

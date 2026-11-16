@@ -19,6 +19,22 @@ namespace FtpSysPro.Core.Engine
         public bool OverwriteExisting { get; set; } = true;
         public string ZipPassword { get; set; } = string.Empty;
         public string SelectedSubFolder { get; set; } = string.Empty;
+        public List<string> SelectedSubFolders { get; set; } = new List<string>();
+
+        public List<string> GetAllSubFolderFilters()
+        {
+            var list = new List<string>();
+            if (SelectedSubFolders != null && SelectedSubFolders.Count > 0)
+            {
+                list.AddRange(SelectedSubFolders.Where(x => !string.IsNullOrWhiteSpace(x)));
+            }
+            if (!string.IsNullOrWhiteSpace(SelectedSubFolder))
+            {
+                var parts = SelectedSubFolder.Split(new[] { ';', '|' }, StringSplitOptions.RemoveEmptyEntries);
+                list.AddRange(parts.Where(x => !string.IsNullOrWhiteSpace(x)));
+            }
+            return list.Select(x => x.Trim()).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        }
     }
 
     public class RestoreResult
@@ -355,6 +371,8 @@ namespace FtpSysPro.Core.Engine
                 }
 
                 // 2. Apply sets in chronological order
+                var activeFilters = options.GetAllSubFolderFilters();
+
                 foreach (var set in chain)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
@@ -400,7 +418,8 @@ namespace FtpSysPro.Core.Engine
                             options.OverwriteExisting,
                             null,
                             cancellationToken,
-                            options.SelectedSubFolder);
+                            options.SelectedSubFolder,
+                            activeFilters);
 
                         try { File.Delete(localZip); } catch { }
                     }
@@ -437,7 +456,7 @@ namespace FtpSysPro.Core.Engine
                             {
                                 cancellationToken.ThrowIfCancellationRequested();
 
-                                if (!MatchesSubFolder(f.RelativePath, options.SelectedSubFolder))
+                                if (!MatchesAnySubFolder(f.RelativePath, activeFilters))
                                     continue;
 
                                 var remoteFile = $"{remoteDir}/{f.RelativePath.Replace('\\', '/')}";
@@ -460,7 +479,7 @@ namespace FtpSysPro.Core.Engine
                                 options.TargetDirectory,
                                 options.OverwriteExisting,
                                 cancellationToken,
-                                options.SelectedSubFolder,
+                                activeFilters,
                                 result);
                         }
                     }
@@ -470,7 +489,7 @@ namespace FtpSysPro.Core.Engine
                     {
                         foreach (var deletedRel in set.DeletedRelativePaths)
                         {
-                            if (!MatchesSubFolder(deletedRel, options.SelectedSubFolder))
+                            if (!MatchesAnySubFolder(deletedRel, activeFilters))
                                 continue;
 
                             var deletedFull = Path.Combine(options.TargetDirectory, deletedRel);
@@ -483,9 +502,15 @@ namespace FtpSysPro.Core.Engine
                 }
 
                 result.Success = true;
-                var subFolderNote = string.IsNullOrWhiteSpace(options.SelectedSubFolder)
-                    ? ""
-                    : $" [Thư mục con: '{options.SelectedSubFolder}']";
+                string subFolderNote = "";
+                if (activeFilters.Count == 1)
+                {
+                    subFolderNote = $" [Thư mục con: '{activeFilters[0]}']";
+                }
+                else if (activeFilters.Count > 1)
+                {
+                    subFolderNote = $" [{activeFilters.Count} thư mục con: '{string.Join("; ", activeFilters)}']";
+                }
                 result.Message = $"Phục hồi dữ liệu thành công từ {chain.Count} điểm sao lưu (chuỗi Full + Incremental){subFolderNote}.";
             }
             catch (Exception ex)
@@ -507,16 +532,33 @@ namespace FtpSysPro.Core.Engine
             return result;
         }
 
+        private static bool MatchesAnySubFolder(string relativePath, List<string> subFolderFilters)
+        {
+            if (subFolderFilters == null || subFolderFilters.Count == 0)
+                return true;
+
+            var normRel = relativePath.Replace('\\', '/').Trim('/');
+
+            foreach (var filter in subFolderFilters)
+            {
+                if (string.IsNullOrWhiteSpace(filter)) return true;
+                var normFilter = filter.Replace('\\', '/').Trim('/');
+                if (normRel.StartsWith(normFilter + "/", StringComparison.OrdinalIgnoreCase) ||
+                    normRel.Equals(normFilter, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         private static bool MatchesSubFolder(string relativePath, string subFolderFilter)
         {
             if (string.IsNullOrWhiteSpace(subFolderFilter))
                 return true;
 
-            var normFilter = subFolderFilter.Replace('\\', '/').Trim('/');
-            var normRel = relativePath.Replace('\\', '/').Trim('/');
-
-            return normRel.StartsWith(normFilter + "/", StringComparison.OrdinalIgnoreCase) ||
-                   normRel.Equals(normFilter, StringComparison.OrdinalIgnoreCase);
+            var parts = subFolderFilter.Split(new[] { ';', '|' }, StringSplitOptions.RemoveEmptyEntries);
+            return MatchesAnySubFolder(relativePath, parts.Select(p => p.Trim()).ToList());
         }
 
         private static async Task DownloadRemoteDirectoryRecursiveAsync(
@@ -526,15 +568,15 @@ namespace FtpSysPro.Core.Engine
             string targetDir,
             bool overwriteExisting,
             CancellationToken cancellationToken,
-            string subFolderFilter,
+            List<string> subFolderFilters,
             RestoreResult result)
         {
             var currentRemote = string.IsNullOrEmpty(relativePath) ? remoteBaseDir : $"{remoteBaseDir}/{relativePath}";
             var items = await destination.ListAsync(currentRemote, cancellationToken);
 
-            var normFilter = string.IsNullOrWhiteSpace(subFolderFilter)
-                ? null
-                : subFolderFilter.Replace('\\', '/').Trim('/');
+            var normFilters = (subFolderFilters != null && subFolderFilters.Count > 0)
+                ? subFolderFilters.Select(f => f.Replace('\\', '/').Trim('/')).Where(f => !string.IsNullOrEmpty(f)).ToList()
+                : null;
 
             foreach (var item in items)
             {
@@ -544,10 +586,10 @@ namespace FtpSysPro.Core.Engine
 
                 if (item.IsDirectory)
                 {
-                    if (normFilter != null)
+                    if (normFilters != null && normFilters.Count > 0)
                     {
-                        bool isAncestor = normFilter.StartsWith(normChild + "/", StringComparison.OrdinalIgnoreCase);
-                        bool isDescendantOrSelf = normChild.StartsWith(normFilter, StringComparison.OrdinalIgnoreCase);
+                        bool isAncestor = normFilters.Any(f => f.StartsWith(normChild + "/", StringComparison.OrdinalIgnoreCase));
+                        bool isDescendantOrSelf = normFilters.Any(f => normChild.StartsWith(f, StringComparison.OrdinalIgnoreCase));
                         if (!isAncestor && !isDescendantOrSelf)
                             continue;
                     }
@@ -559,18 +601,17 @@ namespace FtpSysPro.Core.Engine
                         targetDir,
                         overwriteExisting,
                         cancellationToken,
-                        subFolderFilter,
+                        subFolderFilters,
                         result);
                 }
                 else
                 {
-                    if (normFilter != null)
+                    if (normFilters != null && normFilters.Count > 0)
                     {
-                        if (!normChild.StartsWith(normFilter + "/", StringComparison.OrdinalIgnoreCase) &&
-                            !normChild.Equals(normFilter, StringComparison.OrdinalIgnoreCase))
-                        {
+                        bool matched = normFilters.Any(f => normChild.StartsWith(f + "/", StringComparison.OrdinalIgnoreCase) ||
+                                                            normChild.Equals(f, StringComparison.OrdinalIgnoreCase));
+                        if (!matched)
                             continue;
-                        }
                     }
 
                     var localTarget = Path.Combine(targetDir, childRel.Replace('/', '\\'));
@@ -578,11 +619,8 @@ namespace FtpSysPro.Core.Engine
                         continue;
 
                     await destination.DownloadFileAsync(item.FullPath, localTarget, null, cancellationToken);
-                    if (result != null)
-                    {
-                        result.RestoredFiles++;
-                        result.RestoredBytes += item.SizeBytes;
-                    }
+                    result.RestoredFiles++;
+                    result.RestoredBytes += item.SizeBytes;
                 }
             }
         }

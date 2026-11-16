@@ -435,7 +435,14 @@ namespace FtpSysPro.Manager.UI
                 {
                     if (dlg.ShowDialog(this) == DialogResult.OK)
                     {
-                        if (!string.IsNullOrWhiteSpace(dlg.SelectedSubFolder))
+                        if (dlg.SelectedSubFolders != null && dlg.SelectedSubFolders.Count > 0)
+                        {
+                            txtSelectiveFolder.Text = string.Join("; ", dlg.SelectedSubFolders);
+                            chkSelectiveFolder.Checked = true;
+                            txtSelectiveFolder.Enabled = true;
+                            btnBrowseSubFolder.Enabled = true;
+                        }
+                        else if (!string.IsNullOrWhiteSpace(dlg.SelectedSubFolder))
                         {
                             txtSelectiveFolder.Text = dlg.SelectedSubFolder;
                             chkSelectiveFolder.Checked = true;
@@ -841,13 +848,35 @@ namespace FtpSysPro.Manager.UI
 
             var selectedSet = (BackupSetManifest)lvBackupSets.SelectedItems[0].Tag;
 
-            var selectiveSubFolder = (chkSelectiveFolder.Checked && !string.IsNullOrWhiteSpace(txtSelectiveFolder.Text))
+            var rawSelectiveText = (chkSelectiveFolder.Checked && !string.IsNullOrWhiteSpace(txtSelectiveFolder.Text))
                 ? txtSelectiveFolder.Text.Trim()
                 : string.Empty;
 
-            var subFolderDesc = string.IsNullOrEmpty(selectiveSubFolder)
-                ? (Strings.IsVi ? "Toàn bộ dữ liệu" : "All data")
-                : (Strings.IsVi ? $"Chỉ thư mục con '{selectiveSubFolder}'" : $"Subfolder '{selectiveSubFolder}' only");
+            var selectiveFolders = string.IsNullOrWhiteSpace(rawSelectiveText)
+                ? new List<string>()
+                : rawSelectiveText.Split(new[] { ';', '|' }, StringSplitOptions.RemoveEmptyEntries)
+                    .Select(s => s.Trim())
+                    .Where(s => !string.IsNullOrEmpty(s))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+
+            var selectiveSubFolder = selectiveFolders.Count > 0 ? string.Join("; ", selectiveFolders) : string.Empty;
+
+            string subFolderDesc;
+            if (selectiveFolders.Count == 0)
+            {
+                subFolderDesc = Strings.IsVi ? "Toàn bộ dữ liệu" : "All data";
+            }
+            else if (selectiveFolders.Count == 1)
+            {
+                subFolderDesc = Strings.IsVi ? $"Chỉ thư mục con '{selectiveFolders[0]}'" : $"Subfolder '{selectiveFolders[0]}' only";
+            }
+            else
+            {
+                subFolderDesc = Strings.IsVi
+                    ? $"{selectiveFolders.Count} thư mục con ('{string.Join("', '", selectiveFolders)}')"
+                    : $"{selectiveFolders.Count} subfolders ('{string.Join("', '", selectiveFolders)}')";
+            }
 
             var confirmMsg = Strings.IsVi
                 ? $"Chuẩn bị tiến hành phục hồi dữ liệu:\n\n• Điểm phục hồi: {selectedSet.BackupSetId}\n• Phạm vi: {subFolderDesc}\n• Thư mục đích: {txtTargetFolder.Text}\n\nHệ thống sẽ tự động ghép chuỗi Full + Incremental tương ứng.\nBạn có muốn tiếp tục không?"
@@ -885,7 +914,8 @@ namespace FtpSysPro.Manager.UI
                     TargetDirectory = txtTargetFolder.Text.Trim(),
                     OverwriteExisting = chkOverwrite.Checked,
                     ZipPassword = txtPassword.Text,
-                    SelectedSubFolder = selectiveSubFolder
+                    SelectedSubFolder = selectiveSubFolder,
+                    SelectedSubFolders = selectiveFolders
                 };
 
                 if (rdoJob.Checked && cboJob.SelectedIndex >= 0)
@@ -954,7 +984,8 @@ namespace FtpSysPro.Manager.UI
                         TargetDirectory = req.TargetDirectory,
                         OverwriteExisting = req.OverwriteExisting,
                         ZipPassword = req.ZipPassword,
-                        SelectedSubFolder = req.SelectedSubFolder
+                        SelectedSubFolder = req.SelectedSubFolder,
+                        SelectedSubFolders = req.SelectedSubFolders ?? selectiveFolders
                     };
 
                     if (req.CustomDestination != null)

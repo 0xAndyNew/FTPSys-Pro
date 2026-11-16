@@ -20,7 +20,7 @@ namespace FtpSysPro.Core.Resources
             CultureInfo.DefaultThreadCurrentUICulture = culture;
         }
 
-        public static string AppVersion => "1.2.9";
+        public static string AppVersion => "1.3.0";
         public static string AppName => IsVi ? "FTPSys Pro - Sao lưu Dữ liệu Doanh nghiệp" : "FTPSys Pro - Enterprise Backup & Recovery";
 
         // Navigation / Tabs
@@ -326,12 +326,14 @@ namespace FtpSysPro.Core.Resources
         public static string RestoreFromJob => IsVi ? "Từ Job đã lưu" : "From Configured Job";
         public static string RestoreFromFolder => IsVi ? "Từ Thư mục sao lưu (Local / USB / Mạng UNC)" : "From Backup Directory (Local / USB / UNC)";
         public static string RestoreFromRemote => IsVi ? "Từ Máy chủ FTP / SFTP từ xa" : "From Remote FTP / SFTP Server";
-        public static string RestoreSelectiveSubFolder => IsVi ? "Chỉ khôi phục thư mục con cụ thể:" : "Restore specific subfolder only:";
-        public static string RestoreSelectivePlaceholder => IsVi ? "Ví dụ: Documents hoặc SubFolder (bỏ trống để khôi phục tất cả)" : "e.g. Documents or SubFolder (leave blank for all)";
+        public static string RestoreSelectiveSubFolder => IsVi ? "Chỉ khôi phục các thư mục con:" : "Restore specific subfolders only:";
+        public static string RestoreSelectivePlaceholder => IsVi ? "Chọn một hoặc nhiều thư mục (cách nhau bởi dấu chấm phẩy ;)" : "Select one or more subfolders (separated by semicolon ;)";
         public static string RestoreScan => IsVi ? "Quét điểm phục hồi" : "Scan Restore Points";
         public static string RestoreConnectAndScan => IsVi ? "Kết nối & Quét" : "Connect & Scan";
-        public static string SelectSubFolderTitle => IsVi ? "Chọn thư mục con cần phục hồi" : "Select Subfolder to Restore";
+        public static string SelectSubFolderTitle => IsVi ? "Chọn các thư mục con cần phục hồi" : "Select Subfolders to Restore";
         public static string SelectSubFolderBrowse => IsVi ? "📁 Chọn mục..." : "📁 Browse...";
+        public static string SelectAllFolders => IsVi ? "📦 Chọn tất cả" : "📦 Select All";
+        public static string ClearAllSelection => IsVi ? "✕ Bỏ chọn" : "✕ Clear";
         public static string ViewRestoreLogs => IsVi ? "📋 Nhật ký phục hồi" : "📋 Restore Logs";
         public static string RestoreLogFileName => IsVi ? "Nhật ký phục hồi dữ liệu" : "Data Restoration Logs";
         public static string RootFolderAllData => IsVi ? "(Toàn bộ dữ liệu)" : "(All data / Root)";

@@ -181,10 +181,12 @@ namespace FtpSysPro.Service
                         TargetDirectory = restoreReq.TargetDirectory,
                         OverwriteExisting = restoreReq.OverwriteExisting,
                         ZipPassword = restoreReq.ZipPassword,
-                        SelectedSubFolder = restoreReq.SelectedSubFolder
+                        SelectedSubFolder = restoreReq.SelectedSubFolder,
+                        SelectedSubFolders = restoreReq.SelectedSubFolders ?? new List<string>()
                     };
 
-                    string subFolderLog = string.IsNullOrEmpty(restoreReq.SelectedSubFolder) ? "Toàn bộ" : restoreReq.SelectedSubFolder;
+                    var allFilters = restoreOpts.GetAllSubFolderFilters();
+                    string subFolderLog = allFilters.Count > 0 ? string.Join(", ", allFilters) : "Toàn bộ";
                     _configStore.AppendRestoreLog("INF", $"[Service] Bắt đầu phục hồi bản sao lưu '{restoreReq.BackupSetId}' đến '{restoreReq.TargetDirectory}' (Mục: {subFolderLog})", restoreReq.JobId, null, restoreReq.BackupSetId, restoreReq.TargetDirectory);
 
                     RestoreResult res;

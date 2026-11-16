@@ -249,5 +249,90 @@ namespace FtpSysPro.Core.Tests
             Assert.True(File.Exists(Path.Combine(restoreTarget, "ledger.csv")));
             Assert.Equal(fileContent, File.ReadAllText(Path.Combine(restoreTarget, "ledger.csv")));
         }
+
+        [Fact]
+        public void ZipArchive_MultipleSubFoldersExtraction_FiltersEntriesCorrectly()
+        {
+            // Arrange: create zip with multiple folders
+            var srcDir = Path.Combine(_tempDir, "MultiZipSrc");
+            var outDir = Path.Combine(_tempDir, "MultiZipOut");
+            var sub1 = Path.Combine(srcDir, "Docs");
+            var sub2 = Path.Combine(srcDir, "Images");
+            var sub3 = Path.Combine(srcDir, "Source");
+            Directory.CreateDirectory(sub1);
+            Directory.CreateDirectory(sub2);
+            Directory.CreateDirectory(sub3);
+
+            var docFile = Path.Combine(sub1, "readme.txt");
+            var imgFile = Path.Combine(sub2, "photo.jpg");
+            var srcFile = Path.Combine(sub3, "app.cs");
+            File.WriteAllText(docFile, "Documentation Text");
+            File.WriteAllText(imgFile, "Fake Image Content");
+            File.WriteAllText(srcFile, "using System;");
+
+            var zipPath = Path.Combine(_tempDir, "multi_archive.zip");
+
+            var files = new List<ScannedFile>
+            {
+                new ScannedFile { FullPath = docFile, RelativePath = @"Docs\readme.txt", SizeBytes = new FileInfo(docFile).Length, LastWriteTimeUtc = DateTime.UtcNow },
+                new ScannedFile { FullPath = imgFile, RelativePath = @"Images\photo.jpg", SizeBytes = new FileInfo(imgFile).Length, LastWriteTimeUtc = DateTime.UtcNow },
+                new ScannedFile { FullPath = srcFile, RelativePath = @"Source\app.cs", SizeBytes = new FileInfo(srcFile).Length, LastWriteTimeUtc = DateTime.UtcNow }
+            };
+
+            ZipArchiveHelper.CreateZipArchive(zipPath, files, 5);
+
+            // Act: extract Docs AND Images (multi-folder filter)
+            var selectedFolders = new List<string> { "Docs", "Images" };
+            ZipArchiveHelper.ExtractZipArchive(zipPath, outDir, null, true, null, default, null, selectedFolders);
+
+            // Assert
+            Assert.True(File.Exists(Path.Combine(outDir, "Docs", "readme.txt")));
+            Assert.True(File.Exists(Path.Combine(outDir, "Images", "photo.jpg")));
+            Assert.False(File.Exists(Path.Combine(outDir, "Source", "app.cs")));
+        }
+
+        [Fact]
+        public async Task RestoreFromDestination_MultipleSubFoldersRestore_RestoresSelectedFoldersOnly()
+        {
+            // Arrange
+            var repoDir = Path.Combine(_tempDir, "MultiFolderRepo");
+            var fullDir = Path.Combine(repoDir, "CorpJob_20261115_100000_FULL");
+            Directory.CreateDirectory(Path.Combine(fullDir, "Accounting"));
+            Directory.CreateDirectory(Path.Combine(fullDir, "HR"));
+            Directory.CreateDirectory(Path.Combine(fullDir, "Sales"));
+
+            File.WriteAllText(Path.Combine(fullDir, "Accounting", "report.xlsx"), "Accounting Data");
+            File.WriteAllText(Path.Combine(fullDir, "HR", "employees.csv"), "HR Data");
+            File.WriteAllText(Path.Combine(fullDir, "Sales", "leads.txt"), "Sales Leads");
+
+            var destConfig = new DestinationConfig
+            {
+                Type = DestinationType.LocalOrUnc,
+                LocalPath = repoDir
+            };
+
+            var restoreEngine = new RestoreEngine(_configStore);
+            var targetRestoreDir = Path.Combine(_tempDir, "MultiFolderRestored");
+
+            // Act
+            var restoreOpts = new RestoreOptions
+            {
+                TargetDirectory = targetRestoreDir,
+                OverwriteExisting = true,
+                SelectedSubFolders = new List<string> { "Accounting", "HR" }
+            };
+
+            var result = await restoreEngine.RestoreFromDestinationToPointInTimeAsync(
+                destConfig,
+                "",
+                "CorpJob_20261115_100000_FULL",
+                restoreOpts);
+
+            // Assert
+            Assert.True(result.Success);
+            Assert.True(File.Exists(Path.Combine(targetRestoreDir, "Accounting", "report.xlsx")));
+            Assert.True(File.Exists(Path.Combine(targetRestoreDir, "HR", "employees.csv")));
+            Assert.False(File.Exists(Path.Combine(targetRestoreDir, "Sales", "leads.txt")));
+        }
     }
 }
