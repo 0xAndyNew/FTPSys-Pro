@@ -303,40 +303,10 @@ namespace FtpSysPro.Manager.UI
                 ForeColor = Color.FromArgb(10, 80, 180)
             };
 
-            btnBrowseSubFolder = new Button
-            {
-                Text = Strings.SelectSubFolderBrowse,
-                Location = new Point(480, 382),
-                Size = new Size(95, 28),
-                Enabled = false,
-                FlatStyle = FlatStyle.System
-            };
-            btnBrowseSubFolder.Click += async (s, e) => await OpenSubFolderPickerAsync();
-
-            btnRemoveSubFolder = new Button
-            {
-                Text = Strings.DeselectSelectedFolder,
-                Location = new Point(580, 382),
-                Size = new Size(92, 28),
-                Enabled = false,
-                FlatStyle = FlatStyle.System
-            };
-            btnRemoveSubFolder.Click += (s, e) => RemoveSelectedSubFolder();
-
-            btnClearSubFolder = new Button
-            {
-                Text = Strings.ClearAllSelectedFolders,
-                Location = new Point(677, 382),
-                Size = new Size(83, 28),
-                Enabled = false,
-                FlatStyle = FlatStyle.System
-            };
-            btnClearSubFolder.Click += (s, e) => ClearAllSubFolders();
-
             lvSelectiveFolders = new ListView
             {
                 Location = new Point(20, 415),
-                Size = new Size(740, 85),
+                Size = new Size(610, 85),
                 View = View.Details,
                 FullRowSelect = true,
                 GridLines = true,
@@ -346,8 +316,38 @@ namespace FtpSysPro.Manager.UI
                 BorderStyle = BorderStyle.FixedSingle,
                 Enabled = false
             };
-            lvSelectiveFolders.Columns.Add(Strings.IsVi ? "Đường dẫn nguồn" : "Source Path", 515);
-            lvSelectiveFolders.Columns.Add(Strings.IsVi ? "Dung lượng" : "Size", 200);
+            lvSelectiveFolders.Columns.Add(Strings.IsVi ? "Đường dẫn nguồn" : "Source Path", 415);
+            lvSelectiveFolders.Columns.Add(Strings.IsVi ? "Dung lượng" : "Size", 170);
+
+            btnBrowseSubFolder = new Button
+            {
+                Text = Strings.SelectSubFolderBrowse,
+                Location = new Point(640, 415),
+                Size = new Size(120, 26),
+                Enabled = false,
+                FlatStyle = FlatStyle.System
+            };
+            btnBrowseSubFolder.Click += async (s, e) => await OpenSubFolderPickerAsync();
+
+            btnRemoveSubFolder = new Button
+            {
+                Text = Strings.DeselectSelectedFolder,
+                Location = new Point(640, 444),
+                Size = new Size(120, 26),
+                Enabled = false,
+                FlatStyle = FlatStyle.System
+            };
+            btnRemoveSubFolder.Click += (s, e) => RemoveSelectedSubFolder();
+
+            btnClearSubFolder = new Button
+            {
+                Text = Strings.ClearAllSelectedFolders,
+                Location = new Point(640, 473),
+                Size = new Size(120, 26),
+                Enabled = false,
+                FlatStyle = FlatStyle.System
+            };
+            btnClearSubFolder.Click += (s, e) => ClearAllSubFolders();
 
             lvSelectiveFolders.DoubleClick += async (s, e) =>
             {
@@ -527,6 +527,7 @@ namespace FtpSysPro.Manager.UI
         private void UpdateFolderSelectionDisplay()
         {
             lvSelectiveFolders.Items.Clear();
+            lblSelectedSubFoldersCount.Location = new Point(chkSelectiveFolder.Right + 8, 388);
 
             if (!chkSelectiveFolder.Checked)
             {
