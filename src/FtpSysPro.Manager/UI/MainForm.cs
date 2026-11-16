@@ -49,6 +49,8 @@ namespace FtpSysPro.Manager.UI
         private TabPage tabProperties;
         private TabPage tabHistory;
         private TabPage tabLog;
+        private TabPage tabRestoreLog;
+        private OperationLogControl operationRestoreLogControl;
 
         // Tab 1: Task Properties
         private Panel pnlPropHeader;
@@ -434,8 +436,30 @@ namespace FtpSysPro.Manager.UI
             operationLogControl = new OperationLogControl(_configStore, _currentConfig);
             tabLog.Controls.Add(operationLogControl);
 
+            // -----------------------------------------------------------------
+            // Tab 4: Restore Log (Nhật ký phục hồi)
+            // -----------------------------------------------------------------
+            tabRestoreLog = new TabPage
+            {
+                Text = "🔄 " + Strings.TabRestoreLog,
+                BackColor = Color.FromArgb(248, 250, 252),
+                Padding = new Padding(0)
+            };
+
+            operationRestoreLogControl = new OperationLogControl(_configStore, _currentConfig);
+            operationRestoreLogControl.SetCustomLogFile(_configStore.RestoreLogFilePath, Strings.TabRestoreLog);
+            tabRestoreLog.Controls.Add(operationRestoreLogControl);
+
             // Add all tabs to TabControl
-            tabRight.TabPages.AddRange(new TabPage[] { tabProperties, tabHistory, tabLog });
+            tabRight.TabPages.AddRange(new TabPage[] { tabProperties, tabHistory, tabLog, tabRestoreLog });
+
+            tabRight.SelectedIndexChanged += (s, e) =>
+            {
+                if (tabRight.SelectedTab == tabRestoreLog)
+                {
+                    operationRestoreLogControl?.SetCustomLogFile(_configStore.RestoreLogFilePath, Strings.TabRestoreLog);
+                }
+            };
 
             // SplitContainer
             splitContainer = new SplitContainer
@@ -582,6 +606,7 @@ namespace FtpSysPro.Manager.UI
             if (tabProperties != null) tabProperties.Text = "📋 " + Strings.TabTaskProperties;
             if (tabHistory != null) tabHistory.Text = "⏰ " + Strings.TabHistory;
             if (tabLog != null) tabLog.Text = "📝 " + Strings.TabLog;
+            if (tabRestoreLog != null) tabRestoreLog.Text = "🔄 " + Strings.TabRestoreLog;
 
             // Property-Value column headers
             if (colPropName != null) colPropName.HeaderText = Strings.ColProperty;
@@ -762,6 +787,7 @@ namespace FtpSysPro.Manager.UI
             {
                 dlg.ShowDialog(this);
             }
+            operationRestoreLogControl?.SetCustomLogFile(_configStore.RestoreLogFilePath, Strings.TabRestoreLog);
         }
 
         private void OpenSettings()

@@ -20,7 +20,7 @@ namespace FtpSysPro.Core.Resources
             CultureInfo.DefaultThreadCurrentUICulture = culture;
         }
 
-        public static string AppVersion => "1.2.8";
+        public static string AppVersion => "1.2.9";
         public static string AppName => IsVi ? "FTPSys Pro - Sao lưu Dữ liệu Doanh nghiệp" : "FTPSys Pro - Enterprise Backup & Recovery";
 
         // Navigation / Tabs
@@ -179,6 +179,7 @@ namespace FtpSysPro.Core.Resources
         public static string TabTaskProperties => IsVi ? "Thuộc tính Job" : "Task properties";
         public static string TabHistory => IsVi ? "Lịch sử thực thi" : "History";
         public static string TabLog => IsVi ? "Nhật ký vận hành" : "Log";
+        public static string TabRestoreLog => IsVi ? "Nhật ký phục hồi" : "Restore Log";
 
         // Task Properties table
         public static string ColProperty => IsVi ? "Thuộc tính" : "Property";

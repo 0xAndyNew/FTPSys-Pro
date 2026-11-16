@@ -372,16 +372,11 @@ namespace FtpSysPro.Core.Config
                 if (!string.IsNullOrEmpty(targetDir)) details.Add($"Target: {targetDir}");
 
                 string context = details.Count > 0 ? " [" + string.Join(", ", details) + "]" : "";
-                string line = $"{ts:yyyy-MM-dd HH:mm:ss.fff zzz} [{tag}] [RESTORE]{context} {message}";
+                string line = $"{ts:yyyy-MM-dd HH:mm:ss} [{tag}] [RESTORE]{context} {message}";
 
                 lock (_syncLock)
                 {
                     File.AppendAllText(RestoreLogFilePath, line + Environment.NewLine, System.Text.Encoding.UTF8);
-                }
-
-                if (!string.IsNullOrEmpty(jobId))
-                {
-                    AppendJobLog(jobId, jobName ?? jobId, tag, $"[RESTORE] {message}", ts);
                 }
             }
             catch { }

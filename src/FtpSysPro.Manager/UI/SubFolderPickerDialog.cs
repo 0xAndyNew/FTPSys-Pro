@@ -130,23 +130,25 @@ namespace FtpSysPro.Manager.UI
 
             btnSelectAll = new Button
             {
-                Text = Strings.IsVi ? "Khôi phục toàn bộ" : "Restore All",
+                Text = Strings.IsVi ? "📦 Chọn thư mục gốc (Toàn bộ)" : "📦 Select Root (All)",
                 Location = new Point(15, 38),
-                Size = new Size(135, 32),
+                Size = new Size(205, 32),
                 Anchor = AnchorStyles.Bottom | AnchorStyles.Left,
                 FlatStyle = FlatStyle.System
             };
             btnSelectAll.Click += (s, e) =>
             {
-                SelectedSubFolder = string.Empty;
-                DialogResult = DialogResult.OK;
-                Close();
+                if (treeFolders.Nodes.Count > 0)
+                {
+                    treeFolders.SelectedNode = treeFolders.Nodes[0];
+                    SelectedSubFolder = string.Empty;
+                    lblSelected.Text = Strings.IsVi ? "Đang chọn: 📦 Thư mục gốc (Toàn bộ dữ liệu)" : "Selected: 📦 (All data / Root)";
+                }
             };
 
             btnOk = new Button
             {
                 Text = Strings.IsVi ? "Đồng ý" : "Select",
-                DialogResult = DialogResult.OK,
                 Location = new Point(310, 38),
                 Size = new Size(95, 32),
                 Anchor = AnchorStyles.Bottom | AnchorStyles.Right,
@@ -161,6 +163,23 @@ namespace FtpSysPro.Manager.UI
                 {
                     SelectedSubFolder = treeFolders.SelectedNode.Tag as string ?? string.Empty;
                 }
+                if (string.IsNullOrEmpty(SelectedSubFolder))
+                {
+                    var confirmRoot = MessageBox.Show(this,
+                        Strings.IsVi
+                            ? "Bạn đang chọn thư mục gốc (Toàn bộ dữ liệu của bản sao lưu).\n\nNếu muốn khôi phục toàn bộ, nhấn 'Có' (Yes).\nNếu muốn khôi phục một thư mục con cụ thể, nhấn 'Không' (No) để quay lại chọn thư mục con."
+                            : "You have selected the root folder (All backup data).\n\nIf you want to restore all data, click 'Yes'.\nIf you want a specific subfolder, click 'No' to pick a subfolder.",
+                        Strings.IsVi ? "Xác nhận phạm vi phục hồi" : "Confirm Restore Scope",
+                        MessageBoxButtons.YesNo,
+                        MessageBoxIcon.Question);
+
+                    if (confirmRoot != DialogResult.Yes)
+                    {
+                        return;
+                    }
+                }
+
+                DialogResult = DialogResult.OK;
                 Close();
             };
 
@@ -200,13 +219,13 @@ namespace FtpSysPro.Manager.UI
                 var path = e.Node?.Tag as string ?? string.Empty;
                 SelectedSubFolder = path;
                 lblSelected.Text = string.IsNullOrEmpty(path)
-                    ? (Strings.IsVi ? "Đang chọn: (Toàn bộ dữ liệu - Thư mục gốc)" : "Selected: (All data / Root)")
+                    ? (Strings.IsVi ? "Đang chọn: 📦 Thư mục gốc (Toàn bộ dữ liệu)" : "Selected: 📦 (All data / Root)")
                     : (Strings.IsVi ? $"Đang chọn: 📁 {path}" : $"Selected: 📁 {path}");
             };
 
             treeFolders.NodeMouseDoubleClick += (s, e) =>
             {
-                if (e.Node != null)
+                if (e.Node != null && e.Node.Nodes.Count == 0 && e.Node != treeFolders.Nodes[0])
                 {
                     SelectedSubFolder = e.Node.Tag as string ?? string.Empty;
                     DialogResult = DialogResult.OK;

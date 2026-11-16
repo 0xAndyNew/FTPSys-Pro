@@ -47,6 +47,8 @@ namespace FtpSysPro.Manager.UI
         private Timer timerAutoRefresh;
         private Timer _searchTimer;
         private string _activeFilePath;
+        private bool _isCustomFileMode;
+        private string _customTitle;
         private long _lastLoadedLength;
         private DateTime _lastLoadedTime;
         private bool _isLoading;
@@ -206,7 +208,7 @@ namespace FtpSysPro.Manager.UI
 
             btnRefresh = CreateModernButton("↻ " + (Strings.IsVi ? "Làm mới" : "Refresh"), 72, (s, e) =>
             {
-                if (_currentJob != null)
+                if (!_isCustomFileMode && _currentJob != null)
                 {
                     _configStore.EnsureJobLogPopulated(_currentJob);
                 }
@@ -406,6 +408,8 @@ namespace FtpSysPro.Manager.UI
 
         public void SetCurrentJob(BackupJob job)
         {
+            _isCustomFileMode = false;
+            _customTitle = null;
             _currentJob = job;
             UpdateJobHeader();
 
@@ -419,6 +423,19 @@ namespace FtpSysPro.Manager.UI
                 _activeFilePath = null;
             }
 
+            _lastLoadedLength = 0;
+            LoadCurrentLog(appendOnly: false);
+        }
+
+        public void SetCustomLogFile(string filePath, string displayTitle)
+        {
+            _isCustomFileMode = true;
+            _customTitle = displayTitle;
+            _currentJob = null;
+            _activeFilePath = filePath;
+            lblJobTitle.Text = "🔄 " + displayTitle;
+            lblJobTitle.ForeColor = Color.FromArgb(9, 105, 218);
+            lblJobTitle.BackColor = Color.FromArgb(221, 244, 255);
             _lastLoadedLength = 0;
             LoadCurrentLog(appendOnly: false);
         }
@@ -470,7 +487,7 @@ namespace FtpSysPro.Manager.UI
         {
             if (_isLoading) return;
 
-            if (_currentJob == null)
+            if (!_isCustomFileMode && _currentJob == null)
             {
                 if (!appendOnly)
                 {
@@ -500,20 +517,26 @@ namespace FtpSysPro.Manager.UI
                 {
                     txtLog.Clear();
                     AppendColorText("--------------------------------------------------------------------------------" + Environment.NewLine, Color.FromArgb(208, 215, 222));
-                    AppendColorText($"  NOTEPAD++ JOB LOG VIEWER - FTPSYS PRO" + Environment.NewLine, Color.FromArgb(9, 105, 218));
-                    AppendColorText($"  Job: {_currentJob.Name} ({_currentJob.Id})" + Environment.NewLine, Color.FromArgb(36, 41, 47));
+                    AppendColorText($"  {(_isCustomFileMode ? _customTitle?.ToUpperInvariant() : "NOTEPAD++ JOB LOG VIEWER")} - FTPSYS PRO" + Environment.NewLine, Color.FromArgb(9, 105, 218));
+                    if (!_isCustomFileMode && _currentJob != null)
+                    {
+                        AppendColorText($"  Job: {_currentJob.Name} ({_currentJob.Id})" + Environment.NewLine, Color.FromArgb(36, 41, 47));
+                    }
                     AppendColorText("--------------------------------------------------------------------------------" + Environment.NewLine, Color.FromArgb(208, 215, 222));
                     AppendColorText(Strings.IsVi
-                        ? $"  [INFO] Job '{_currentJob.Name}' chưa có dữ liệu nhật ký nào." + Environment.NewLine
-                        : $"  [INFO] Job '{_currentJob.Name}' has no log entries yet." + Environment.NewLine,
+                        ? (_isCustomFileMode ? "  [INFO] Chưa có nhật ký phục hồi nào được ghi nhận." + Environment.NewLine : $"  [INFO] Job '{_currentJob?.Name}' chưa có dữ liệu nhật ký nào." + Environment.NewLine)
+                        : (_isCustomFileMode ? "  [INFO] No restore log entries recorded yet." + Environment.NewLine : $"  [INFO] Job '{_currentJob?.Name}' has no log entries yet." + Environment.NewLine),
                         Color.FromArgb(154, 103, 0));
-                    AppendColorText(Strings.IsVi
-                        ? "  💡 Gợi ý: Bấm nút '▶ Chạy ngay' trên thanh công cụ để thực thi sao lưu lần đầu." + Environment.NewLine
-                        : "  💡 Tip: Click '▶ Run' on the toolbar to execute the first backup." + Environment.NewLine,
-                        Color.FromArgb(26, 127, 55));
+                    if (!_isCustomFileMode)
+                    {
+                        AppendColorText(Strings.IsVi
+                            ? "  💡 Gợi ý: Bấm nút '▶ Chạy ngay' trên thanh công cụ để thực thi sao lưu lần đầu." + Environment.NewLine
+                            : "  💡 Tip: Click '▶ Run' on the toolbar to execute the first backup." + Environment.NewLine,
+                            Color.FromArgb(26, 127, 55));
+                    }
                     AppendColorText("--------------------------------------------------------------------------------" + Environment.NewLine, Color.FromArgb(208, 215, 222));
 
-                    lblStatusFile.Text = $"Job: {_currentJob.Name}";
+                    lblStatusFile.Text = _isCustomFileMode ? $"{_customTitle} | restore.log" : $"Job: {_currentJob?.Name}";
                     lblStatusLines.Text = Strings.IsVi ? "Hiển thị: 0 dòng" : "Lines: 0";
                     lblStatusSize.Text = Strings.IsVi ? "Dung lượng: 0 B" : "Size: 0 B";
                     lblStatusUpdated.Text = Strings.IsVi ? $"Cập nhật: {DateTime.Now:HH:mm:ss}" : $"Updated: {DateTime.Now:HH:mm:ss}";
@@ -585,8 +608,10 @@ namespace FtpSysPro.Manager.UI
                         {
                             txtLog.Clear();
                             AppendColorText("--------------------------------------------------------------------------------" + Environment.NewLine, Color.FromArgb(208, 215, 222));
-                            AppendColorText($"  NOTEPAD++ JOB LOG VIEWER - FTPSYS PRO" + Environment.NewLine, Color.FromArgb(9, 105, 218));
-                            AppendColorText($"  Job: {_currentJob.Name}  |  File: {Path.GetFileName(logFilePath)}  |  Format: UTF-8" + Environment.NewLine, Color.FromArgb(36, 41, 47));
+                            AppendColorText($"  {(_isCustomFileMode ? _customTitle?.ToUpperInvariant() : "NOTEPAD++ JOB LOG VIEWER")} - FTPSYS PRO" + Environment.NewLine, Color.FromArgb(9, 105, 218));
+                            AppendColorText(_isCustomFileMode
+                                ? $"  File: {Path.GetFileName(logFilePath)}  |  Format: UTF-8" + Environment.NewLine
+                                : $"  Job: {_currentJob?.Name}  |  File: {Path.GetFileName(logFilePath)}  |  Format: UTF-8" + Environment.NewLine, Color.FromArgb(36, 41, 47));
                             AppendColorText("--------------------------------------------------------------------------------" + Environment.NewLine, Color.FromArgb(208, 215, 222));
                             if (rawLineNumber > 0)
                             {
@@ -618,7 +643,9 @@ namespace FtpSysPro.Manager.UI
                         txtLog.ResumeLayout();
 
                         int totalDisplayedLines = matchedLinesCount;
-                        lblStatusFile.Text = $"Job: {_currentJob.Name} | {Path.GetFileName(logFilePath)}";
+                        lblStatusFile.Text = _isCustomFileMode
+                            ? $"{_customTitle} | {Path.GetFileName(logFilePath)}"
+                            : $"Job: {_currentJob?.Name} | {Path.GetFileName(logFilePath)}";
                         lblStatusLines.Text = Strings.IsVi ? $"Hiển thị: {totalDisplayedLines:N0} dòng" : $"Lines: {totalDisplayedLines:N0}";
                         lblStatusSize.Text = Strings.IsVi ? $"Dung lượng: {FormatBytes(currentLength)}" : $"Size: {FormatBytes(currentLength)}";
                         lblStatusUpdated.Text = Strings.IsVi ? $"Cập nhật: {_lastLoadedTime:HH:mm:ss}" : $"Updated: {_lastLoadedTime:HH:mm:ss}";

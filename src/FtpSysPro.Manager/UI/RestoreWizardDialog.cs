@@ -286,35 +286,28 @@ namespace FtpSysPro.Manager.UI
             };
             txtSelectiveFolder = new TextBox
             {
-                Location = new Point(230, 405),
-                Width = 240,
+                Location = new Point(255, 404),
+                Width = 380,
                 Enabled = false
             };
 
             btnBrowseSubFolder = new Button
             {
                 Text = Strings.SelectSubFolderBrowse,
-                Location = new Point(475, 403),
-                Size = new Size(115, 27),
+                Location = new Point(645, 402),
+                Size = new Size(115, 28),
                 Enabled = false,
                 FlatStyle = FlatStyle.System
             };
             btnBrowseSubFolder.Click += async (s, e) => await OpenSubFolderPickerAsync();
 
-            chkSelectiveFolder.CheckedChanged += async (s, e) =>
+            chkSelectiveFolder.CheckedChanged += (s, e) =>
             {
                 txtSelectiveFolder.Enabled = chkSelectiveFolder.Checked;
                 btnBrowseSubFolder.Enabled = chkSelectiveFolder.Checked;
                 if (chkSelectiveFolder.Checked)
                 {
-                    if (string.IsNullOrWhiteSpace(txtSelectiveFolder.Text) && lvBackupSets.SelectedItems.Count > 0)
-                    {
-                        await OpenSubFolderPickerAsync();
-                    }
-                    else
-                    {
-                        txtSelectiveFolder.Focus();
-                    }
+                    txtSelectiveFolder.Focus();
                 }
             };
 
@@ -426,9 +419,15 @@ namespace FtpSysPro.Manager.UI
                 if (folders.Count == 0)
                 {
                     MessageBox.Show(this,
-                        Strings.NoSubFoldersFound,
+                        Strings.IsVi
+                            ? "Bản sao lưu này không chứa thư mục con nào (các tệp nằm tại thư mục gốc).\nBạn có thể tự nhập tên thư mục vào ô văn bản nếu muốn chỉ định."
+                            : Strings.NoSubFoldersFound,
                         Strings.IsVi ? "Thông báo" : "Notice",
                         MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    txtSelectiveFolder.Enabled = true;
+                    btnBrowseSubFolder.Enabled = true;
+                    chkSelectiveFolder.Checked = true;
+                    txtSelectiveFolder.Focus();
                     return;
                 }
 
@@ -436,8 +435,21 @@ namespace FtpSysPro.Manager.UI
                 {
                     if (dlg.ShowDialog(this) == DialogResult.OK)
                     {
-                        txtSelectiveFolder.Text = dlg.SelectedSubFolder;
-                        chkSelectiveFolder.Checked = !string.IsNullOrEmpty(dlg.SelectedSubFolder);
+                        if (!string.IsNullOrWhiteSpace(dlg.SelectedSubFolder))
+                        {
+                            txtSelectiveFolder.Text = dlg.SelectedSubFolder;
+                            chkSelectiveFolder.Checked = true;
+                            txtSelectiveFolder.Enabled = true;
+                            btnBrowseSubFolder.Enabled = true;
+                        }
+                        else
+                        {
+                            // User explicitly confirmed Root / All data
+                            txtSelectiveFolder.Text = string.Empty;
+                            chkSelectiveFolder.Checked = false;
+                            txtSelectiveFolder.Enabled = false;
+                            btnBrowseSubFolder.Enabled = false;
+                        }
                     }
                 }
             }
@@ -455,6 +467,21 @@ namespace FtpSysPro.Manager.UI
         private async System.Threading.Tasks.Task<List<string>> GetAvailableSubFoldersAsync(BackupSetManifest manifest)
         {
             var folderSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            // 0. If files list is empty, try loading local catalog manifest if jobId is available
+            if ((manifest.Files == null || manifest.Files.Count == 0) && !string.IsNullOrEmpty(manifest.JobId))
+            {
+                try
+                {
+                    var localManifests = _configStore.LoadLocalManifests(manifest.JobId);
+                    var matched = localManifests.FirstOrDefault(m => m.BackupSetId == manifest.BackupSetId);
+                    if (matched?.Files != null && matched.Files.Count > 0)
+                    {
+                        manifest.Files = matched.Files;
+                    }
+                }
+                catch { }
+            }
 
             // 1. From manifest.Files if available
             if (manifest.Files != null && manifest.Files.Count > 0)
@@ -497,34 +524,46 @@ namespace FtpSysPro.Manager.UI
                     Path.Combine(localSearchPath, manifest.BackupSetId + ".zip")
                 };
 
-                foreach (var zipFile in zipCandidates)
+                string foundZip = zipCandidates.FirstOrDefault(File.Exists);
+                if (foundZip == null)
                 {
-                    if (File.Exists(zipFile))
+                    try
                     {
-                        await System.Threading.Tasks.Task.Run(() =>
+                        var zipName = manifest.ArchiveFileName ?? (manifest.BackupSetId + ".zip");
+                        foundZip = Directory.GetFiles(localSearchPath, zipName, SearchOption.AllDirectories).FirstOrDefault();
+                        if (foundZip == null)
                         {
-                            using (var fs = new FileStream(zipFile, FileMode.Open, FileAccess.Read, FileShare.Read))
-                            using (var zip = new ICSharpCode.SharpZipLib.Zip.ZipFile(fs))
-                            {
-                                if (!string.IsNullOrEmpty(txtPassword.Text))
-                                {
-                                    zip.Password = txtPassword.Text;
-                                }
+                            foundZip = Directory.GetFiles(localSearchPath, manifest.BackupSetId + ".zip", SearchOption.AllDirectories).FirstOrDefault();
+                        }
+                    }
+                    catch { }
+                }
 
-                                foreach (ICSharpCode.SharpZipLib.Zip.ZipEntry entry in zip)
+                if (!string.IsNullOrEmpty(foundZip) && File.Exists(foundZip))
+                {
+                    await System.Threading.Tasks.Task.Run(() =>
+                    {
+                        using (var fs = new FileStream(foundZip, FileMode.Open, FileAccess.Read, FileShare.Read))
+                        using (var zip = new ICSharpCode.SharpZipLib.Zip.ZipFile(fs))
+                        {
+                            if (!string.IsNullOrEmpty(txtPassword.Text))
+                            {
+                                zip.Password = txtPassword.Text;
+                            }
+
+                            foreach (ICSharpCode.SharpZipLib.Zip.ZipEntry entry in zip)
+                            {
+                                var cleanName = entry.Name.Replace('/', '\\').Trim('\\');
+                                var dir = entry.IsDirectory ? cleanName : Path.GetDirectoryName(cleanName);
+                                while (!string.IsNullOrEmpty(dir))
                                 {
-                                    var cleanName = entry.Name.Replace('/', '\\').Trim('\\');
-                                    var dir = entry.IsDirectory ? cleanName : Path.GetDirectoryName(cleanName);
-                                    while (!string.IsNullOrEmpty(dir))
-                                    {
-                                        folderSet.Add(dir);
-                                        dir = Path.GetDirectoryName(dir);
-                                    }
+                                    folderSet.Add(dir);
+                                    dir = Path.GetDirectoryName(dir);
                                 }
                             }
-                        });
-                        return folderSet.OrderBy(x => x).ToList();
-                    }
+                        }
+                    });
+                    return folderSet.OrderBy(x => x).ToList();
                 }
 
                 // Check if directory backup exists locally
@@ -534,21 +573,28 @@ namespace FtpSysPro.Manager.UI
                     Path.Combine(localSearchPath, manifest.BackupSetId)
                 };
 
-                foreach (var dir in dirCandidates)
+                string foundDir = dirCandidates.FirstOrDefault(Directory.Exists);
+                if (foundDir == null)
                 {
-                    if (Directory.Exists(dir))
+                    try
                     {
-                        await System.Threading.Tasks.Task.Run(() =>
-                        {
-                            var subDirs = Directory.GetDirectories(dir, "*", SearchOption.AllDirectories);
-                            foreach (var sd in subDirs)
-                            {
-                                var rel = sd.Substring(dir.Length).TrimStart('\\');
-                                folderSet.Add(rel);
-                            }
-                        });
-                        return folderSet.OrderBy(x => x).ToList();
+                        foundDir = Directory.GetDirectories(localSearchPath, manifest.BackupSetId, SearchOption.AllDirectories).FirstOrDefault();
                     }
+                    catch { }
+                }
+
+                if (!string.IsNullOrEmpty(foundDir) && Directory.Exists(foundDir))
+                {
+                    await System.Threading.Tasks.Task.Run(() =>
+                    {
+                        var subDirs = Directory.GetDirectories(foundDir, "*", SearchOption.AllDirectories);
+                        foreach (var sd in subDirs)
+                        {
+                            var rel = sd.Substring(foundDir.Length).TrimStart('\\');
+                            folderSet.Add(rel);
+                        }
+                    });
+                    return folderSet.OrderBy(x => x).ToList();
                 }
             }
 

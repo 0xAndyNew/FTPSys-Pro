@@ -247,10 +247,9 @@ namespace FtpSysPro.Core.Tests
             Assert.Contains(target, logContent);
             Assert.Contains("Phục hồi thành công 25 tệp", logContent);
 
-            // Verify it also appends to the Job's log file
-            var jobLog = File.ReadAllText(_store.GetJobLogFilePath(jobId));
-            Assert.Contains("[RESTORE]", jobLog);
-            Assert.Contains("Phục hồi thành công 25 tệp", jobLog);
+            // Verify restore log has timestamp and is isolated from Job backup logs
+            Assert.Contains(DateTime.Now.ToString("yyyy-MM-dd"), logContent);
+            Assert.False(File.Exists(_store.GetJobLogFilePath(jobId)));
         }
     }
 }
